@@ -1,0 +1,3 @@
+[submodule "Wizzy/vendor/spdlog"]
+	path = Wizzy/vendor/spdlog
+	url = https://github.com/gabime/spdlog

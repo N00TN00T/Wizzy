@@ -1,4 +1,5 @@
 #include "Application.h"
+#include "Log.h"
 
 namespace Wizzy {
 

@@ -5,3 +5,8 @@ bin-int/
 
 # Files
 .user
+
+# Project files
+.project
+.vcxproj
+.filters
