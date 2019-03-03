@@ -11,9 +11,15 @@ namespace Wizzy {
 	Application::~Application() {
 	}
 
+	void Application::OnEvent(Event& e){
+		EventDispatcher _dispatcher(e);
+		_dispatcher.Dispatch<WindowCloseEvent>(WZ_BIND_FN(Application::OnWindowClose));
+	}
+
 	void Application::Run() {
 		
 		m_window = std::unique_ptr<IWindow>(IWindow::Create());
+		m_window->SetEventCallback(WZ_BIND_FN(Application::OnEvent));
 
 		m_running = true;
 
@@ -26,4 +32,8 @@ namespace Wizzy {
 		}
 	}
 
+	bool Application::OnWindowClose(WindowCloseEvent& e) {
+		m_running = false;
+		return false;
+	}
 }

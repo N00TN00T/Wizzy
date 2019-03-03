@@ -7,7 +7,6 @@ extern Wizzy::Application* Wizzy::CreateApplication();
 int main(int argc, char** argv) {
 
 	Wizzy::Log::Init();
-	WZ_CORE_INFO("Initialized the logs");
 
 	auto _app = Wizzy::CreateApplication();
 	_app->Run();

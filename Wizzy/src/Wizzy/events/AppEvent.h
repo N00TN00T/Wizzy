@@ -20,16 +20,16 @@ namespace Wizzy {
 	class WZ_API WindowResizeEvent
 		: public Event {
 	private:
-		float m_x;
-		float m_y;
+		u32 m_x;
+		u32 m_y;
 	public:
-		inline WindowResizeEvent(float x, float y) {
+		inline WindowResizeEvent(u32 x, u32 y) {
 			m_x = x;
 			m_y = y;
 		}
 
-		inline const float& GetX() const { return m_x; }
-		inline const float& GetY() const { return m_y; }
+		inline const u32& GetX() const { return m_x; }
+		inline const u32& GetY() const { return m_y; }
 
 		inline virtual string ToString() const override {
 			return GetName() + ": X'" + std::to_string(m_x) + "'" + ": Y'" + std::to_string(m_y) + "'";

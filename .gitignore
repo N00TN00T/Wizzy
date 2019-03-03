@@ -2,11 +2,15 @@
 .vs/
 bin/
 bin-int/
+.vscode/
 
 # Files
 .user
+Makefile
 
 # Project files
 .project
 .vcxproj
+.user
 .filters
+.makefile

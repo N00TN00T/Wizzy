@@ -2,7 +2,12 @@
 #include "WindowsWindow.h"
 
 #include <GLFW/glfw3.h>
-#include <gl/GL.h>
+#include <gl/GL.h> //TODO
+
+#include "Wizzy/events/AppEvent.h"
+#include "Wizzy/events/MouseEvent.h"
+#include "Wizzy/events/CharEvent.h"
+#include "Wizzy/events/KeyEvent.h"
 
 namespace Wizzy {
     IWindow *IWindow::Create(const WindowProps& props) {
@@ -10,6 +15,10 @@ namespace Wizzy {
     }
 
     bool WindowsWindow::s_glfwInitialized(false);
+
+    static void glfw_error_callback(int32 error, const char *description) {
+        WZ_CORE_ERROR("GLFW ERROR ({0}): '{1}'", error, description);
+    }
 
     WindowsWindow::WindowsWindow(const WindowProps& props) {
         Init(props);
@@ -29,9 +38,11 @@ namespace Wizzy {
             WZ_CORE_TRACE("Initializing glfw...");
 
             auto _result = glfwInit();
-
-            WZ_CORE_ASSERT(_result != GLFW_NO_ERROR, "Glfw init error code: '{0}'", _result);
         
+            glfwSetErrorCallback(glfw_error_callback);
+
+            WZ_CORE_ASSERT(_result != GLFW_NO_ERROR, "Error initializing glfw");
+
             s_glfwInitialized = true;
         }
 
@@ -43,6 +54,96 @@ namespace Wizzy {
 
         SetVSync(false);
         SetClearColor(.1f, .2f, .5f, 1.f);
+
+        glfwSetWindowSizeCallback(m_glfwWindow, [](GLFWwindow *w, int32 width, int32 height){
+            
+            auto& _data = *((WindowData*)glfwGetWindowUserPointer(w));
+            _data.width = width;
+            _data.height = height;
+
+            WindowResizeEvent _event(width, height);
+            _data.eventCallbackFn(_event);
+        });
+
+        glfwSetWindowCloseCallback(m_glfwWindow, [](GLFWwindow *w){
+            
+            auto& _data = *((WindowData*)glfwGetWindowUserPointer(w));
+
+            WindowCloseEvent _event;
+            _data.eventCallbackFn(_event);
+        });
+        
+        glfwSetKeyCallback(m_glfwWindow, [](GLFWwindow *w, int32 key, int32 scancode, int32 action, int32 mods){
+            
+            auto& _data = *((WindowData*)glfwGetWindowUserPointer(w));
+
+            switch(action) {
+            case GLFW_PRESS:
+				{
+					KeyPressedEvent _event(key);
+					_data.eventCallbackFn(_event);
+					break;
+				}
+            case GLFW_RELEASE:
+				{
+					KeyReleasedEvent _event(key);
+					_data.eventCallbackFn(_event);
+					break;
+				}
+            case GLFW_REPEAT:
+				{
+					KeyRepeatEvent _event(key);
+					_data.eventCallbackFn(_event);
+					break;
+				}
+            }
+
+            
+        });
+        
+        glfwSetMouseButtonCallback(m_glfwWindow, [](GLFWwindow *w, int32 button, int32 action, int32 mods){
+            
+            auto& _data = *((WindowData*)glfwGetWindowUserPointer(w));
+
+            switch(action) {
+            case GLFW_PRESS:
+				{
+					MousePressedEvent _event(button);
+					_data.eventCallbackFn(_event);
+					break;
+				}
+            case GLFW_RELEASE:
+				{
+					MouseReleasedEvent _event(button);
+					_data.eventCallbackFn(_event);
+					break;
+				}
+            }
+        });
+
+		glfwSetCharCallback(m_glfwWindow, [](GLFWwindow *w, uint32 c) {
+
+			auto& _data = *((WindowData*)glfwGetWindowUserPointer(w));
+
+			CharEvent _event(c);
+			_data.eventCallbackFn(_event);
+		});
+
+        glfwSetScrollCallback(m_glfwWindow, [](GLFWwindow *w, double x, double y){
+            
+            auto& _data = *((WindowData*)glfwGetWindowUserPointer(w));
+
+            MouseScrolledEvent _event(x, y);
+            _data.eventCallbackFn(_event);
+        });
+
+        glfwSetCursorPosCallback(m_glfwWindow, [](GLFWwindow *w, double x, double y){
+            
+            auto& _data = *((WindowData*)glfwGetWindowUserPointer(w));
+
+            MouseMovedEvent _event(x, y);
+            _data.eventCallbackFn(_event);
+        });
     }
 
     void WindowsWindow::Shutdown() {

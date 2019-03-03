@@ -20,7 +20,7 @@ namespace Wizzy {
         virtual void SetWidth(u32 width) override;
         virtual void SetHeight(u32 height) override;
 
-        inline virtual void SetEventCallback(const EventCallbackFn& callbackFn) override { m_data.callbackFn = callbackFn; }
+        inline virtual void SetEventCallback(const EventCallbackFn& callbackFn) override { m_data.eventCallbackFn = callbackFn; }
         virtual void SetVSync(bool enabled) override;
         virtual bool IsVsync() const override;
 
@@ -31,7 +31,7 @@ namespace Wizzy {
     private:        
         struct WindowData {
             string title;
-            EventCallbackFn callbackFn;
+            EventCallbackFn eventCallbackFn;
             u32 width;
             u32 height;
             bool vsync;

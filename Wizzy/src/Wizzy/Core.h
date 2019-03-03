@@ -34,3 +34,5 @@
 	#define WZ_ASSERT(x, ...) if (!(x)) { WZ_CRITICAL("Critical error: {0}", __VA_ARGS__); }
 	#define WZ_CORE_ASSERT(x, ...) if (!(x)) { WZ_CORE_CRITICAL("Critical error: {0}", __VA_ARGS__); }
 #endif
+
+#define WZ_BIND_FN(fn) (std::bind(&fn, this, std::placeholders::_1))
