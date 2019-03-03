@@ -1,9 +1,9 @@
+#include "wzpch.h"
 #include "Application.h"
 #include "Log.h"
+#include "events\appevent.h"
 
 namespace Wizzy {
-
-
 
 	Application::Application() {
 	}
@@ -12,8 +12,17 @@ namespace Wizzy {
 	}
 
 	void Application::Run() {
-		while (true) {
+		
+		m_window = std::unique_ptr<IWindow>(IWindow::Create());
 
+		m_running = true;
+
+		while (m_running) {
+			m_window->OnFrameBegin();
+
+
+
+			m_window->OnFrameEnd();
 		}
 	}
 

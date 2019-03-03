@@ -1,9 +1,6 @@
 #pragma once
 
 #include "Core.h"
-#include <spdlog\spdlog.h>
-#include <memory>
-#include <stdio.h>
 
 namespace Wizzy {
 	class WZ_API Log {

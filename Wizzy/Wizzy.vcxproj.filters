@@ -1,0 +1,69 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup>
+    <Filter Include="Wizzy">
+      <UniqueIdentifier>{F2FE600E-5E13-89BF-2795-2C1F936885F0}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Wizzy\events">
+      <UniqueIdentifier>{B63AEDDF-A29D-7C84-4B23-B53A37654807}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Wizzy\platform">
+      <UniqueIdentifier>{A6C744AC-9295-38B2-7B29-A9D867961417}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Wizzy\platform\windows">
+      <UniqueIdentifier>{0050221A-EC49-4B6C-D5B6-E17CC14FB1D8}</UniqueIdentifier>
+    </Filter>
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="src\Wizzy.h" />
+    <ClInclude Include="src\Wizzy\Application.h">
+      <Filter>Wizzy</Filter>
+    </ClInclude>
+    <ClInclude Include="src\Wizzy\Core.h">
+      <Filter>Wizzy</Filter>
+    </ClInclude>
+    <ClInclude Include="src\Wizzy\Entry.h">
+      <Filter>Wizzy</Filter>
+    </ClInclude>
+    <ClInclude Include="src\Wizzy\IWindow.h">
+      <Filter>Wizzy</Filter>
+    </ClInclude>
+    <ClInclude Include="src\Wizzy\Log.h">
+      <Filter>Wizzy</Filter>
+    </ClInclude>
+    <ClInclude Include="src\Wizzy\events\AppEvent.h">
+      <Filter>Wizzy\events</Filter>
+    </ClInclude>
+    <ClInclude Include="src\Wizzy\events\CharEvent.h">
+      <Filter>Wizzy\events</Filter>
+    </ClInclude>
+    <ClInclude Include="src\Wizzy\events\Event.h">
+      <Filter>Wizzy\events</Filter>
+    </ClInclude>
+    <ClInclude Include="src\Wizzy\events\KeyEvent.h">
+      <Filter>Wizzy\events</Filter>
+    </ClInclude>
+    <ClInclude Include="src\Wizzy\events\MouseEvent.h">
+      <Filter>Wizzy\events</Filter>
+    </ClInclude>
+    <ClInclude Include="src\Wizzy\platform\windows\WindowsWindow.h">
+      <Filter>Wizzy\platform\windows</Filter>
+    </ClInclude>
+    <ClInclude Include="src\wzpch.h" />
+  </ItemGroup>
+  <ItemGroup>
+    <ClCompile Include="src\Wizzy\Application.cpp">
+      <Filter>Wizzy</Filter>
+    </ClCompile>
+    <ClCompile Include="src\Wizzy\IWindow.cpp">
+      <Filter>Wizzy</Filter>
+    </ClCompile>
+    <ClCompile Include="src\Wizzy\Log.cpp">
+      <Filter>Wizzy</Filter>
+    </ClCompile>
+    <ClCompile Include="src\Wizzy\platform\windows\WindowsWindow.cpp">
+      <Filter>Wizzy\platform\windows</Filter>
+    </ClCompile>
+    <ClCompile Include="src\wzpch.cpp" />
+  </ItemGroup>
+</Project>

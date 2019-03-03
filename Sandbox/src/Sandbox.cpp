@@ -1,3 +1,4 @@
+#include "spch.h"
 #include <Wizzy.h>
 
 class Sandbox
@@ -6,5 +7,6 @@ class Sandbox
 };
 
 Wizzy::Application* Wizzy::CreateApplication() {
+	
 	return new Sandbox();
 }
