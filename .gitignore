@@ -14,3 +14,6 @@ Makefile
 .user
 .filters
 .makefile
+
+# Exceptions
+!vendor/bin/
