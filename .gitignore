@@ -17,3 +17,4 @@ Makefile
 
 # Exceptions
 !vendor/bin/
+!vendor/bin/premake/premake5.exe
