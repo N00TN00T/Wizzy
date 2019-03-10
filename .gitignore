@@ -3,17 +3,20 @@
 bin/
 bin-int/
 .vscode/
+.codelite/
 
 # Files
-.user
+*.user
 Makefile
 
 # Project files
-.project
-.vcxproj
-.user
-.filters
-.makefile
+*.project
+*.workspace
+*.layout
+*.mk
+*.vcxproj
+*.user
+*.filters
 
 # Exceptions
 !vendor/bin/

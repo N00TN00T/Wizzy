@@ -38,6 +38,8 @@ namespace Wizzy {
 		virtual string ToString() const { return GetName(); }
 
 		inline bool IsInCategory(EventCategory category) { return GetCategoryFlags() & category; }
+
+		inline bool IsHandled() const { return m_isHandled; }
 	};
 
 	class EventDispatcher {

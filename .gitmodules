@@ -3,3 +3,6 @@
 [submodule "Wizzy/vendor/glfw"]
 	path = Wizzy/vendor/glfw
 	url = https://github.com/N00TN00T/glfw
+[submodule "Wizzy/vendor/spdlog"]
+	path = Wizzy/vendor/spdlog
+	url = https://github.com/gabime/spdlog

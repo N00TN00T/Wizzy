@@ -14,6 +14,8 @@ namespace Wizzy {
 	void Application::OnEvent(Event& e){
 		EventDispatcher _dispatcher(e);
 		_dispatcher.Dispatch<WindowCloseEvent>(WZ_BIND_FN(Application::OnWindowClose));
+
+		m_layerStack.OnEvent(e);
 	}
 
 	void Application::Run() {
@@ -26,10 +28,26 @@ namespace Wizzy {
 		while (m_running) {
 			m_window->OnFrameBegin();
 
-
+			m_layerStack.UpdateLayers();
 
 			m_window->OnFrameEnd();
 		}
+	}
+
+	void Application::PushLayer(Layer * layer) {
+		m_layerStack.PushLayer(layer);
+	}
+
+	void Application::PushOverlay(Layer * overlay) {
+		m_layerStack.PushOverlay(overlay);
+	}
+
+	void Application::PopLayer(Layer * layer) {
+		m_layerStack.PopLayer(layer);
+	}
+
+	void Application::PopOverlay(Layer * overlay) {
+		m_layerStack.PopOverlay(overlay);
 	}
 
 	bool Application::OnWindowClose(WindowCloseEvent& e) {

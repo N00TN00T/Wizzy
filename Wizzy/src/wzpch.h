@@ -28,10 +28,12 @@
 /* external libraries */
 
 #include <spdlog\spdlog.h>
+#include <spdlog/fmt/ostr.h>
 
 /* wizzy headers */
 
 #include "Wizzy/Log.h"
+#include "Wizzy/utils.h"
 
 /* Platform specific headers */
 #ifdef WZ_PLATFORM_WINDOWS

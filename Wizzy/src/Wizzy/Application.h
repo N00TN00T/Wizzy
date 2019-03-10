@@ -1,9 +1,9 @@
 #pragma once
 
-#include "Core.h"
-#include "IWindow.h"
-#include "events/Event.h"
-#include "events/AppEvent.h"
+#include "Wizzy/Core.h"
+#include "Wizzy/events/AppEvent.h"
+#include "Wizzy/IWindow.h"
+#include "LayerStack.h"
 
 namespace Wizzy {
 
@@ -16,6 +16,11 @@ namespace Wizzy {
 
 		void Run();
 
+		void PushLayer(Layer *layer);
+		void PushOverlay(Layer *overlay);
+		void PopLayer(Layer *layer);
+		void PopOverlay(Layer *overlay);
+
 	private:
 		bool OnWindowClose(WindowCloseEvent& e);
 	protected:
@@ -23,6 +28,7 @@ namespace Wizzy {
 
 	private:
 		bool m_running;
+		LayerStack m_layerStack;
 	};
 
 	Application* CreateApplication();

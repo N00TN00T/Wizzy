@@ -1,8 +1,8 @@
 #include "wzpch.h"
 #include "WindowsWindow.h"
 
+#include <glad/glad.h>
 #include <GLFW/glfw3.h>
-#include <gl/GL.h> //TODO
 
 #include "Wizzy/events/AppEvent.h"
 #include "Wizzy/events/MouseEvent.h"
@@ -42,7 +42,7 @@ namespace Wizzy {
             glfwSetErrorCallback(glfw_error_callback);
 
             WZ_CORE_ASSERT(_result != GLFW_NO_ERROR, "Error initializing glfw");
-
+			
             s_glfwInitialized = true;
         }
 
@@ -50,6 +50,11 @@ namespace Wizzy {
 
         m_glfwWindow = glfwCreateWindow(props.width, props.height, props.title.c_str(), nullptr, nullptr);
         glfwMakeContextCurrent(m_glfwWindow);
+
+		WZ_CORE_TRACE("Initializing glad...");
+		auto _status = gladLoadGLLoader((GLADloadproc)glfwGetProcAddress);
+		WZ_CORE_ASSERT(_status, "Failed to intitialize glad");
+
         glfwSetWindowUserPointer(m_glfwWindow, &m_data);
 
         SetVSync(false);

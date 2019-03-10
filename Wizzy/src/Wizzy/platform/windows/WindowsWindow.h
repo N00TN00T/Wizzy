@@ -1,7 +1,8 @@
 #pragma once
 
 #include "Wizzy/IWindow.h"
-#include <glfw/glfw3.h>
+
+struct GLFWwindow;
 
 namespace Wizzy {
 

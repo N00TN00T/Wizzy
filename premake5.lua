@@ -1,24 +1,34 @@
 -- PREMAKE FOR WIZZY
 
 workspace "Wizzy"
-  architecture "x64"
-  
+
   configurations 
   {
-    "Debug",
-    "Release",
-    "Distribution"
+    "Debug64",
+    "Release64",
+    "Dist64",
+    "DebugARM",
+    "ReleaseARM",
+    "DistARM"
   }
+  
+  filter "configurations:*64"
+    architecture "x64"
+    
+filter "configurations:*ARM"
+    architecture "ARM"
   
 output_dir = "%{cfg.buildcfg}-%{cfg.system}-%{cfg.architecture}"
   
 -- Include directories relative to root directory
 include_dir = {
-  glfw = "Wizzy/vendor/glfw/include"
+  glfw = "Wizzy/vendor/glfw/include",
+  glad = "Wizzy/vendor/glad/include"
 }
 
 -- Include the premake file from glfw directory
 include "Wizzy/vendor/glfw/"
+include "Wizzy/vendor/glad/"
 
 --[[------------------------------------------------------------------------------------
        CORE PROJECT
@@ -46,12 +56,14 @@ project "Wizzy"
   {
     "%{prj.name}/src",
     "%{prj.name}/vendor/spdlog/include",
-    "%{include_dir.glfw}"
+    "%{include_dir.glfw}",
+    "%{include_dir.glad}"
   }
 
   links 
   {
     "glfw",
+    "glad",
     "opengl32.lib"
   }
 
@@ -73,35 +85,27 @@ project "Wizzy"
       ("{COPY} %{cfg.buildtarget.relpath} ../bin/" .. output_dir .. "/Sandbox")
     }
 
-  filter "configurations:Debug"
-    defines 
-    {
-      "WZ_CONFIG_DEBUG"
-    }
+  filter "configurations:Debug*"
+    defines "WZ_CONFIG_DEBUG"
+    buildoptions "/MDd"
     runtime "Debug"
     symbols "On"
 
-  filter "configurations:Release"
-    defines 
-    {
-      "WZ_CONFIG_RELEASE"
-    }
+  filter "configurations:Release*"
+    defines "WZ_CONFIG_RELEASE"
+    buildoptions "/MD"
     runtime "Release"
     optimize "On"
 
-  filter "configurations:Distribution"
+  filter "configurations:Dist*"
     defines 
     {
-      "WZ_CONFIG_DISTRIBUTION",
+      "WZ_CONFIG_DIST",
       "WZ_DISABLE_ASSERTS"
     }
+    buildoptions "/MD"
     runtime "Release"
     optimize "On"
-
-  --filter { "system:windows", "configurations:Release" }
-    --buildoptions "/MT"
-  --filter { "system:windows", "configurations:Distribution" }
-    --buildoptions "/MT"
 
 --[[------------------------------------------------------------------------------------]]
 
@@ -150,34 +154,26 @@ project "Sandbox"
       "WZ_PLATFORM_WINDOWS"
     }
 
-  filter "configurations:Debug"
-    defines 
-    {
-      "WZ_CONFIG_DEBUG"
-    }
+  filter "configurations:Debug*"
+    defines "WZ_CONFIG_DEBUG"
+    buildoptions "/MDd"
     runtime "Debug"
     symbols "On"
 
-  filter "configurations:Release"
-    defines 
-    {
-      "WZ_CONFIG_RELEASE"
-    }
+  filter "configurations:Release*"
+    defines "WZ_CONFIG_RELEASE"
+    buildoptions "/MD"
     runtime "Release"
     optimize "On"
 
-  filter "configurations:Distribution"
+  filter "configurations:Dist*"
     defines 
     {
-      "WZ_CONFIG_DISTRIBUTION",
+      "WZ_CONFIG_DIST",
       "WZ_DISABLE_ASSERTS"
     }
+    buildoptions "/MD"
     runtime "Release"
     optimize "On"
-
-  --[[filter { "system:windows", "configurations:Release" }
-    buildoptions "/MT"
-  filter { "system:windows", "configurations:Distribution" }
-    buildoptions "/MT"]]
 
 --[[------------------------------------------------------------------------------------]]
