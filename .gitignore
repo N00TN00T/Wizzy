@@ -17,6 +17,9 @@ Makefile
 *.vcxproj
 *.user
 *.filters
+*.sln
+Makefile
+imgui.ini
 
 # Exceptions
 !vendor/bin/

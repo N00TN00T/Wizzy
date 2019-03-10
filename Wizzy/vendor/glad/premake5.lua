@@ -1,3 +1,5 @@
+-- PREMAKE FOR WIZZY
+
 project "glad"
     kind "StaticLib"
     language "C"

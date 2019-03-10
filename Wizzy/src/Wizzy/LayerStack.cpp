@@ -3,7 +3,7 @@
 
 namespace Wizzy {
 	LayerStack::LayerStack() {
-		m_layerInsert = m_layers.begin();
+		
 	}
 	LayerStack::~LayerStack() {
 		for (Layer*& layer : m_layers) {
@@ -13,18 +13,19 @@ namespace Wizzy {
 	}
 
 	void LayerStack::PushLayer(Layer * layer) {
-		m_layerInsert = m_layers.emplace(m_layerInsert, layer);
+		m_layers.emplace(m_layers.begin() + m_layerInsertIndex, layer);
+		m_layerInsertIndex++;
 		layer->OnAttach();
 	}
 	void LayerStack::PushOverlay(Layer * overlay) {
-		m_layers.emplace(m_layerInsert, overlay);
+		m_layers.emplace_back(overlay);
 		overlay->OnAttach();
 	}
 	void LayerStack::PopLayer(Layer * layer) {
 		if (vector_contains(m_layers, layer)) {
 			layer->OnDetach();
 			m_layers.erase(std::find(m_layers.begin(), m_layers.end(), layer));
-			m_layerInsert--;
+			m_layerInsertIndex--;
 		}
 	}
 	void LayerStack::PopOverlay(Layer * overlay) {
@@ -44,6 +45,11 @@ namespace Wizzy {
 
 			if (e.IsHandled())
 				break;
+		}
+	}
+	void LayerStack::OnImguiRender() {
+		for (auto& layer : m_layers) {
+			layer->OnImguiRender();
 		}
 	}
 }

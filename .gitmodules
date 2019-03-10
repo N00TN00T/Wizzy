@@ -6,3 +6,6 @@
 [submodule "Wizzy/vendor/spdlog"]
 	path = Wizzy/vendor/spdlog
 	url = https://github.com/gabime/spdlog
+[submodule "Wizzy/vendor/imgui"]
+	path = Wizzy/vendor/imgui
+	url = https://github.com/N00TN00T/imgui/

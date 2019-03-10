@@ -23,12 +23,14 @@ output_dir = "%{cfg.buildcfg}-%{cfg.system}-%{cfg.architecture}"
 -- Include directories relative to root directory
 include_dir = {
   glfw = "Wizzy/vendor/glfw/include",
-  glad = "Wizzy/vendor/glad/include"
+  glad = "Wizzy/vendor/glad/include",
+  imgui = "Wizzy/vendor/imgui"
 }
 
 -- Include the premake file from glfw directory
 include "Wizzy/vendor/glfw/"
 include "Wizzy/vendor/glad/"
+include "Wizzy/vendor/imgui/"
 
 --[[------------------------------------------------------------------------------------
        CORE PROJECT
@@ -57,13 +59,15 @@ project "Wizzy"
     "%{prj.name}/src",
     "%{prj.name}/vendor/spdlog/include",
     "%{include_dir.glfw}",
-    "%{include_dir.glad}"
+    "%{include_dir.glad}",
+    "%{include_dir.imgui}"
   }
 
   links 
   {
     "glfw",
     "glad",
+    "imgui",
     "opengl32.lib"
   }
 
@@ -136,7 +140,8 @@ project "Sandbox"
   {
     "Wizzy/src",
     "Sandbox/src",
-    "Wizzy/vendor/spdlog/include"
+    "Wizzy/vendor/spdlog/include",
+    "%{include_dir.imgui}"
   }
 
   links

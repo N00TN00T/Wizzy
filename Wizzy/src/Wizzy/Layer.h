@@ -16,6 +16,7 @@ namespace Wizzy {
 		virtual void OnDetach() {}
 		virtual void OnUpdate() {}
 		virtual void OnEvent(Event& e) {}
+		virtual void OnImguiRender() {}
 
 #ifdef WZ_CONFIG_DEBUG
 		inline const string& GetName() const { return m_name; };

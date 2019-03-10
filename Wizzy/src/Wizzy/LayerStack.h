@@ -25,10 +25,11 @@ namespace Wizzy {
 
 		void UpdateLayers();
 		void OnEvent(Event& e);
+		void OnImguiRender();
 
 	private:
 		std::vector<Layer*> m_layers;
-		std::vector<Layer*>::iterator m_layerInsert;
+		uint16 m_layerInsertIndex = 0;
 	};
 
 }

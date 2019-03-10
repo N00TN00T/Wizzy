@@ -42,6 +42,8 @@ namespace Wizzy {
 
         virtual void SetClearColor(float r, float g, float b, float a) = 0;
 
+		virtual void* GetNativeWindow() = 0;
+
         static IWindow *Create(const WindowProps& props = WindowProps());
     };
 }

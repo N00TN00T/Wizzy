@@ -26,6 +26,9 @@ namespace Wizzy {
         virtual bool IsVsync() const override;
 
 		virtual void SetClearColor(float r, float g, float b, float a) override;
+
+		inline virtual void* GetNativeWindow() { return m_glfwWindow; }
+
     private:
         virtual void Init(const WindowProps& props);
         virtual void Shutdown();

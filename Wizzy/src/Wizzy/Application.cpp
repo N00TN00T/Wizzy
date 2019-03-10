@@ -5,6 +5,8 @@
 
 namespace Wizzy {
 
+	Application *Application::s_instance;
+
 	Application::Application() {
 	}
 
@@ -20,8 +22,13 @@ namespace Wizzy {
 
 	void Application::Run() {
 		
+		s_instance = this;
+
 		m_window = std::unique_ptr<IWindow>(IWindow::Create());
 		m_window->SetEventCallback(WZ_BIND_FN(Application::OnEvent));
+
+		m_imguiLayer = new ImguiLayer();
+		PushOverlay(m_imguiLayer);
 
 		m_running = true;
 
@@ -29,6 +36,10 @@ namespace Wizzy {
 			m_window->OnFrameBegin();
 
 			m_layerStack.UpdateLayers();
+
+			m_imguiLayer->Begin();
+			m_layerStack.OnImguiRender();
+			m_imguiLayer->End();
 
 			m_window->OnFrameEnd();
 		}
