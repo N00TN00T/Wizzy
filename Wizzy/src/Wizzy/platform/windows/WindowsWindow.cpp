@@ -156,12 +156,13 @@ namespace Wizzy {
     }
 
     void WindowsWindow::OnFrameBegin() {
-        glfwPollEvents();
-        glfwSwapBuffers(m_glfwWindow);
+		glClear(GL_COLOR_BUFFER_BIT);
+        
     }
 
     void WindowsWindow::OnFrameEnd() {
-        glClear(GL_COLOR_BUFFER_BIT);
+		glfwPollEvents();
+		glfwSwapBuffers(m_glfwWindow);
     }
 
     void WindowsWindow::SetVSync(bool enabled) {
