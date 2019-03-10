@@ -1,6 +1,4 @@
-[submodule "Wizzy/vendor/spdlog"]
-	path = Wizzy/vendor/spdlog
-	url = https://github.com/gabime/spdlog
+
 
 [submodule "Wizzy/vendor/glfw"]
 	path = Wizzy/vendor/glfw

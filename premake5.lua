@@ -18,7 +18,7 @@ include_dir = {
 }
 
 -- Include the premake file from glfw directory
-include "Wizzy/vendor/glfw/premake.lua"
+include "Wizzy/vendor/glfw/"
 
 --[[------------------------------------------------------------------------------------
        CORE PROJECT
