@@ -1,4 +1,4 @@
--- PREMAKE FOR WIZZY
+-- PREMAKE FOR GLAD
 
 project "glad"
     kind "StaticLib"
@@ -20,5 +20,10 @@ project "glad"
     systemversion "latest"
     staticruntime "On"
 
-    filter { "system:windows", "configurations:Release" }
-        buildoptions "/MT"
+  filter { "system:windows", "configurations:Release" }
+      buildoptions "/MT"
+
+  filter "system:linux"
+  pic "On"
+  systemversion "latest"
+  staticruntime "On"
