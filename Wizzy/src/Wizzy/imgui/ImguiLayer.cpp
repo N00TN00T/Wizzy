@@ -24,11 +24,10 @@ namespace Wizzy {
 		WZ_CORE_TRACE("Initializing imgui...");
 
 		auto _versionResult = IMGUI_CHECKVERSION();
-		//WZ_CORE_ASSERT(_versionResult, "Failed initialing imgui when checking version");
+		WZ_CORE_ASSERT(_versionResult, "Failed initialing imgui when checking version");
 
-		//WZ_CORE_ASSERT(ImGui::CreateContext(), "Failed creating imgui context");
-
-		ImGui::CreateContext();
+		auto _context = ImGui::CreateContext();
+		WZ_CORE_ASSERT(_context, "Failed creating imgui context");
 		
 		auto& _io = ImGui::GetIO();
 		_io.ConfigFlags |= ImGuiConfigFlags_NavEnableKeyboard;

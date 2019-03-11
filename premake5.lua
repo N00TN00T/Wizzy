@@ -25,7 +25,8 @@ include_dir = {
   spdlog = "Wizzy/vendor/spdlog/include",
   glfw = "Wizzy/vendor/glfw/include",
   glad = "Wizzy/vendor/glad/include",
-  imgui = "Wizzy/vendor/imgui"
+  imgui = "Wizzy/vendor/imgui",
+  glm = "Wizzy/vendor/glm"
 }
 
 -- Include the premake file from glfw directory
@@ -67,7 +68,8 @@ project "Wizzy"
     "%{include_dir.spdlog}",
     "%{include_dir.glfw}",
     "%{include_dir.glad}",
-    "%{include_dir.imgui}"
+    "%{include_dir.imgui}",
+    "%{include_dir.glm}"
   }
 
   links 
@@ -214,7 +216,8 @@ project "Sandbox"
     "Wizzy/src",
     "Sandbox/src",
     "Wizzy/vendor/spdlog/include",
-    "%{include_dir.imgui}"
+    "%{include_dir.imgui}",
+    "%{include_dir.glm}"
   }
 
   links

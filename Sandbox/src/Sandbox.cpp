@@ -9,14 +9,17 @@ public:
 		: Wizzy::Layer::Layer("ExampleLayer") {
 	}
 public:
+
+	virtual void OnAttach() override {
+		
+	}
+
 	virtual void OnImguiRender() override {
 		
 	}
 
 	virtual void OnUpdate() override {
-		if (Wizzy::Input::GetKey(WZ_KEY_E)){
-			WZ_DEBUG("E PRESSED BABYYYY");
-		}
+		
 	}
 
 };
