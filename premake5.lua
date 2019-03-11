@@ -22,6 +22,7 @@ output_dir = "%{cfg.buildcfg}-%{cfg.system}-%{cfg.architecture}"
   
 -- Include directories relative to root directory
 include_dir = {
+  spdlog = "Wizzy/vendor/spdlog/include",
   glfw = "Wizzy/vendor/glfw/include",
   glad = "Wizzy/vendor/glad/include",
   imgui = "Wizzy/vendor/imgui"
@@ -57,7 +58,7 @@ project "Wizzy"
   includedirs
   {
     "%{prj.name}/src",
-    "%{prj.name}/vendor/spdlog/include",
+    "%{include_dir.spdlog}",
     "%{include_dir.glfw}",
     "%{include_dir.glad}",
     "%{include_dir.imgui}"
@@ -67,8 +68,7 @@ project "Wizzy"
   {
     "glfw",
     "glad",
-    "imgui",
-    "opengl32.lib"
+    "imgui"
   }
 
   defines "WZ_EXPORT"
@@ -89,15 +89,32 @@ project "Wizzy"
       ("{COPY} %{cfg.buildtarget.relpath} ../bin/" .. output_dir .. "/Sandbox")
     }
 
+    links
+    {
+      "opengl32.lib"
+    }
+
+  filter "system:linux"
+    cppdialect "C++17"
+    staticruntime "On"
+    systemversion "latest"
+    pic "On"
+    defines "WZ_PLATFORM_LINUX"
+
+    links
+    {
+      "Xrandr",
+      "Xi",
+      "X11"
+    }
+
   filter "configurations:Debug*"
     defines "WZ_CONFIG_DEBUG"
-    buildoptions "/MDd"
     runtime "Debug"
     symbols "On"
 
   filter "configurations:Release*"
     defines "WZ_CONFIG_RELEASE"
-    buildoptions "/MD"
     runtime "Release"
     optimize "On"
 
@@ -107,9 +124,15 @@ project "Wizzy"
       "WZ_CONFIG_DIST",
       "WZ_DISABLE_ASSERTS"
     }
-    buildoptions "/MD"
     runtime "Release"
     optimize "On"
+
+    filter { "system:windows", "configurations:Debug*" }
+  buildoptions "/MDd"
+    filter { "system:windows", "configurations:Release*" }
+  buildoptions "/MD"
+    filter { "system:windows", "configurations:Dist*" }
+  buildoptions "/MD"
 
 --[[------------------------------------------------------------------------------------]]
 
@@ -149,6 +172,13 @@ project "Sandbox"
     "Wizzy"
   }
   
+  filter "system:linux"
+    cppdialect "C++17"
+    staticruntime "On"
+    systemversion "latest"
+    pic "On"
+    defines "WZ_PLATFORM_LINUX"
+
   filter "system:windows"
     cppdialect "gnu++17"
     staticruntime "On"
@@ -159,15 +189,17 @@ project "Sandbox"
       "WZ_PLATFORM_WINDOWS"
     }
 
+  filter "system:linux"
+    systemversion "latest"
+    defines "WZ_PLATFORM_LINUX"
+
   filter "configurations:Debug*"
     defines "WZ_CONFIG_DEBUG"
-    buildoptions "/MDd"
     runtime "Debug"
     symbols "On"
 
   filter "configurations:Release*"
     defines "WZ_CONFIG_RELEASE"
-    buildoptions "/MD"
     runtime "Release"
     optimize "On"
 
@@ -177,8 +209,14 @@ project "Sandbox"
       "WZ_CONFIG_DIST",
       "WZ_DISABLE_ASSERTS"
     }
-    buildoptions "/MD"
     runtime "Release"
     optimize "On"
+
+  filter { "system:windows", "configurations:Debug*" }
+    buildoptions "/MDd"
+  filter { "system:windows", "configurations:Release*" }
+    buildoptions "/MD"
+  filter { "system:windows", "configurations:Dist*" }
+    buildoptions "/MD"
 
 --[[------------------------------------------------------------------------------------]]

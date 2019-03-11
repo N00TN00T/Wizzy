@@ -1,7 +1,7 @@
 #include "wzpch.h"
 #include "Application.h"
 #include "Log.h"
-#include "events\appevent.h"
+#include "events/AppEvent.h"
 
 namespace Wizzy {
 

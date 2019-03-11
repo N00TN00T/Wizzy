@@ -1,5 +1,5 @@
 #pragma once
-#include "event.h"
+#include "Event.h"
 #include "../Core.h"
 
 namespace Wizzy {

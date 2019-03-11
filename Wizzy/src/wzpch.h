@@ -27,7 +27,7 @@
 
 /* external libraries */
 
-#include <spdlog\spdlog.h>
+#include <spdlog/spdlog.h>
 #include <spdlog/fmt/ostr.h>
 
 /* wizzy headers */
