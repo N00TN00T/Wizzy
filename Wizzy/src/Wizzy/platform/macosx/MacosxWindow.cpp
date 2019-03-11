@@ -1,5 +1,5 @@
 #include "wzpch.h"
-#include "WindowsWindow.h"
+#include "MacosxWindow.h"
 
 #include <glad/glad.h>
 #include <GLFW/glfw3.h>
@@ -11,24 +11,24 @@
 
 namespace Wizzy {
     IWindow *IWindow::Create(const WindowProps& props) {
-        return new WindowsWindow(props);
+        return new MacosxWindow(props);
     }
 
-    bool WindowsWindow::s_glfwInitialized(false);
+    bool MacosxWindow::s_glfwInitialized(false);
 
     static void glfw_error_callback(int32 error, const char *description) {
         WZ_CORE_ERROR("GLFW ERROR ({0}): '{1}'", error, description);
     }
 
-    WindowsWindow::WindowsWindow(const WindowProps& props) {
+    MacosxWindow::MacosxWindow(const WindowProps& props) {
         Init(props);
     }
 
-    WindowsWindow::~WindowsWindow(){
+    MacosxWindow::~MacosxWindow(){
         Shutdown();
     }
 
-    void WindowsWindow::Init(const WindowProps& props) {
+    void MacosxWindow::Init(const WindowProps& props) {
         m_data.title = props.title;
         m_data.width = props.width;
         m_data.height = props.height;
@@ -150,42 +150,42 @@ namespace Wizzy {
             _data.eventCallbackFn(_event);
         });
 
-        WZ_CORE_INFO("Welcome to Wizzy for Windows!");
+        WZ_CORE_INFO("Welcome to Wizzy for Macosx!");
         WZ_CORE_INFO("Version: {0}", glGetString(GL_VERSION));
     }
 
-    void WindowsWindow::Shutdown() {
+    void MacosxWindow::Shutdown() {
         glfwDestroyWindow(m_glfwWindow);
     }
 
-    void WindowsWindow::OnFrameBegin() {
+    void MacosxWindow::OnFrameBegin() {
 		glClear(GL_COLOR_BUFFER_BIT);
         
     }
 
-    void WindowsWindow::OnFrameEnd() {
+    void MacosxWindow::OnFrameEnd() {
 		glfwPollEvents();
 		glfwSwapBuffers(m_glfwWindow);
     }
 
-    void WindowsWindow::SetVSync(bool enabled) {
+    void MacosxWindow::SetVSync(bool enabled) {
         glfwSwapInterval(enabled);
         m_data.vsync = enabled;
     }
 
-    bool WindowsWindow::IsVsync() const {
+    bool MacosxWindow::IsVsync() const {
         return m_data.vsync;
     }
 
-    void WindowsWindow::SetClearColor(float r, float g, float b, float a) {
+    void MacosxWindow::SetClearColor(float r, float g, float b, float a) {
         glClearColor(r, g, b, a);
     }
 
-    void WindowsWindow::SetWidth(u32 width){
+    void MacosxWindow::SetWidth(u32 width){
         glfwSetWindowSize(m_glfwWindow, width, m_data.height);
     }
 
-    void WindowsWindow::SetHeight(u32 height){
+    void MacosxWindow::SetHeight(u32 height){
         glfwSetWindowSize(m_glfwWindow, m_data.width, height);
     }
 }

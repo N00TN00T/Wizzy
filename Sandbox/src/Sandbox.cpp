@@ -10,7 +10,13 @@ public:
 	}
 public:
 	virtual void OnImguiRender() override {
-		//ImGui::ShowDemoWindow();
+		
+	}
+
+	virtual void OnUpdate() override {
+		if (Wizzy::Input::GetKey(WZ_KEY_E)){
+			WZ_DEBUG("E PRESSED BABYYYY");
+		}
 	}
 
 };

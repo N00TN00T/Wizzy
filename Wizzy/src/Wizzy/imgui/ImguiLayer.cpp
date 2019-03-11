@@ -24,10 +24,12 @@ namespace Wizzy {
 		WZ_CORE_TRACE("Initializing imgui...");
 
 		auto _versionResult = IMGUI_CHECKVERSION();
-		WZ_CORE_ASSERT(_versionResult, "Failed initialing imgui when checking version");
+		//WZ_CORE_ASSERT(_versionResult, "Failed initialing imgui when checking version");
 
-		WZ_CORE_ASSERT(ImGui::CreateContext(), "Failed creating imgui context");
+		//WZ_CORE_ASSERT(ImGui::CreateContext(), "Failed creating imgui context");
 
+		ImGui::CreateContext();
+		
 		auto& _io = ImGui::GetIO();
 		_io.ConfigFlags |= ImGuiConfigFlags_NavEnableKeyboard;
 		_io.ConfigFlags |= ImGuiConfigFlags_NavEnableGamepad;
@@ -44,7 +46,7 @@ namespace Wizzy {
 		Application& _app = Application::Get();
 		// TODO: Cross-platform support
 		GLFWwindow *_window = static_cast<GLFWwindow*>(_app.GetWindow().GetNativeWindow());
-
+		
 		ImGui_ImplGlfw_InitForOpenGL(_window, true);
 		ImGui_ImplOpenGL3_Init("#version 410");
 	}
@@ -54,9 +56,7 @@ namespace Wizzy {
 		ImGui::DestroyContext();
 	}
 	void ImguiLayer::OnImguiRender() {
-		static bool show = true;
-		//ImGui::ShowDemoWindow(&show);
-		ImGui::ShowDemoWindow();
+		
 	}
 	void ImguiLayer::Begin() {
 		ImGui_ImplOpenGL3_NewFrame();
@@ -67,6 +67,14 @@ namespace Wizzy {
 		auto& _io = ImGui::GetIO();
 		auto& _app = Application::Get();
 		_io.DisplaySize = ImVec2(_app.GetWindow().GetWidth(), _app.GetWindow().GetHeight());
+
+		static double _lastTime = glfwGetTime();
+
+		double _now = glfwGetTime();
+
+		_io.DeltaTime = _now - _lastTime;
+		
+		_lastTime = _now;
 
 		ImGui::Render();
 		ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());

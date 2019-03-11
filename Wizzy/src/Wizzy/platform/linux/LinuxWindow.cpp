@@ -1,5 +1,5 @@
 #include "wzpch.h"
-#include "WindowsWindow.h"
+#include "LinuxWindow.h"
 
 #include <glad/glad.h>
 #include <GLFW/glfw3.h>
@@ -9,26 +9,28 @@
 #include "Wizzy/events/CharEvent.h"
 #include "Wizzy/events/KeyEvent.h"
 
+#include "LinuxInput.h"
+
 namespace Wizzy {
     IWindow *IWindow::Create(const WindowProps& props) {
-        return new WindowsWindow(props);
+        return new LinuxWindow(props);
     }
 
-    bool WindowsWindow::s_glfwInitialized(false);
+    bool LinuxWindow::s_glfwInitialized(false);
 
     static void glfw_error_callback(int32 error, const char *description) {
         WZ_CORE_ERROR("GLFW ERROR ({0}): '{1}'", error, description);
     }
 
-    WindowsWindow::WindowsWindow(const WindowProps& props) {
+    LinuxWindow::LinuxWindow(const WindowProps& props) {
         Init(props);
     }
 
-    WindowsWindow::~WindowsWindow(){
+    LinuxWindow::~LinuxWindow(){
         Shutdown();
     }
 
-    void WindowsWindow::Init(const WindowProps& props) {
+    void LinuxWindow::Init(const WindowProps& props) {
         m_data.title = props.title;
         m_data.width = props.width;
         m_data.height = props.height;
@@ -46,7 +48,9 @@ namespace Wizzy {
             s_glfwInitialized = true;
         }
 
-        WZ_CORE_TRACE("Creating window '{0}'...", props.title);
+        WZ_CORE_TRACE("Creating window '{0}' for platform {1}...", 
+                        props.title,
+                        "Linux");
 
         m_glfwWindow = glfwCreateWindow(props.width, props.height, props.title.c_str(), nullptr, nullptr);
         glfwMakeContextCurrent(m_glfwWindow);
@@ -150,42 +154,42 @@ namespace Wizzy {
             _data.eventCallbackFn(_event);
         });
 
-        WZ_CORE_INFO("Welcome to Wizzy for Windows!");
+        WZ_CORE_INFO("Welcome to Wizzy for Linux!");
         WZ_CORE_INFO("Version: {0}", glGetString(GL_VERSION));
     }
 
-    void WindowsWindow::Shutdown() {
+    void LinuxWindow::Shutdown() {
         glfwDestroyWindow(m_glfwWindow);
     }
 
-    void WindowsWindow::OnFrameBegin() {
+    void LinuxWindow::OnFrameBegin() {
 		glClear(GL_COLOR_BUFFER_BIT);
         
     }
 
-    void WindowsWindow::OnFrameEnd() {
+    void LinuxWindow::OnFrameEnd() {
 		glfwPollEvents();
 		glfwSwapBuffers(m_glfwWindow);
     }
 
-    void WindowsWindow::SetVSync(bool enabled) {
+    void LinuxWindow::SetVSync(bool enabled) {
         glfwSwapInterval(enabled);
         m_data.vsync = enabled;
     }
 
-    bool WindowsWindow::IsVsync() const {
+    bool LinuxWindow::IsVsync() const {
         return m_data.vsync;
     }
 
-    void WindowsWindow::SetClearColor(float r, float g, float b, float a) {
+    void LinuxWindow::SetClearColor(float r, float g, float b, float a) {
         glClearColor(r, g, b, a);
     }
 
-    void WindowsWindow::SetWidth(u32 width){
+    void LinuxWindow::SetWidth(u32 width){
         glfwSetWindowSize(m_glfwWindow, width, m_data.height);
     }
 
-    void WindowsWindow::SetHeight(u32 height){
+    void LinuxWindow::SetHeight(u32 height){
         glfwSetWindowSize(m_glfwWindow, m_data.width, height);
     }
 }

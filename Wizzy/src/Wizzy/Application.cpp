@@ -2,6 +2,7 @@
 #include "Application.h"
 #include "Log.h"
 #include "events/AppEvent.h"
+#include "Wizzy/Input.h"
 
 namespace Wizzy {
 

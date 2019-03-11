@@ -16,29 +16,29 @@ namespace Wizzy {
 	};
 }
 
-#if  defined(WZ_PLATFORM_WINDOWS) && defined(WZ_CONFIG_DEBUG)
-	#define PRINT_PLACE printf("%s:%d:\n", __FILE__, __LINE__)
-	#define PRINT_NEW_LINE printf("\n")
+#define __FILENAME__ (__builtin_strrchr(__FILE__, '/') ? __builtin_strrchr(__FILE__, '/') + 1 : __FILE__)
+
+#if defined WZ_CONFIG_DEBUG
+	#define PRINT_PREFIX printf("==========%s:%d==========\n", __FILENAME__, __LINE__)
 #else
-	#define PRINT_PLACE
-	#define PRINT_NEW_LINE 
+	#define PRINT_PREFIX
 #endif
 
 #ifndef WZ_CONFIG_DIST
 
-	#define WZ_CORE_TRACE(...) PRINT_PLACE;  ::Wizzy::Log::GetCoreLogger()->trace(__VA_ARGS__); PRINT_NEW_LINE
-	#define WZ_CORE_DEBUG(...) PRINT_PLACE; ::Wizzy::Log::GetCoreLogger()->debug(__VA_ARGS__); PRINT_NEW_LINE
-	#define WZ_CORE_INFO(...) PRINT_PLACE; ::Wizzy::Log::GetCoreLogger()->info(__VA_ARGS__); PRINT_NEW_LINE
-	#define WZ_CORE_WARN(...)  PRINT_PLACE; ::Wizzy::Log::GetCoreLogger()->warn(__VA_ARGS__); PRINT_NEW_LINE
-	#define WZ_CORE_ERROR(...)  PRINT_PLACE; ::Wizzy::Log::GetCoreLogger()->error(__VA_ARGS__); PRINT_NEW_LINE
-	#define WZ_CORE_CRITICAL(...)  PRINT_PLACE; ::Wizzy::Log::GetCoreLogger()->critical(__VA_ARGS__); PRINT_NEW_LINE
+	#define WZ_CORE_TRACE(...) PRINT_PREFIX; ::Wizzy::Log::GetCoreLogger()->trace(__VA_ARGS__);
+	#define WZ_CORE_DEBUG(...) PRINT_PREFIX; ::Wizzy::Log::GetCoreLogger()->debug(__VA_ARGS__);
+	#define WZ_CORE_INFO(...) PRINT_PREFIX; ::Wizzy::Log::GetCoreLogger()->info(__VA_ARGS__);
+	#define WZ_CORE_WARN(...)  PRINT_PREFIX; ::Wizzy::Log::GetCoreLogger()->warn(__VA_ARGS__);
+	#define WZ_CORE_ERROR(...)  PRINT_PREFIX; ::Wizzy::Log::GetCoreLogger()->error(__VA_ARGS__);
+	#define WZ_CORE_CRITICAL(...)  PRINT_PREFIX; ::Wizzy::Log::GetCoreLogger()->critical(__VA_ARGS__);
 
-	#define WZ_TRACE(...)  PRINT_PLACE; ::Wizzy::Log::GetClientLogger()->trace(__VA_ARGS__); PRINT_NEW_LINE
-	#define WZ_DEBUG(...) PRINT_PLACE; ::Wizzy::Log::GetClientLogger()->debug(__VA_ARGS__); PRINT_NEW_LINE
-	#define WZ_INFO(...)  PRINT_PLACE; ::Wizzy::Log::GetClientLogger()->info(__VA_ARGS__); PRINT_NEW_LINE
-	#define WZ_WARN(...)  PRINT_PLACE; ::Wizzy::Log::GetClientLogger()->warn(__VA_ARGS__); PRINT_NEW_LINE
-	#define WZ_ERROR(...)  PRINT_PLACE; ::Wizzy::Log::GetClientLogger()->error(__VA_ARGS__); PRINT_NEW_LINE
-	#define WZ_CRITICAL(...) PRINT_PLACE; ::Wizzy::Log::GetClientLogger()->critical(__VA_ARGS__); PRINT_NEW_LINE
+	#define WZ_TRACE(...)  PRINT_PREFIX; ::Wizzy::Log::GetClientLogger()->trace(__VA_ARGS__);
+	#define WZ_DEBUG(...) PRINT_PREFIX; ::Wizzy::Log::GetClientLogger()->debug(__VA_ARGS__);
+	#define WZ_INFO(...)  PRINT_PREFIX; ::Wizzy::Log::GetClientLogger()->info(__VA_ARGS__);
+	#define WZ_WARN(...)  PRINT_PREFIX; ::Wizzy::Log::GetClientLogger()->warn(__VA_ARGS__);
+	#define WZ_ERROR(...)  PRINT_PREFIX; ::Wizzy::Log::GetClientLogger()->error(__VA_ARGS__);
+	#define WZ_CRITICAL(...) PRINT_PREFIX; ::Wizzy::Log::GetClientLogger()->critical(__VA_ARGS__);
 
 #else // In distribution mode
 
