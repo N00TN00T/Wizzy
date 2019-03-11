@@ -180,7 +180,7 @@ project "Sandbox"
     defines "WZ_PLATFORM_LINUX"
 
   filter "system:windows"
-    cppdialect "gnu++17"
+    cppdialect "C++17"
     staticruntime "On"
     systemversion "latest"
 
@@ -188,10 +188,6 @@ project "Sandbox"
     {
       "WZ_PLATFORM_WINDOWS"
     }
-
-  filter "system:linux"
-    systemversion "latest"
-    defines "WZ_PLATFORM_LINUX"
 
   filter "configurations:Debug*"
     defines "WZ_CONFIG_DEBUG"

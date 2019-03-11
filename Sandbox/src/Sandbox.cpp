@@ -10,7 +10,7 @@ public:
 	}
 public:
 	virtual void OnImguiRender() override {
-		ImGui::ShowDemoWindow();
+		//ImGui::ShowDemoWindow();
 	}
 
 };

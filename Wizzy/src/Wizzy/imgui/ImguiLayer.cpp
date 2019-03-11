@@ -56,6 +56,7 @@ namespace Wizzy {
 	void ImguiLayer::OnImguiRender() {
 		static bool show = true;
 		//ImGui::ShowDemoWindow(&show);
+		ImGui::ShowDemoWindow();
 	}
 	void ImguiLayer::Begin() {
 		ImGui_ImplOpenGL3_NewFrame();
