@@ -27,3 +27,7 @@ project "glad"
     pic "On"
     systemversion "latest"
     staticruntime "On"
+
+  filter "system:macosx"
+    systemversion "latest"
+    staticruntime "On"
