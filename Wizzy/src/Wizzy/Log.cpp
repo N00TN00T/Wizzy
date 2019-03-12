@@ -11,9 +11,9 @@ namespace Wizzy {
 		spdlog::set_pattern("[%H:%M:%S:%e] %n: %^(%l) %v%$");
 
 		s_coreLogger = spdlog::stdout_color_mt("CORE");
-		s_coreLogger->set_level(spdlog::level::trace);
-
+		SetCoreLogLevel(LOG_LEVEL_TRACE);
+		
 		s_clientLogger = spdlog::stdout_color_mt("CLIENT");
-		s_clientLogger->set_level(spdlog::level::trace);
+		SetClientLogLevel(LOG_LEVEL_TRACE);
 	}
 }

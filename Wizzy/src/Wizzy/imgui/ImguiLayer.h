@@ -1,9 +1,11 @@
 #pragma once
 
+#include "Wizzy/Core.h"
+
 #include "Wizzy/Layer.h"
 
 namespace Wizzy {
-	class ImguiLayer
+	class WZ_API ImguiLayer
 		: public Layer {
 	public:
 		ImguiLayer();

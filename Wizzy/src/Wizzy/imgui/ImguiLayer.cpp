@@ -46,9 +46,13 @@ namespace Wizzy {
 		// TODO: Cross-platform support
 		GLFWwindow *_window = static_cast<GLFWwindow*>(_app.GetWindow().GetNativeWindow());
 		
-		ImGui_ImplGlfw_InitForOpenGL(_window, true);
-		ImGui_ImplOpenGL3_Init("#version 410");
+		bool _glfwInitResult = ImGui_ImplGlfw_InitForOpenGL(_window, true);
+		WZ_CORE_ASSERT(_glfwInitResult, "Failed to initialize ImGui for glfw");
+
+		bool _openglInitresult = ImGui_ImplOpenGL3_Init("#version 410");
+		WZ_CORE_ASSERT(_openglInitresult, "Failed to initialize ImGui for OpenGL3");
 	}
+
 	void ImguiLayer::OnDetach() {
 		ImGui_ImplOpenGL3_Shutdown();
 		ImGui_ImplGlfw_Shutdown();

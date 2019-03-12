@@ -167,7 +167,7 @@ project "Wizzy"
 
   filter "configurations:Release*"
     defines "WZ_CONFIG_RELEASE"
-    runtime "Release"
+    runtime "Debug"
     optimize "On"
 
   filter "configurations:Dist*"
