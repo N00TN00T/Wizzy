@@ -11,6 +11,7 @@
 #include <sstream>
 #include <ostream>
 #include <signal.h>
+#include <typeinfo>
 
 /* std data structures */
 #include <string>

@@ -46,7 +46,8 @@ namespace Wizzy {
             s_glfwInitialized = true;
         }
 
-        WZ_CORE_TRACE("Creating window '{0}'...", props.title);
+        WZ_CORE_TRACE("Creating window '{0}'...", 
+                        props.title);
 
         m_glfwWindow = glfwCreateWindow(props.width, props.height, props.title.c_str(), nullptr, nullptr);
         glfwMakeContextCurrent(m_glfwWindow);
