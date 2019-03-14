@@ -18,6 +18,7 @@ Makefile
 *.user
 *.filters
 *.sln
+*.code-workspace
 Makefile
 imgui.ini
 
