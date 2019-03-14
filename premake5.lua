@@ -85,14 +85,15 @@ project "Wizzy"
 --                        WINDOWS
 ---------------------------------------------------------------------
   filter "system:windows"
-    cppdialect "gnu++17"
+    cppdialect "C++17"
     staticruntime "On"
     systemversion "latest"
 
     defines 
     {
       "WZ_PLATFORM_WINDOWS",
-      "GLFW_INCLUDE_NONE"
+      "GLFW_INCLUDE_NONE"--,
+      --"IMGUI_API=__declspec(dllexport)"
     }
 
     postbuildcommands
@@ -197,7 +198,6 @@ project "Sandbox"
   kind "ConsoleApp"
   language "C++"
   architecture "x64"
-  staticruntime "off"
   
   targetdir ("bin/" .. output_dir .. "/%{prj.name}")
   objdir ("bin-int/" .. output_dir .. "/%{prj.name}")
@@ -244,6 +244,7 @@ project "Sandbox"
 ---------------------------------------------------------------------
   filter "system:windows"
     cppdialect "C++17"
+    staticruntime "On"
     systemversion "latest"
 
     defines "WZ_PLATFORM_WINDOWS"
@@ -254,6 +255,7 @@ project "Sandbox"
       "%{prj.name}/src/Wizzy/platform/windows/**.h",
       "%{prj.name}/src/Wizzy/platform/windows/**.cpp"
     }
+
 ----------------------------------------------------------------------
 
 ---------------------------------------------------------------------

@@ -15,7 +15,7 @@ public:
 	}
 
 	virtual void OnImguiRender() override {
-		
+		ImGui::ShowDemoWindow();
 	}
 
 	virtual void OnUpdate() override {
