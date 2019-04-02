@@ -1,5 +1,3 @@
-#pragma once
-
 /* std libraries */
 
 #include <iostream>

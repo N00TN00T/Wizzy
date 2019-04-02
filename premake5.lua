@@ -29,7 +29,6 @@ include_dir = {
   glm = "Wizzy/vendor/glm"
 }
 
--- Include the premake file from glfw directory
 include "Wizzy/vendor/glfw/"
 include "Wizzy/vendor/glad/"
 include "Wizzy/vendor/imgui/"
@@ -40,9 +39,8 @@ include "Wizzy/vendor/imgui/"
 
 project "Wizzy"
   location "Wizzy"
-  kind "SharedLib"
+  kind "StaticLib"
   language "C++"
-  staticruntime "off"
   
   targetdir ("bin/" .. output_dir .. "/%{prj.name}")
   objdir ("bin-int/" .. output_dir .. "/%{prj.name}")
@@ -72,13 +70,6 @@ project "Wizzy"
     "%{include_dir.glm}"
   }
 
-  links 
-  {
-    "glfw",
-    "glad",
-    "imgui"
-  }
-
   defines "WZ_EXPORT"
 
 ---------------------------------------------------------------------
@@ -92,13 +83,7 @@ project "Wizzy"
     defines 
     {
       "WZ_PLATFORM_WINDOWS",
-      "GLFW_INCLUDE_NONE"--,
-      --"IMGUI_API=__declspec(dllexport)"
-    }
-
-    postbuildcommands
-    {
-      ("{COPY} %{cfg.buildtarget.relpath} ../bin/" .. output_dir .. "/Sandbox")
+      "GLFW_INCLUDE_NONE"
     }
 
     links "opengl32.lib"
@@ -121,19 +106,13 @@ project "Wizzy"
     pic "On"
     defines "WZ_PLATFORM_LINUX"
 
-    links
-    {
-      "Xrandr",
-      "Xi",
-      "X11"
-    }
-
     -- Linux-specific files
     files 
     {
       "%{prj.name}/src/Wizzy/platform/linux/**.h",
       "%{prj.name}/src/Wizzy/platform/linux/**.cpp"
     }
+
 ---------------------------------------------------------------------
 
 ---------------------------------------------------------------------
@@ -141,17 +120,10 @@ project "Wizzy"
 ---------------------------------------------------------------------
   filter "system:macosx"
     cppdialect "C++17"
-    --staticruntime "On"
+    staticruntime "On"
     systemversion "latest"
     pic "On"
     defines "WZ_PLATFORM_LINUX"
-
-    links
-    {
-      "Xrandr",
-      "Xi",
-      "X11"
-    }
 
     -- Macosx-specific files
     files 
@@ -217,12 +189,21 @@ project "Sandbox"
     "Sandbox/src",
     "Wizzy/vendor/spdlog/include",
     "%{include_dir.imgui}",
+    "%{include_dir.glm}",
+    "%{include_dir.spdlog}",
+    "%{include_dir.glfw}",
+    "%{include_dir.glad}",
     "%{include_dir.glm}"
   }
 
   links
   {
-    "Wizzy"
+    "GL",
+    "GLU",
+    "Wizzy",
+    "imgui",
+    "glfw",
+    "glad"
   }
   
 ---------------------------------------------------------------------
@@ -232,11 +213,20 @@ project "Sandbox"
     cppdialect "C++17"
     staticruntime "On"
     systemversion "latest"
+
     pic "On"
 
     defines "WZ_PLATFORM_LINUX"
 
-    links "imgui"
+    links
+    {
+      "X11",
+      "Xxf86vm",
+      "Xrandr",
+      "pthread",
+      "Xi",
+      "dl"
+    }
 ---------------------------------------------------------------------
 
 ---------------------------------------------------------------------
@@ -247,7 +237,11 @@ project "Sandbox"
     staticruntime "On"
     systemversion "latest"
 
-    defines "WZ_PLATFORM_WINDOWS"
+    defines 
+    {
+      "WZ_PLATFORM_WINDOWS",
+      "GLFW_INCLUDE_NONE"
+    }
 
     -- Windows-specific files
     files 
@@ -255,6 +249,8 @@ project "Sandbox"
       "%{prj.name}/src/Wizzy/platform/windows/**.h",
       "%{prj.name}/src/Wizzy/platform/windows/**.cpp"
     }
+
+    links "opengl32.lib"
 
 ----------------------------------------------------------------------
 
@@ -275,7 +271,15 @@ project "Sandbox"
       "%{prj.name}/src/Wizzy/platform/macosx/**.cpp"
     }
 
-    links "imgui"
+    links
+    {
+      "X11",
+      "Xxf86vm",
+      "Xrandr",
+      "pthread",
+      "Xi",
+      "dl"
+    }
 ---------------------------------------------------------------------
 
   filter "configurations:Debug*"

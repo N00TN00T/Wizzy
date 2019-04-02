@@ -17,6 +17,9 @@
 	#error Wizzy requires to be compiled with gcc for support on other platforms that windows
 #endif
 
+#undef WZ_API
+#define WZ_API
+
 #ifdef __GNUC__
 	#define __FILENAME__ (__builtin_strrchr(__FILE__, '/') ? __builtin_strrchr(__FILE__, '/') + 1 : __FILE__)
 #else
