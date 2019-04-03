@@ -67,7 +67,7 @@
 
 #define BIT(x) (1 << x)
 
-inline const std::unordered_map<int, std::string> __WZ_ERROR_STRINGS = {
+const std::unordered_map<int, std::string> __WZ_ERROR_STRINGS = {
 	{ WZ_ERR_NONE, "no error" },
 	{ WZ_ERR_INIT_FAILURE, "Initialization failure" },
 };
