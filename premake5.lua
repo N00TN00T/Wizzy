@@ -198,8 +198,6 @@ project "Sandbox"
 
   links
   {
-    "GL",
-    "GLU",
     "Wizzy",
     "imgui",
     "glfw",
@@ -220,6 +218,8 @@ project "Sandbox"
 
     links
     {
+      "GL",
+      "GLU",
       "X11",
       "Xxf86vm",
       "Xrandr",
