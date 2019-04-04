@@ -1,5 +1,5 @@
 # Wizzy
-Wizzy Engine
+Wizzy Engine is a cross-platform 3D Game Engine made for Moba-like games.
 
 Mac not yet supported
 
