@@ -152,13 +152,6 @@ project "Wizzy"
     runtime "Release"
     optimize "On"
 
-    filter { "system:windows", "configurations:Debug*" }
-  buildoptions "/MDd"
-    filter { "system:windows", "configurations:Release*" }
-  buildoptions "/MD"
-    filter { "system:windows", "configurations:Dist*" }
-  buildoptions "/MD"
-
 --[[------------------------------------------------------------------------------------]]
 
 
@@ -300,12 +293,5 @@ project "Sandbox"
     }
     runtime "Release"
     optimize "On"
-
-  filter { "system:windows", "configurations:Debug*" }
-    buildoptions "/MDd"
-  filter { "system:windows", "configurations:Release*" }
-    buildoptions "/MD"
-  filter { "system:windows", "configurations:Dist*" }
-    buildoptions "/MD"
 
 --[[------------------------------------------------------------------------------------]]

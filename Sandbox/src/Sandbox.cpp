@@ -2,6 +2,8 @@
 
 #include <Wizzy.h>
 
+#include <GL/glew.h>
+
 class ExampleLayer
 	: public Wizzy::Layer {
 public:

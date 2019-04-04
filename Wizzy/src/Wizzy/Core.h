@@ -30,6 +30,14 @@
 	#define __FILENAME__  __FUNCTION__
 #endif
 
+#ifdef WZ_PLATFORM_WINDOWS
+	#define WZ_BREAK __debugbreak()
+#elif defined (__GNUC__)
+	#define WZ_BREAK __builtin_trap()
+#else
+	#define WZ_BREAK signal(SIGTRAP)
+#endif
+
 #define WZ_ERR_NONE 0
 #define WZ_ERR_INIT_FAILURE 1
 
@@ -38,19 +46,9 @@
 #ifndef WZ_DISABLE_ASSERTS
 
 	#define ASSERT_MSG (("Assertion failed: '{0}' in " + string(__FILENAME__) + ":" + std::to_string(__LINE__)).c_str())
-	
-	#define EMMIT_ASSERTION_IF_FALSE(fn, x, ...) if (!(x)) { WZ_CRITICAL(ASSERT_MSG, __VA_ARGS__); fn; }
 
-	#ifdef WZ_PLATFORM_WINDOWS
-		#define WZ_ASSERT(x, ...) EMMIT_ASSERTION_IF_FALSE(__debugbreak(), x, __VA_ARGS__)
-		#define WZ_CORE_ASSERT(x, ...) EMMIT_ASSERTION_IF_FALSE(__debugbreak(), x, __VA_ARGS__)
-	#elif defined(__GNUC__)
-		#define WZ_ASSERT(x, ...) EMMIT_ASSERTION_IF_FALSE(__builtin_trap(), x, __VA_ARGS__)
-		#define WZ_CORE_ASSERT(x, ...) EMMIT_ASSERTION_IF_FALSE(__builtin_trap(), x, __VA_ARGS__)
-	#else
-		#define WZ_ASSERT(x, ...) EMMIT_ASSERTION_IF_FALSE(signal(SIGTRAP), x, __VA_ARGS__)
-		#define WZ_CORE_ASSERT(x, ...) EMMIT_ASSERTION_IF_FALSE(signal(SIGTRAP), x, __VA_ARGS__)
-	#endif
+	#define WZ_ASSERT(x, ...) if (!(x)) { WZ_CRITICAL(ASSERT_MSG, __VA_ARGS__); WZ_BREAK; }
+	#define WZ_CORE_ASSERT(x, ...) if (!(x)) { WZ_CORE_CRITICAL(ASSERT_MSG, __VA_ARGS__); WZ_BREAK; }
 
 	#define WZ_ASSERT_ERROR(e) WZ_CORE_ASSERT(e == WZ_ERR_NONE, "Wizzy error! (code " + std::to_string(e) + "): '" + WZ_ERR_STRING(e) + "'")
 

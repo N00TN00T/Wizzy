@@ -39,6 +39,7 @@ namespace Wizzy {
 
 	private:
 		bool OnWindowClose(WindowCloseEvent& e);
+		bool OnWindowResize(WindowResizeEvent& e);
 	protected:
 		std::unique_ptr<IWindow> m_window;
 		ImguiLayer *m_imguiLayer;
