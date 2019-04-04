@@ -4,6 +4,8 @@
 #include "events/AppEvent.h"
 #include "Wizzy/Input.h"
 
+#include <GL/glew.h>
+
 namespace Wizzy {
 
 	Application *Application::s_instance;
@@ -25,7 +27,23 @@ namespace Wizzy {
 		
 		s_instance = this;
 
-		m_window = std::unique_ptr<IWindow>(IWindow::Create());
+		string _wndTitle = m_props.appName + (m_props.appVersion.size() > 0 ? " v" + m_props.appVersion
+												: "");
+
+#ifdef WZ_CONFIG_DEBUG
+		_wndTitle += " (Wizzy version '" + WZ_VERSION + "') - Debug";
+#elif defined(WZ_CONFIG_RELEASE)
+		_wndTitle += " (Wizzy version '" + WZ_VERSION + "') - Release";
+#elif !defined(WZ_CONFIG_DIST)
+		_wndTitle += " (Wizzy version '" + WZ_VERSION + "') - Configuration not defined";
+#endif
+
+
+		WindowProps _windowProps = WindowProps(	_wndTitle,
+												1600,
+												900 );
+
+		m_window = std::unique_ptr<IWindow>(IWindow::Create(_windowProps));
 		m_window->SetEventCallback(WZ_BIND_FN(Application::OnEvent));
 
 		m_imguiLayer = new ImguiLayer();

@@ -15,7 +15,7 @@ public:
 	}
 
 	virtual void OnImguiRender() override {
-		ImGui::ShowDemoWindow();
+		
 	}
 
 	virtual void OnUpdate() override {
@@ -34,6 +34,5 @@ public:
 };
 
 Wizzy::Application* Wizzy::CreateApplication() {
-	
 	return new Sandbox();
 }

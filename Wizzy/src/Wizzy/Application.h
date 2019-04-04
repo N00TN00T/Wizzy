@@ -8,6 +8,16 @@
 
 namespace Wizzy {
 
+	struct ApplicationProps {
+		string appName;
+		string appVersion;
+
+		ApplicationProps(const string& appName = "Wizzy App",
+						 const string& appVersion = "") : 
+						 appName(appName),
+						 appVersion(appVersion) {}
+	};
+
 	class WZ_API Application {
 	public:
 		Application();
@@ -24,6 +34,9 @@ namespace Wizzy {
 
 		inline IWindow& GetWindow() { return *m_window; }
 
+		inline ApplicationProps& GetProps() { return m_props; }
+		inline void SetProps(const ApplicationProps& props) { m_props = props; }
+
 	private:
 		bool OnWindowClose(WindowCloseEvent& e);
 	protected:
@@ -33,6 +46,7 @@ namespace Wizzy {
 	private:
 		bool m_running;
 		LayerStack m_layerStack;
+		ApplicationProps m_props;
 
 	public:
 		inline static Application& Get() { return *s_instance; }

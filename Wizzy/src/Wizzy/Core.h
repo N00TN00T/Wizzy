@@ -1,5 +1,9 @@
 #pragma once
 
+#if !defined(WZ_PLATFORM_WINDOWS) && !defined(WZ_PLATFORM_LINUX)
+	#error Wizzy is currently only supported on Windows and Linux
+#endif
+
 #if defined(WZ_PLATFORM_WINDOWS)
 	#ifdef WZ_EXPORT
 		#define WZ_API __declspec(dllexport)
@@ -66,6 +70,10 @@
 #define WZ_BIND_FN(fn) (std::bind(&fn, this, std::placeholders::_1))
 
 #define BIT(x) (1 << x)
+
+#define WZ_MAKE_VERSION(major, minor, patch) (#major + string(".") + #minor + string(".") + #patch) 
+
+#define WZ_VERSION	WZ_MAKE_VERSION(0, 0, 1)
 
 const std::unordered_map<int, std::string> __WZ_ERROR_STRINGS = {
 	{ WZ_ERR_NONE, "no error" },

@@ -38,7 +38,7 @@
 /* wizzy headers */
 
 #include "Wizzy/Log.h"
-#include "Wizzy/utils.h"
+#include "Wizzy/Utils.h"
 
 /* Platform specific headers */
 #ifdef WZ_PLATFORM_WINDOWS

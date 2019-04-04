@@ -44,7 +44,7 @@ namespace Wizzy {
             glfwSetErrorCallback(glfw_error_callback);
 
             WZ_CORE_ASSERT(_result != GLFW_NO_ERROR, "Error initializing glfw");
-			
+        
             s_glfwInitialized = true;
         }
 
