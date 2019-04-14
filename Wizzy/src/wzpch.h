@@ -8,6 +8,7 @@
 #include <utility>
 #include <sstream>
 #include <ostream>
+#include <fstream>
 #include <signal.h>
 #include <typeinfo>
 
@@ -39,7 +40,6 @@
 /* wizzy headers */
 
 #include "Wizzy/Log.h"
-#include "Wizzy/Utils.h"
 
 /* Platform specific headers */
 #ifdef WZ_PLATFORM_WINDOWS

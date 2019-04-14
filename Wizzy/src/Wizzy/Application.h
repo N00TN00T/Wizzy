@@ -1,7 +1,7 @@
 #pragma once
 
 #include "Wizzy/Core.h"
-#include "Wizzy/events/AppEvent.h"
+#include "Wizzy/Events/AppEvent.h"
 #include "Wizzy/IWindow.h"
 #include "Wizzy/LayerStack.h"
 #include "Wizzy/imgui/ImguiLayer.h"
@@ -13,7 +13,7 @@ namespace Wizzy {
 		string appVersion;
 
 		ApplicationProps(const string& appName = "Wizzy App",
-						 const string& appVersion = "") : 
+						 const string& appVersion = "") :
 						 appName(appName),
 						 appVersion(appVersion) {}
 	};

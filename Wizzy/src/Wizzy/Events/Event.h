@@ -1,5 +1,5 @@
 #pragma once
-#include "../Core.h"
+#include "Wizzy/Core.h"
 
 namespace Wizzy {
 

@@ -1,7 +1,7 @@
 #pragma once
 
 #include "Core.h"
-#include "events/Event.h"
+#include "Events/Event.h"
 
 namespace Wizzy {
     struct WindowProps {

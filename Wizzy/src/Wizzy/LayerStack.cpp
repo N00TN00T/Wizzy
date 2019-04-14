@@ -1,9 +1,11 @@
 #include <wzpch.h>
-#include "LayerStack.h"
+
+#include "Wizzy/LayerStack.h"
+#include "Wizzy/Utils.h"
 
 namespace Wizzy {
 	LayerStack::LayerStack() {
-		
+
 	}
 	LayerStack::~LayerStack() {
 		for (Layer*& layer : m_layers) {

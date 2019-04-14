@@ -2,7 +2,7 @@
 
 #include "Wizzy/Core.h"
 #include "Wizzy/Layer.h"
-#include "Wizzy/events/Event.h"
+#include "Wizzy/Events/Event.h"
 
 /*
 	The ownership of the raw Layer pointers belong to the LayerStack as long

@@ -1,11 +1,12 @@
 #include "wzpch.h"
 #include "Application.h"
 #include "Log.h"
-#include "events/AppEvent.h"
+#include "Events/AppEvent.h"
 #include "Wizzy/Input.h"
 
 #include <glad/glad.h>
 #include <imgui.h>
+#include "Wizzy/Resources/Shader.h"
 
 namespace Wizzy {
 
@@ -23,21 +24,27 @@ namespace Wizzy {
 		_dispatcher.Dispatch<WindowResizeEvent>(WZ_BIND_FN(Application::OnWindowResize));
 
 		m_layerStack.OnEvent(e);
+
+
 	}
 
 	void Application::Run() {
-		
+
 		s_instance = this;
 
-		string _wndTitle = m_props.appName + (m_props.appVersion.size() > 0 ? " v" + m_props.appVersion
-												: "");
+		string _wndTitle = m_props.appName
+							+ (m_props.appVersion.size() > 0 ?
+								" v" + m_props.appVersion
+								: "");
 
 #ifdef WZ_CONFIG_DEBUG
 		_wndTitle += " (Wizzy version '" + WZ_VERSION + "') - Debug";
 #elif defined(WZ_CONFIG_RELEASE)
 		_wndTitle += " (Wizzy version '" + WZ_VERSION + "') - Release";
 #elif !defined(WZ_CONFIG_DIST)
-		_wndTitle += " (Wizzy version '" + WZ_VERSION + "') - Configuration not defined";
+		_wndTitle += " (Wizzy version '"
+									+ WZ_VERSION
+									+ "') - Configuration not defined";
 #endif
 
 
@@ -56,8 +63,11 @@ namespace Wizzy {
 		glEnable(GL_BLEND);
 		glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 
+		glEnable(GL_CULL_FACE);
+		glCullFace(GL_BACK);
+
 		float _vertices[] = {
-			
+
 			// front
 			-2, -2, -2,
 			0, 2, 0,
@@ -79,15 +89,15 @@ namespace Wizzy {
 			-2, -2, 2,
 
 			// bot topleft
-			-2, -2, -2,
-			-2, -2, 2,
 			2, -2, 2,
+			-2, -2, 2,
+			-2, -2, -2,
 
 			// bot botright
-			2, -2, 2,
+			-2, -2, -2,
 			2, -2, -2,
-			-2, -2, -2
-			
+			2, -2, 2
+
 		};
 
 		u32 _vbIdx;
@@ -99,69 +109,12 @@ namespace Wizzy {
 		glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 0, NULL);
 		glEnableVertexAttribArray(0);
 
-		char*const VERT_CODE = R"(
-			#version 410 core
+		Shader _shader("basic.vert", "basic.frag");
 
-			layout (location = 0) in vec4 position;
-
-			uniform mat4 projection;
-			uniform mat4 view;
-
-			out vec4 pos;
-
-			void main() {
-				pos = projection * view * position;
-				gl_Position = pos;
-			}
-		)"; 
-
-		constexpr char* FRAG_CODE = R"(
-			#version 410 core
-
-			out vec4 color;
-
-			in vec4 pos;
-
-			void main() {
-				color = vec4(pos.x / 16.0, pos.y / 9.0, pos.z / 12.5, 1.0);
-			}
-		)"; 
-
-		u32 _program = glCreateProgram();
-		u32 _vShader = glCreateShader(GL_VERTEX_SHADER);
-		u32 _fShader = glCreateShader(GL_FRAGMENT_SHADER);
-
-		glShaderSource(_vShader, 1, &VERT_CODE, NULL);
-		glShaderSource(_fShader, 1, &FRAG_CODE, NULL);
-
-		// COMPILE VERTEX SHADER
-		glCompileShader(_vShader);
-		int32 _vCompileResult;
-		glGetShaderiv(_vShader, GL_COMPILE_STATUS, &_vCompileResult);
-
-		// COMPILE FRAGMENT SHADER
-		glCompileShader(_fShader);
-		int32 _fCompileResult;
-		glGetShaderiv(_fShader, GL_COMPILE_STATUS, &_fCompileResult);
-
-		WZ_CORE_ASSERT(_vCompileResult != GL_NO_ERROR, string("Failed compiling vertex shader: "));
-		WZ_CORE_ASSERT(_fCompileResult != GL_NO_ERROR, string("Failed compiling fragment shader: "));
-
-		glAttachShader(_program, _vShader);
-		glAttachShader(_program, _fShader);
-
-		glLinkProgram(_program);
-		glValidateProgram(_program);
-
-		glDeleteShader(_vShader);
-		glDeleteShader(_fShader);
-
-		WZ_INFO("Compiled shader program");
-
-		glUseProgram(_program);
+		_shader.Use();
 
 		vec3 _camPos(0, 0, -10);
-		
+
 		vec3 _rot(0, 0, 0);
 		vec3 _pos(0, 0, 0);
 		vec3 _scale(1, 1, 1);
@@ -176,16 +129,15 @@ namespace Wizzy {
 			m_layerStack.UpdateLayers();
 
 			auto _proj = glm::translate(glm::perspectiveFov<float>(90, 16, 9, .1f, 10000), _camPos);
-			glUniformMatrix4fv(glGetUniformLocation(_program, "projection"), 1, GL_FALSE, glm::value_ptr(_proj));
+			_shader.SetUniformMat4("projection", _proj);
 
 			auto _view = glm::translate(glm::identity<mat4>(), _pos);
 			_view = glm::rotate(_view, _rot.x, vec3(1, 0, 0));
 			_view = glm::rotate(_view, _rot.y, vec3(0, 1, 0));
 			_view = glm::rotate(_view, _rot.z, vec3(0, 0, 1));
 			_view = glm::scale(_view, _scale);
-			
 
-			glUniformMatrix4fv(glGetUniformLocation(_program, "view"), 1, GL_FALSE, glm::value_ptr(_view));
+			_shader.SetUniformMat4("view", _view);
 
 			glDrawArrays(GL_TRIANGLES, 0, 18);
 

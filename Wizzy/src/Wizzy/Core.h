@@ -55,7 +55,7 @@
 #else
 
 	#define ASSERT_MSG ("Critical error: '{0}'")
-	
+
 	#define EMMIT_ASSERTION_IF_FALSE(x, ...) if (!(x)) { WZ_CRITICAL(ASSERT_MSG, __VA_ARGS__); }
 
 	#define WZ_ASSERT(x, ...) EMMIT_ASSERTION_IF_FALSE(x, __VA_ARGS__)
@@ -69,7 +69,7 @@
 
 #define BIT(x) (1 << x)
 
-#define WZ_MAKE_VERSION(major, minor, patch) (#major + string(".") + #minor + string(".") + #patch) 
+#define WZ_MAKE_VERSION(major, minor, patch) (#major + string(".") + #minor + string(".") + #patch)
 
 #define WZ_VERSION	WZ_MAKE_VERSION(0, 0, 1)
 

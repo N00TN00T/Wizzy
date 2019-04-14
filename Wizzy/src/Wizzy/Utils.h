@@ -9,3 +9,7 @@ template <typename T>
 bool set_contains(std::set<T> set, T value) {
 	return std::find(set.begin(), set.end(), value) != set.end();
 }
+
+bool write_file(const string& file, const string& data);
+
+bool read_file(const string& file, string *out);

@@ -2,7 +2,7 @@
 
 workspace "Wizzy"
 
-  configurations 
+  configurations
   {
     "Debug64",
     "Release64",
@@ -11,15 +11,15 @@ workspace "Wizzy"
     "ReleaseARM",
     "DistARM"
   }
-  
+
   filter "configurations:*64"
     architecture "x64"
-    
+
 filter "configurations:*ARM"
     architecture "ARM"
-  
+
 output_dir = "%{cfg.buildcfg}-%{cfg.system}-%{cfg.architecture}"
-  
+
 -- Include directories relative to root directory
 include_dir = {
   spdlog = "Wizzy/vendor/spdlog/include",
@@ -41,25 +41,25 @@ project "Wizzy"
   location "Wizzy"
   kind "StaticLib"
   language "C++"
-  
+
   targetdir ("bin/" .. output_dir .. "/%{prj.name}")
   objdir ("bin-int/" .. output_dir .. "/%{prj.name}")
-  
+
   pchheader "wzpch.h"
   pchsource "Wizzy/src/wzpch.cpp"
 
-  files 
+  files
   {
     "%{prj.name}/src/**.h",
     "%{prj.name}/src/**.cpp"
   }
 
-  -- Exclude all platform-specific ones to later include the ones the target platform will use
-  removefiles 
-  { 
-    "%{prj.name}/src/Wizzy/platform/**"
+  -- Exclude all Platform-specific ones to later include the ones the target Platform will use
+  removefiles
+  {
+    "%{prj.name}/src/Wizzy/Platform/**"
   }
-  
+
   includedirs
   {
     "%{prj.name}/src",
@@ -70,7 +70,7 @@ project "Wizzy"
     "%{include_dir.glm}"
   }
 
-  defines "WZ_EXPORT"
+  defines {"WZ_EXPORT", "WZ_USE_OPENGL"}
 
 ---------------------------------------------------------------------
 --                        WINDOWS
@@ -80,7 +80,7 @@ project "Wizzy"
     staticruntime "On"
     systemversion "latest"
 
-    defines 
+    defines
     {
       "WZ_PLATFORM_WINDOWS",
       "GLFW_INCLUDE_NONE"
@@ -89,10 +89,10 @@ project "Wizzy"
     links "opengl32.lib"
 
     -- Windows-specific files
-    files 
+    files
     {
-      "%{prj.name}/src/Wizzy/platform/windows/**.h",
-      "%{prj.name}/src/Wizzy/platform/windows/**.cpp"
+      "%{prj.name}/src/Wizzy/Platform/Windows/**.h",
+      "%{prj.name}/src/Wizzy/Platform/Windows/**.cpp"
     }
 ---------------------------------------------------------------------
 
@@ -107,10 +107,10 @@ project "Wizzy"
     defines "WZ_PLATFORM_LINUX"
 
     -- Linux-specific files
-    files 
+    files
     {
-      "%{prj.name}/src/Wizzy/platform/linux/**.h",
-      "%{prj.name}/src/Wizzy/platform/linux/**.cpp"
+      "%{prj.name}/src/Wizzy/Platform/Linux/**.h",
+      "%{prj.name}/src/Wizzy/Platform/Linux/**.cpp"
     }
 
 ---------------------------------------------------------------------
@@ -126,10 +126,10 @@ project "Wizzy"
     defines "WZ_PLATFORM_LINUX"
 
     -- Macosx-specific files
-    files 
+    files
     {
-      "%{prj.name}/src/Wizzy/platform/Macosx/**.h",
-      "%{prj.name}/src/Wizzy/platform/Macosx/**.cpp"
+      "%{prj.name}/src/Wizzy/Platform/MacOS/**.h",
+      "%{prj.name}/src/Wizzy/Platform/MacOS/**.cpp"
     }
 ---------------------------------------------------------------------
 
@@ -144,7 +144,7 @@ project "Wizzy"
     optimize "On"
 
   filter "configurations:Dist*"
-    defines 
+    defines
     {
       "WZ_CONFIG_DIST",
       "WZ_DISABLE_ASSERTS"
@@ -163,19 +163,19 @@ project "Sandbox"
   kind "ConsoleApp"
   language "C++"
   architecture "x64"
-  
+
   targetdir ("bin/" .. output_dir .. "/%{prj.name}")
   objdir ("bin-int/" .. output_dir .. "/%{prj.name}")
 
   pchheader "spch.h"
   pchsource "Sandbox/src/spch.cpp"
 
-  files 
+  files
   {
     "%{prj.name}/src/**.h",
     "%{prj.name}/src/**.cpp"
   }
-  
+
   includedirs
   {
     "Wizzy/src",
@@ -196,7 +196,9 @@ project "Sandbox"
     "glfw",
     "glad"
   }
-  
+
+  defines { "WZ_USE_OPENGL" }
+
 ---------------------------------------------------------------------
 --                        LINUX
 ---------------------------------------------------------------------
@@ -230,17 +232,17 @@ project "Sandbox"
     staticruntime "On"
     systemversion "latest"
 
-    defines 
+    defines
     {
       "WZ_PLATFORM_WINDOWS",
       "GLFW_INCLUDE_NONE"
     }
 
     -- Windows-specific files
-    files 
+    files
     {
-      "%{prj.name}/src/Wizzy/platform/windows/**.h",
-      "%{prj.name}/src/Wizzy/platform/windows/**.cpp"
+      "%{prj.name}/src/Wizzy/Platform/windows/**.h",
+      "%{prj.name}/src/Wizzy/Platform/windows/**.cpp"
     }
 
     links "opengl32.lib"
@@ -258,10 +260,10 @@ project "Sandbox"
     defines "WZ_PLATFORM_MACOSX"
 
     -- Macosx-specific files
-    files 
+    files
     {
-      "%{prj.name}/src/Wizzy/platform/macosx/**.h",
-      "%{prj.name}/src/Wizzy/platform/macosx/**.cpp"
+      "%{prj.name}/src/Wizzy/Platform/macosx/**.h",
+      "%{prj.name}/src/Wizzy/Platform/macosx/**.cpp"
     }
 
     links
@@ -286,7 +288,7 @@ project "Sandbox"
     optimize "On"
 
   filter "configurations:Dist*"
-    defines 
+    defines
     {
       "WZ_CONFIG_DIST",
       "WZ_DISABLE_ASSERTS"
