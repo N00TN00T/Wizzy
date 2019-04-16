@@ -5,7 +5,7 @@
 
 namespace Wizzy {
 
-	class WZ_API MouseMovedEvent
+	class  MouseMovedEvent
 		: public Event {
 	private:
 		double m_x, m_y;
@@ -27,7 +27,7 @@ namespace Wizzy {
 		}
 	};
 
-	class WZ_API MousePressedEvent
+	class  MousePressedEvent
 		: public Event {
 	private:
 		int m_buttonCode;
@@ -47,7 +47,7 @@ namespace Wizzy {
 		}
 	};
 
-	class WZ_API MouseReleasedEvent
+	class  MouseReleasedEvent
 		: public Event {
 	private:
 		int m_buttonCode;
@@ -67,7 +67,7 @@ namespace Wizzy {
 		}
 	};
 
-	class WZ_API MouseScrolledEvent
+	class  MouseScrolledEvent
 		: public Event {
 	private:
 		double m_xOffset, m_yOffset;

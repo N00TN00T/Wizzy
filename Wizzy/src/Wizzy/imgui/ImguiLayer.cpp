@@ -69,7 +69,8 @@ namespace Wizzy {
 	void ImguiLayer::End() {
 		auto& _io = ImGui::GetIO();
 		auto& _app = Application::Get();
-		_io.DisplaySize = ImVec2(_app.GetWindow().GetWidth(), _app.GetWindow().GetHeight());
+		_io.DisplaySize = ImVec2((float)_app.GetWindow().GetWidth(), 
+								 (float)_app.GetWindow().GetHeight());
 
 		static double _lastTime = glfwGetTime();
 

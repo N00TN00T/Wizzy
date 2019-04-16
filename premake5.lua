@@ -245,7 +245,7 @@ project "Sandbox"
       "%{prj.name}/src/Wizzy/Platform/windows/**.cpp"
     }
 
-    links "opengl32.lib"
+    links { "opengl32.lib", "glu32.lib" }
 
 ----------------------------------------------------------------------
 

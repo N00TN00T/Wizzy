@@ -13,7 +13,7 @@ namespace Wizzy {
 
 	class Layer;
 
-	class WZ_API LayerStack {
+	class  LayerStack {
 	public:
 		LayerStack();
 		~LayerStack();

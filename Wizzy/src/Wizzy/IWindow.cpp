@@ -1,2 +1,2 @@
 #include "wzpch.h"
-#include "IWindow.h"
+#include "Wizzy/IWindow.h"

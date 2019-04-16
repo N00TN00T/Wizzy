@@ -8,7 +8,7 @@ namespace Wizzy {
 	/* ------------------------------
 	 *	WINDOW EVENTS
 	 * ------------------------------*/
-	class WZ_API WindowCloseEvent
+	class  WindowCloseEvent
 		: public Event {
 	public:
 		inline WindowCloseEvent() {}
@@ -17,7 +17,7 @@ namespace Wizzy {
 		EVENT_CLASS_CATEGORY(category_application)
 	};
 
-	class WZ_API WindowResizeEvent
+	class  WindowResizeEvent
 		: public Event {
 	private:
 		u32 m_x;
@@ -39,7 +39,7 @@ namespace Wizzy {
 		EVENT_CLASS_CATEGORY(category_application)
 	};
 
-	class WZ_API WindowFocusEvent
+	class  WindowFocusEvent
 		: public Event {
 	public:
 		inline WindowFocusEvent() {}
@@ -48,7 +48,7 @@ namespace Wizzy {
 		EVENT_CLASS_CATEGORY(category_application)
 	};
 
-	class WZ_API WindowUnfocusEvent
+	class  WindowUnfocusEvent
 		: public Event {
 	public:
 		inline WindowUnfocusEvent() {}
@@ -57,7 +57,7 @@ namespace Wizzy {
 		EVENT_CLASS_CATEGORY(category_application)
 	};
 
-	class WZ_API WindowMoveEvent
+	class  WindowMoveEvent
 		: public Event {
 	public:
 		inline WindowMoveEvent() {}
@@ -69,7 +69,7 @@ namespace Wizzy {
 	/* ------------------------------
 	 *	APP EVENTS
 	 * ------------------------------*/
-	class WZ_API AppTickEvent
+	class  AppTickEvent
 		: public Event {
 	public:
 		inline AppTickEvent() {}
@@ -78,7 +78,7 @@ namespace Wizzy {
 		EVENT_CLASS_CATEGORY(category_application)
 	};
 
-	class WZ_API AppUpdateEvent
+	class  AppUpdateEvent
 		: public Event {
 	public:
 		inline AppUpdateEvent() {}
@@ -87,7 +87,7 @@ namespace Wizzy {
 		EVENT_CLASS_CATEGORY(category_application)
 	};
 
-	class WZ_API AppRenderEvent
+	class  AppRenderEvent
 		: public Event {
 	public:
 		inline AppRenderEvent() {}

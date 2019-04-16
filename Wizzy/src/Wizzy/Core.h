@@ -4,26 +4,6 @@
 	#error Wizzy is currently only supported on Windows and Linux
 #endif
 
-#if defined(WZ_PLATFORM_WINDOWS)
-	#ifdef WZ_EXPORT
-		#define WZ_API __declspec(dllexport)
-	#else
-		#define WZ_API __declspec(dllimport)
-	#endif
-#elif defined(__GNUC__)
-	#ifdef WZ_EXPORT
-		#define WZ_API __attribute__((visibility("default")))
-	#else
-		#define WZ_API
-	#endif
-#else
-	#define WZ_API
-	#error Wizzy requires to be compiled with gcc for support on other platforms that windows
-#endif
-
-#undef WZ_API
-#define WZ_API
-
 #ifdef __GNUC__
 	#define __FILENAME__ (__builtin_strrchr(__FILE__, '/') ? __builtin_strrchr(__FILE__, '/') + 1 : __FILE__)
 #else
@@ -69,9 +49,11 @@
 
 #define BIT(x) (1 << x)
 
-#define WZ_MAKE_VERSION(major, minor, patch) (#major + string(".") + #minor + string(".") + #patch)
-
-#define WZ_VERSION	WZ_MAKE_VERSION(0, 0, 1)
+#define WZ_MAKE_VERSION(major, minor, patch) (std::to_string(major) + "." + std::to_string(minor) + "." + std::to_string(patch))
+#define WZ_VERSION_MAJOR 0
+#define WZ_VERSION_MINOR 1
+#define WZ_VERSION_PATCH 1
+#define WZ_VERSION	WZ_MAKE_VERSION(WZ_VERSION_MAJOR, WZ_VERSION_MINOR, WZ_VERSION_PATCH)
 
 const std::unordered_map<int, std::string> __WZ_ERROR_STRINGS = {
 	{ WZ_ERR_NONE, "no error" },

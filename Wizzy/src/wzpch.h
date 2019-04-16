@@ -1,5 +1,4 @@
 /* std libraries */
-
 #include <iostream>
 #include <stdio.h>
 #include <functional>
@@ -11,6 +10,7 @@
 #include <fstream>
 #include <signal.h>
 #include <typeinfo>
+#include <assert.h>
 
 /* std data structures */
 #include <string>
@@ -40,6 +40,7 @@
 /* wizzy headers */
 
 #include "Wizzy/Log.h"
+#include "Wizzy/Color.h"
 
 /* Platform specific headers */
 #ifdef WZ_PLATFORM_WINDOWS
@@ -62,6 +63,8 @@ typedef uint32 u32;
 typedef long long int64;
 typedef unsigned long long uint64;
 typedef uint64 u64;
+
+typedef u32 size_bytes;
 
 typedef glm::vec2 vec2;
 typedef glm::vec3 vec3;

@@ -24,20 +24,14 @@ namespace Wizzy {
         auto _state = glfwGetMouseButton(_window, mousecode);
         return _state == GLFW_PRESS;
     }
-    float WindowsInput::GetMouseXImpl() {
-        auto& _app = Application::Get();
 
-        auto _window = static_cast<GLFWwindow*>(_app.GetWindow().GetNativeWindow());
-        double x, y;
-        glfwGetCursorPos(_window, &x, &y);
-        return x;
-    }
-    float WindowsInput::GetMouseYImpl() {
-        auto& _app = Application::Get();
+	vec2 WindowsInput::GetMousePosImpl() {
+		auto& _app = Application::Get();
+		auto _window = static_cast<GLFWwindow*>(_app.GetWindow().GetNativeWindow());
 
-        auto _window = static_cast<GLFWwindow*>(_app.GetWindow().GetNativeWindow());
-        double x, y;
-        glfwGetCursorPos(_window, &x, &y);
-        return y;
-    }
+		double _x, _y;
+		glfwGetCursorPos(_window, &_x, &_y);
+
+		return vec2(_x, _y);
+	}
 }

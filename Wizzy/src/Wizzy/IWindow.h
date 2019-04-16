@@ -15,7 +15,7 @@ namespace Wizzy {
             : title(title), width(width), height(height) {}
     };
 
-    class WZ_API IWindow {
+    class  IWindow {
     public:
         typedef std::function<void(Event&)> EventCallbackFn;
 

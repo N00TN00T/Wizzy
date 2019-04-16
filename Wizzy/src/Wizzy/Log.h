@@ -15,7 +15,7 @@ namespace Wizzy {
 
 	typedef int8 LogLevel;
 
-	class WZ_API Log {
+	class  Log {
 	public:
 		static void Init();
 

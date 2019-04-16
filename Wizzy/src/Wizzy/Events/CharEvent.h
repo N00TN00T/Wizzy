@@ -4,7 +4,7 @@
 #include "../Core.h"
 
 namespace Wizzy {
-	class WZ_API CharEvent
+	class  CharEvent
 		: public Event {
 	private:
 		uint8 m_char;

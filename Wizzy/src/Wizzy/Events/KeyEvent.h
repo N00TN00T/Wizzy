@@ -3,7 +3,7 @@
 #include "../Core.h"
 
 namespace Wizzy {
-	class WZ_API KeyEvent
+	class  KeyEvent
 		: public Event {
 	protected:
 		int m_keyCode;
@@ -15,7 +15,7 @@ namespace Wizzy {
 		inline const int& GetKeyCode() const { return m_keyCode; }
 	};
 
-	class WZ_API KeyPressedEvent
+	class  KeyPressedEvent
 		: public KeyEvent {
 	public:
 		inline KeyPressedEvent(int keycode) : KeyEvent(keycode) {}
@@ -28,7 +28,7 @@ namespace Wizzy {
 		}
 	};
 
-	class WZ_API KeyReleasedEvent
+	class  KeyReleasedEvent
 		: public KeyEvent {
 	public:
 		inline KeyReleasedEvent(int keycode) : KeyEvent(keycode) { }
@@ -41,7 +41,7 @@ namespace Wizzy {
 		}
 	};
 
-	class WZ_API KeyRepeatEvent
+	class  KeyRepeatEvent
 		: public KeyEvent {
 	public:
 		inline KeyRepeatEvent(int keycode) : KeyEvent(keycode) {}

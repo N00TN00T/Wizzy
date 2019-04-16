@@ -5,7 +5,7 @@
 #include "Wizzy/Layer.h"
 
 namespace Wizzy {
-	class WZ_API ImguiLayer
+	class  ImguiLayer
 		: public Layer {
 	public:
 		ImguiLayer();

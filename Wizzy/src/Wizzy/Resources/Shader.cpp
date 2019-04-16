@@ -1,73 +1,109 @@
 #include "wzpch.h"
 
+#include <glad/glad.h>
+
 #include "Wizzy/Resources/Shader.h"
 #include "Wizzy/Utils.h"
-
-#include <glad/glad.h>
+#include "Wizzy/Graphics/GLErrorHandling.h"
 
 #define U_LOCATION(p, n) glGetUniformLocation(p, n)
 
 namespace Wizzy {
     u32 Shader::s_currentShader(-1);
 
-    Shader::Shader(string vPath, string fPath)
-        : m_vPath(vPath), m_fPath(fPath) {
-        WZ_CORE_ASSERT(Load(), "Failed loading shader");
+    Shader::Shader(const string& file) {
+		m_source = ParseShader(file);
+        WZ_CORE_ASSERT(Compile(), "Failed compiling shader");
     }
 
-    void Shader::Use() {
-        if (s_currentShader != m_shaderId)
-            glUseProgram(m_shaderId);
+	Shader::Shader(const ShaderProgramSource & source)
+		: m_source(source) {
+		WZ_CORE_ASSERT(Compile(), "Failed compiling shader");
+	}
+
+	void Shader::Use() {
+			GL_CALL(glUseProgram(m_shaderId));
     }
 
     void Shader::SetUniformMat4(const string& name, const mat4& value) {
-        glUniformMatrix4fv(U_LOCATION(m_shaderId, name.c_str()), 1,
-                                      GL_FALSE, glm::value_ptr(value));
+        GL_CALL(glUniformMatrix4fv(U_LOCATION(m_shaderId, name.c_str()), 1,
+                                      GL_FALSE, glm::value_ptr(value)));
     }
 
-    bool Shader::Load() {
+	void Shader::SetUniform3f(const string& name, const vec3& value) {
+		GL_CALL(glUniform3f(U_LOCATION(m_shaderId, name.c_str()), value.x, value.y, value.z));
+	}
+
+	void Shader::SetUniform4f(const string& name, const vec4& value) {
+		GL_CALL(glUniform4f(U_LOCATION(m_shaderId, name.c_str()), value.x, value.y, value.z, value.w));
+	}
+
+	ShaderProgramSource Shader::ParseShader(const string & file) {
+		
+		enum class ShaderType { invalid = -1, vertex = 0, fragment = 1 };
+
+		WZ_CORE_TRACE("Parsing a shader program source from '{0}'", file);
+
+		string _allSource;
+		WZ_CORE_ASSERT(read_file(file, &_allSource), "Failed reading shader file '" + file + "'");
+		
+		std::stringstream _sourceStream(_allSource.c_str());
+
+		string _vertSource;
+		string _fragSource;
+		ShaderType _shaderType = ShaderType::invalid;
+
+		string _line;
+		while (std::getline(_sourceStream, _line, '\n')) {
+			if (_line.find("#shader") != std::string::npos) {
+				if (_line.find("vertex") != std::string::npos)
+					_shaderType = ShaderType::vertex;
+				else if (_line.find("fragment") != std::string::npos) 
+					_shaderType = ShaderType::fragment;
+			} else {
+				switch (_shaderType) {
+				case ShaderType::vertex:
+					_vertSource += _line + "\n";
+					break;
+				case ShaderType::fragment:
+					_fragSource += _line + "\n";
+					break;
+				}
+			}
+		}
+
+		return { _vertSource, _fragSource };
+	}
+
+	bool Shader::Compile() {
 #ifdef WZ_USE_OPENGL
-        return __Load_OpenGL();
+        return __Compile_OpenGL();
 #else
     #error Wizzy currently only supports the OpenGL graphics API, make sure WZ_USE_OPENGL is defined
 #endif
     }
 
-    bool Shader::__Load_OpenGL() {
-        u32 _program = glCreateProgram();
-		u32 _vShader = glCreateShader(GL_VERTEX_SHADER);
-		u32 _fShader = glCreateShader(GL_FRAGMENT_SHADER);
+    bool Shader::__Compile_OpenGL() {
+		WZ_CORE_TRACE("Compiling OpenGL Shader...");
+        GL_CALL(u32 _program = glCreateProgram());
+		GL_CALL(u32 _vShader = glCreateShader(GL_VERTEX_SHADER));
+		GL_CALL(u32 _fShader = glCreateShader(GL_FRAGMENT_SHADER));
 
-        string _vCodeStr;
-        string _fCodeStr;
+		const char *_vSource = m_source.vertSource.c_str();
+		const char *_fSource = m_source.fragSource.c_str();
 
-        bool _vertexReadSuccess = read_file(m_vPath.c_str(), &_vCodeStr);
-        bool _fragReadSuccess = read_file(m_fPath.c_str(), &_fCodeStr);
-
-        string _readErrMsg = "";
-        if (!_vertexReadSuccess) _readErrMsg += "Failed reading vertex shader '"
-                                               + m_vPath + "'. ";
-        if (!_fragReadSuccess) _readErrMsg += "Failed reading fragment shader '"
-                                              + m_fPath + "'.";
-        WZ_CORE_ASSERT(_vertexReadSuccess && _fragReadSuccess, _readErrMsg);
-
-        char *_vCode = new char[_vCodeStr.size()];
-        char *_fCode = new char[_fCodeStr.size()];
-        strcpy(_vCode, _vCodeStr.c_str());
-        strcpy(_fCode, _fCodeStr.c_str());
-
-        glShaderSource(_vShader, 1, &_vCode, NULL);
-		glShaderSource(_fShader, 1, &_fCode, NULL);
+        GL_CALL(glShaderSource(_vShader, 1, &_vSource, NULL));
+		GL_CALL(glShaderSource(_fShader, 1, &_fSource, NULL));
 
 		// COMPILE VERTEX SHADER
-		glCompileShader(_vShader);
+		GL_CALL(glCompileShader(_vShader));
 		int32 _vCompileResult;
-		glGetShaderiv(_vShader, GL_COMPILE_STATUS, &_vCompileResult);
+		GL_CALL(glGetShaderiv(_vShader, GL_COMPILE_STATUS, &_vCompileResult));
 
 		// COMPILE FRAGMENT SHADER
-		glCompileShader(_fShader);
+		GL_CALL(glCompileShader(_fShader));
 		int32 _fCompileResult;
-		glGetShaderiv(_fShader, GL_COMPILE_STATUS, &_fCompileResult);
+		GL_CALL(glGetShaderiv(_fShader, GL_COMPILE_STATUS, &_fCompileResult));
 
         bool _vCompileSuccess = _vCompileResult != GL_FALSE;
         bool _fCompileSuccess = _fCompileResult != GL_FALSE;
@@ -77,35 +113,29 @@ namespace Wizzy {
             int32 _vLogLength;
             char *_vLog;
             if (!_vCompileSuccess) {
-                glGetShaderiv(_vShader, GL_INFO_LOG_LENGTH, &_vLogLength);
+                GL_CALL(glGetShaderiv(_vShader, GL_INFO_LOG_LENGTH, &_vLogLength));
                 _vLog = new char[_vLogLength];
-                glGetShaderInfoLog(_vShader, _vLogLength, &_vLogLength, _vLog);
+                GL_CALL(glGetShaderInfoLog(_vShader, _vLogLength, &_vLogLength, _vLog));
             }
             int32 _fLogLength;
             char *_fLog;
             if (!_fCompileSuccess) {
-                glGetShaderiv(_fShader, GL_INFO_LOG_LENGTH, &_fLogLength);
+                GL_CALL(glGetShaderiv(_fShader, GL_INFO_LOG_LENGTH, &_fLogLength));
                 _fLog = new char[_fLogLength];
-                glGetShaderInfoLog(_fShader, _fLogLength, &_fLogLength, _fLog);
+                GL_CALL(glGetShaderInfoLog(_fShader, _fLogLength, &_fLogLength, _fLog));
             }
 
-            if (!_vCompileSuccess) _errMsg += "Failed compiling vertex shader '"
-                                            + m_vPath + "': '" + string(_vLog)
-                                            + "'.";
-            if (!_fCompileSuccess) _errMsg += "Failed compiling fragment shader '"
-                                            + m_fPath + "': '" + string(_fLog)
-                                            + "'.";
+            if (!_vCompileSuccess) _errMsg += "Failed compiling vertex shader '. " + string(_vLog);
+            if (!_fCompileSuccess) _errMsg += "Failed compiling fragment shader '. " + string(_fLog);
         }
         WZ_CORE_ASSERT(_vCompileSuccess && _fCompileSuccess, _errMsg);
 
-        glAttachShader(_program, _vShader);
-        glAttachShader(_program, _fShader);
-
-        glLinkProgram(_program);
-        glValidateProgram(_program);
-
-        glDeleteShader(_vShader);
-        glDeleteShader(_fShader);
+        GL_CALL(glAttachShader(_program, _vShader));
+        GL_CALL(glAttachShader(_program, _fShader));
+        GL_CALL(glLinkProgram(_program));
+        GL_CALL(glValidateProgram(_program));
+        GL_CALL(glDeleteShader(_vShader));
+        GL_CALL(glDeleteShader(_fShader));
 
         m_shaderId = _program;
 

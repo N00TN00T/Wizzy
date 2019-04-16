@@ -5,7 +5,7 @@
 
 namespace Wizzy {
 
-	class WZ_API Layer {
+	class  Layer {
 	public:
 		Layer(const string& name = "Layer");
 		virtual ~Layer();

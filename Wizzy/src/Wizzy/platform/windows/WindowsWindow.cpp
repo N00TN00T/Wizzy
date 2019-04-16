@@ -4,10 +4,11 @@
 #include <glad/glad.h>
 #include <GLFW/glfw3.h>
 
-#include "Wizzy/events/AppEvent.h"
-#include "Wizzy/events/MouseEvent.h"
-#include "Wizzy/events/CharEvent.h"
-#include "Wizzy/events/KeyEvent.h"
+#include "Wizzy/Events/AppEvent.h"
+#include "Wizzy/Events/MouseEvent.h"
+#include "Wizzy/Events/CharEvent.h"
+#include "Wizzy/Events/KeyEvent.h"
+#include "Wizzy/Graphics/GLErrorHandling.h"
 
 namespace Wizzy {
     IWindow *IWindow::Create(const WindowProps& props) {
@@ -43,7 +44,7 @@ namespace Wizzy {
 
             WZ_CORE_ASSERT(_result != GLFW_NO_ERROR, "Error initializing glfw");
 			
-            s_glfwInitialized = true;
+            s_glfwInitialized = true; 
         }
 
         WZ_CORE_TRACE("Creating window '{0}'...", 
@@ -60,6 +61,12 @@ namespace Wizzy {
 
         SetVSync(false);
         SetClearColor(.1f, .2f, .5f, 1.f);
+
+		GL_CALL(glEnable(GL_BLEND));
+		GL_CALL(glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA));
+
+		GL_CALL(glEnable(GL_CULL_FACE));
+		GL_CALL(glCullFace(GL_BACK));
 
         glfwSetWindowSizeCallback(m_glfwWindow, [](GLFWwindow *w, int32 width, int32 height){
             

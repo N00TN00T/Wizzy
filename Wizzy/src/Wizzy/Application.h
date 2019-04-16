@@ -18,7 +18,7 @@ namespace Wizzy {
 						 appVersion(appVersion) {}
 	};
 
-	class WZ_API Application {
+	class  Application {
 	public:
 		Application();
 		~Application();
