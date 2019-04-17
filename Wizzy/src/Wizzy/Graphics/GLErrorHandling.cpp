@@ -2,7 +2,7 @@
 
 #include "Wizzy/Graphics/GLErrorHandling.h"
 #include <glad/glad.h>
-#include <GL/GLU.h>
+#include <GL/glu.h>
 
 namespace Wizzy {
 	namespace __GL_Error_Handling {

@@ -163,7 +163,7 @@ namespace Wizzy {
 			_renderer.Begin();
 
 			_renderer.SubmitRaw(_vao, _ibo, _material, _proj * prismA.View());
-			_renderer.SubmitRaw(_vao, _ibo, _material, _proj * prismB.View());
+			//_renderer.SubmitRaw(_vao, _ibo, _material, _proj * prismB.View());
 
 			_renderer.End();
 

@@ -1,6 +1,7 @@
 #pragma once
 
 namespace Wizzy {
+
 	struct VertexBufferElement {
 		u32 type;
 		u32 count;
@@ -15,28 +16,14 @@ namespace Wizzy {
 
 		template <typename T>
 		inline void Push(u32 count) {
-			WZ_CORE_ASSERT(false, "Type '" + string(typeid(T).name()) + "' is not a supported buffer layout type");
+			if (typeid(T) == typeid(float)) 	PushFloat(count);
+			else if (typeid(T) == typeid(u32)) 	PushU32(count);
+			else if (typeid(T) == typeid(u16)) 	PushU16(count);
+			else if (typeid(T) == typeid(u8)) 	PushU8(count);
+			else WZ_CORE_ASSERT(false, R"(Tried pushing an unsupported type to
+										a buffer layout)");
 		}
 
-		template <>
-		inline void Push<float>(u32 count) {
-			PushFloat(count);
-		}
-
-		template <>
-		inline void Push<u32>(u32 count) {
-			PushU32(count);
-		}
-
-		template <>
-		inline void Push<u16>(u32 count) {
-			PushU16(count);
-		}
-
-		template <>
-		inline void Push<u8>(u32 count) {
-			PushU8(count);
-		}
 
 		inline const std::vector<VertexBufferElement>& GetElements() const {
 			return m_elements;

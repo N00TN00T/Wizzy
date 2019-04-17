@@ -7,7 +7,7 @@ namespace Wizzy {
 		Color(float r, float g, float b, float a);
 
 		union {
-			float rgba[];
+			float rgba[4];
 			struct { float r, g, b, a; };
 		};
 		
