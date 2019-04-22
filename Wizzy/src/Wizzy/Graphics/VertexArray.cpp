@@ -23,13 +23,23 @@ namespace Wizzy {
 			const auto& _element = _elements[i];
 
 			GL_CALL(glEnableVertexAttribArray(i));
-			GL_CALL(glVertexAttribPointer(i, _element.count, _element.type, _element.normalized ? GL_TRUE : GL_FALSE, layout.GetStride(), (const void*)_offset));
+			GL_CALL(glVertexAttribPointer(i,
+										  _element.count,
+										  _element.type,
+										  _element.normalized ? GL_TRUE : GL_FALSE,
+										  layout.GetStride(),
+										  (const void*)_offset));
 			_offset += _element.size;
 		}
-		GL_CALL();
+		vbo.Unbind();
+		Unbind();
 	}
-	
+
 	void VertexArray::Bind() const {
 		GL_CALL(glBindVertexArray(m_vaoId));
+	}
+
+	void VertexArray::Unbind() const {
+		GL_CALL(glBindVertexArray(0));
 	}
 }

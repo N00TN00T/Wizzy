@@ -4,12 +4,11 @@
 #include <glad/glad.h>
 #include <GLFW/glfw3.h>
 
-#include "Wizzy/events/AppEvent.h"
-#include "Wizzy/events/MouseEvent.h"
-#include "Wizzy/events/CharEvent.h"
-#include "Wizzy/events/KeyEvent.h"
-
-#include "LinuxInput.h"
+#include "Wizzy/Events/AppEvent.h"
+#include "Wizzy/Events/MouseEvent.h"
+#include "Wizzy/Events/CharEvent.h"
+#include "Wizzy/Events/KeyEvent.h"
+#include "Wizzy/Graphics/GLErrorHandling.h"
 
 namespace Wizzy {
     IWindow *IWindow::Create(const WindowProps& props) {
@@ -36,19 +35,19 @@ namespace Wizzy {
         m_data.height = props.height;
 
         if (!s_glfwInitialized) {
-            
+
             WZ_CORE_TRACE("Initializing glfw...");
 
             auto _result = glfwInit();
-        
+
             glfwSetErrorCallback(glfw_error_callback);
 
             WZ_CORE_ASSERT(_result != GLFW_NO_ERROR, "Error initializing glfw");
-        
+
             s_glfwInitialized = true;
         }
 
-        WZ_CORE_TRACE("Creating window '{0}'...", 
+        WZ_CORE_TRACE("Creating window '{0}'...",
                         props.title);
 
         m_glfwWindow = glfwCreateWindow(props.width, props.height, props.title.c_str(), nullptr, nullptr);
@@ -63,6 +62,8 @@ namespace Wizzy {
         SetVSync(false);
         SetClearColor(.1f, .2f, .5f, 1.f);
 
+        GL_CALL(glEnable(GL_DEPTH_TEST));
+
 		GL_CALL(glEnable(GL_BLEND));
 		GL_CALL(glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA));
 
@@ -70,7 +71,7 @@ namespace Wizzy {
 		GL_CALL(glCullFace(GL_BACK));
 
         glfwSetWindowSizeCallback(m_glfwWindow, [](GLFWwindow *w, int32 width, int32 height){
-            
+
             auto& _data = *((WindowData*)glfwGetWindowUserPointer(w));
             _data.width = width;
             _data.height = height;
@@ -80,15 +81,15 @@ namespace Wizzy {
         });
 
         glfwSetWindowCloseCallback(m_glfwWindow, [](GLFWwindow *w){
-            
+
             auto& _data = *((WindowData*)glfwGetWindowUserPointer(w));
 
             WindowCloseEvent _event;
             _data.eventCallbackFn(_event);
         });
-        
+
         glfwSetKeyCallback(m_glfwWindow, [](GLFWwindow *w, int32 key, int32 scancode, int32 action, int32 mods){
-            
+
             auto& _data = *((WindowData*)glfwGetWindowUserPointer(w));
 
             switch(action) {
@@ -112,11 +113,11 @@ namespace Wizzy {
 				}
             }
 
-            
+
         });
-        
+
         glfwSetMouseButtonCallback(m_glfwWindow, [](GLFWwindow *w, int32 button, int32 action, int32 mods){
-            
+
             auto& _data = *((WindowData*)glfwGetWindowUserPointer(w));
 
             switch(action) {
@@ -144,7 +145,7 @@ namespace Wizzy {
 		});
 
         glfwSetScrollCallback(m_glfwWindow, [](GLFWwindow *w, double x, double y){
-            
+
             auto& _data = *((WindowData*)glfwGetWindowUserPointer(w));
 
             MouseScrolledEvent _event(x, y);
@@ -152,7 +153,7 @@ namespace Wizzy {
         });
 
         glfwSetCursorPosCallback(m_glfwWindow, [](GLFWwindow *w, double x, double y){
-            
+
             auto& _data = *((WindowData*)glfwGetWindowUserPointer(w));
 
             MouseMovedEvent _event(x, y);
@@ -169,7 +170,7 @@ namespace Wizzy {
 
     void LinuxWindow::OnFrameBegin() {
 		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-        
+
     }
 
     void LinuxWindow::OnFrameEnd() {

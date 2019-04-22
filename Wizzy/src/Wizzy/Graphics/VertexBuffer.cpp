@@ -18,6 +18,9 @@ namespace Wizzy {
 		WZ_CORE_TRACE("Destructed a vertex buffer with id {0}", m_bufferId);
 	}
 	void VertexBuffer::Bind() const {
-		glBindBuffer(GL_ARRAY_BUFFER, m_bufferId);
+		GL_CALL(glBindBuffer(GL_ARRAY_BUFFER, m_bufferId));
+	}
+	void VertexBuffer::Unbind() const  {
+		GL_CALL(glBindBuffer(GL_ARRAY_BUFFER, 0));
 	}
 }

@@ -7,6 +7,7 @@ namespace Wizzy {
 		~IndexBuffer();
 
 		void Bind() const;
+		void Unbind() const;
 		inline u32 GetCount() const { return m_count; }
 	private:
 		u32			m_bufferId;

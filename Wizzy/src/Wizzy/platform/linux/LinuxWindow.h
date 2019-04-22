@@ -32,7 +32,7 @@ namespace Wizzy {
     private:
         virtual void Init(const WindowProps& props);
         virtual void Shutdown();
-    private:        
+    private:
         struct WindowData {
             string title;
             EventCallbackFn eventCallbackFn;

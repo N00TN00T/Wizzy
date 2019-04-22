@@ -21,8 +21,12 @@ namespace Wizzy {
 		WZ_CORE_ASSERT(Compile(), "Failed compiling shader");
 	}
 
-	void Shader::Use() {
-			GL_CALL(glUseProgram(m_shaderId));
+	void Shader::Bind() const {
+		GL_CALL(glUseProgram(m_shaderId));
+    }
+
+    void Shader::Unbind() const {
+        GL_CALL(glUseProgram(0));
     }
 
     void Shader::SetUniformMat4(const string& name, const mat4& value) {
@@ -39,14 +43,14 @@ namespace Wizzy {
 	}
 
 	ShaderProgramSource Shader::ParseShader(const string & file) {
-		
+
 		enum class ShaderType { invalid = -1, vertex = 0, fragment = 1 };
 
 		WZ_CORE_TRACE("Parsing a shader program source from '{0}'", file);
 
 		string _allSource;
 		WZ_CORE_ASSERT(read_file(file, &_allSource), "Failed reading shader file '" + file + "'");
-		
+
 		std::stringstream _sourceStream(_allSource.c_str());
 
 		string _vertSource;
@@ -58,7 +62,7 @@ namespace Wizzy {
 			if (_line.find("#shader") != std::string::npos) {
 				if (_line.find("vertex") != std::string::npos)
 					_shaderType = ShaderType::vertex;
-				else if (_line.find("fragment") != std::string::npos) 
+				else if (_line.find("fragment") != std::string::npos)
 					_shaderType = ShaderType::fragment;
 			} else {
 				switch (_shaderType) {
@@ -125,14 +129,28 @@ namespace Wizzy {
                 GL_CALL(glGetShaderInfoLog(_fShader, _fLogLength, &_fLogLength, _fLog));
             }
 
-            if (!_vCompileSuccess) _errMsg += "Failed compiling vertex shader '. " + string(_vLog);
-            if (!_fCompileSuccess) _errMsg += "Failed compiling fragment shader '. " + string(_fLog);
+            if (!_vCompileSuccess) _errMsg += "Failed compiling vertex shader: ' "
+                                                + string(_vLog) + "'. ";
+            if (!_fCompileSuccess) _errMsg += "Failed compiling fragment shader: ' "
+                                                + string(_fLog) + "'";
         }
         WZ_CORE_ASSERT(_vCompileSuccess && _fCompileSuccess, _errMsg);
 
         GL_CALL(glAttachShader(_program, _vShader));
         GL_CALL(glAttachShader(_program, _fShader));
         GL_CALL(glLinkProgram(_program));
+
+        int32 _linkResult;
+        GL_CALL(glGetProgramiv(_program, GL_LINK_STATUS, &_linkResult));
+
+        bool _linkSuccess = _linkResult != GL_FALSE;
+
+        char *_linkLog;
+        GL_CALL(glGetProgramInfoLog(_program, 512, NULL, _linkLog));
+
+        WZ_CORE_ASSERT(_linkSuccess, "Failed linking shaders into program: '"
+                                        + string(_linkLog) + "'");
+
         GL_CALL(glValidateProgram(_program));
         GL_CALL(glDeleteShader(_vShader));
         GL_CALL(glDeleteShader(_fShader));

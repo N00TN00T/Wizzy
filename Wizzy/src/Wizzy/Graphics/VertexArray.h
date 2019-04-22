@@ -13,6 +13,7 @@ namespace Wizzy {
 		void AddBuffer(const VertexBuffer& vbo, const VertexBufferLayout& layout);
 
 		void Bind() const;
+		void Unbind() const;
 
 	private:
 		u32 m_vaoId;

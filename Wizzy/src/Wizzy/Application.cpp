@@ -6,6 +6,7 @@
 
 #include <glad/glad.h>
 #include <imgui.h>
+#include <stb_image.h>
 
 #include "Wizzy/Graphics/Material.h"
 #include "Wizzy/Graphics/GLErrorHandling.h"
@@ -64,70 +65,81 @@ namespace Wizzy {
 
 		m_running = true;
 
+		//stbi_set_flip_vertically_on_load(true);
+
+		int32 _imageWidth, _imageHeight, _imageChannels;
+
+		byte *_textureData = stbi_load("box.jpeg",
+										&_imageWidth,
+										&_imageHeight,
+										& _imageChannels,
+										0);
+
+		WZ_CORE_ASSERT(_textureData, "Failed loading texture");
+
+		WZ_TRACE("W'{0}', H'{1}', C'{2}'", _imageWidth, _imageHeight, _imageChannels);
+
+		u32 _texId;
+		GL_CALL(glGenTextures(1, &_texId))
+
+		GL_CALL(glBindTexture(GL_TEXTURE_2D, _texId));
+
+		GL_CALL(glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_BORDER));
+		GL_CALL(glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_BORDER));
+
+		GL_CALL(glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_LINEAR));
+		GL_CALL(glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR));
+
+		GL_CALL(glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, _imageWidth, _imageHeight, 0, GL_RGB, GL_UNSIGNED_BYTE, _textureData));
+
+		GL_CALL(glGenerateMipmap(GL_TEXTURE_2D));
+
+		stbi_image_free(_textureData);
+
 		float _vertices[] = {
 
-			// posx, posy, posz
-			// colr, colg, colb, cola,
-			// nrmx, nrmy, nrmz
+			// close top left
+			-2, 2, -2,
+			1, 1, 1, 1,
+			-1, 1, -1,
+			0, 1,
 
-			// top
-			0, 2, 0,			// 0
-			1.0, 0.5, 0.6, 1.0,
-			0.0, 1.0, 0.0,
+			// close top right
+			2, 2, -2,
+			1, 1, 1, 1,
+			1, 1, -1,
+			1, 1,
 
-			// bot close left
-			-2, -2, -2,			// 1
-			0.7, 0.2, 0.8, 1.0,
-			-0.5, 0.0, -0.5,
+			// close bot left
+			-2, -2, -2,
+			1, 1, 1, 1,
+			-1, -1, -1,
+			0, 0,
 
-			// bot close right
-			2, -2, -2,			// 2
-			0.1, 0.4, 0.2, 1.0,
-			0.5, 0.0, -0.5,
+			// close bot right
+			2, -2, -2,
+			1, 1, 1, 1,
+			1, -1, -1,
+			1, 0,
 
-			// bot far left
-			-2, -2, 2,			// 3
-			0.1, 0.1, 0.1, 1.0,
-			-0.5, 0.0, 0.5,
-
-			// bot far right
-			2, -2, 2,			// 4
-			0.4, 0.6, 0.3, 1.0,
-			0.5, 0.0, 0.5,
 		};
 
 		u32 _indices[] = {
-
-			// close
-			0, 2, 1,
-
-			// left
-			0, 1, 3,
-
-			// far
-			0, 3, 4,
-
-			// right
-			0, 4, 2,
-
-			// bot top-left
-			1, 4, 3,
-
-			// bot bot-right
-			4, 1, 2,
-
+			3, 1, 0,
+			0, 2, 3,
 		};
 
 		VertexArray _vao;
 
-		VertexBuffer _vbo(_vertices, (5 * 3 + 5 * 4 + 5 * 3) * sizeof(float));
+		VertexBuffer _vbo(_vertices, (4 * 3 + 4 * 4 + 4 * 3 + 4 * 2) * sizeof(float));
 		VertexBufferLayout _vboLayout;
 		_vboLayout.Push<float>(3);
 		_vboLayout.Push<float>(4);
 		_vboLayout.Push<float>(3);
+		_vboLayout.Push<float>(2);
 		_vao.AddBuffer(_vbo, _vboLayout);
 
-		IndexBuffer _ibo(_indices, 6 * 3);
+		IndexBuffer _ibo(_indices, 6);
 
 		Material _material;
 
@@ -135,7 +147,7 @@ namespace Wizzy {
 
 		vec3 _camPos(0, 0, -10);
 
-		struct Prism {
+		struct Tri {
 			vec3 rot;
 			vec3 pos;
 			vec3 scale;
@@ -150,8 +162,7 @@ namespace Wizzy {
 			}
 		};
 
-		Prism prismA{ vec3(0, 0, 0), vec3(-4, 0, 0), vec3(1, 1, 1) };
-		Prism prismB{ vec3(0, 0, 0), vec3(4, 0, 0), vec3(1, 1, 1) };
+		Tri tri { vec3(0, 0, 0), vec3(0, 0, 0), vec3(1, 1, 1) };
 
 		while (m_running) {
 			m_window->OnFrameBegin();
@@ -162,8 +173,10 @@ namespace Wizzy {
 
 			_renderer.Begin();
 
-			_renderer.SubmitRaw(_vao, _ibo, _material, _proj * prismA.View());
-			//_renderer.SubmitRaw(_vao, _ibo, _material, _proj * prismB.View());
+			_renderer.SubmitRaw(_vao, _ibo, _material, _proj * tri.View());
+			//_renderer.SubmitRaw(_vao, _ibo, _material, _proj * glm::translate(glm::identity<mat4>(), vec3(3, 2, 0)));
+
+			GL_CALL(glBindTexture(GL_TEXTURE_2D, _texId));
 
 			_renderer.End();
 
@@ -173,15 +186,10 @@ namespace Wizzy {
 
 			ImGui::DragFloat3("position##0", glm::value_ptr(_camPos), .1f);
 
-			ImGui::Text("Prism A");
-			ImGui::DragFloat3("position##1", glm::value_ptr(prismA.pos), .1f);
-			ImGui::DragFloat3("rotation##1", glm::value_ptr(prismA.rot), .05f);
-			ImGui::DragFloat3("scale##1", glm::value_ptr(prismA.scale), .05f);
-
-			ImGui::Text("Prism B");
-			ImGui::DragFloat3("position##2", glm::value_ptr(prismB.pos), .1f);
-			ImGui::DragFloat3("rotation##2", glm::value_ptr(prismB.rot), .05f);
-			ImGui::DragFloat3("scale##2", glm::value_ptr(prismB.scale), .05f);
+			ImGui::Text("Triangle");
+			ImGui::DragFloat3("position##1", glm::value_ptr(tri.pos), .1f);
+			ImGui::DragFloat3("rotation##1", glm::value_ptr(tri.rot), .05f);
+			ImGui::DragFloat3("scale##1", glm::value_ptr(tri.scale), .05f);
 
 			ImGui::Text("Material");
 			Color _albedo = _material.GetAlbedo();

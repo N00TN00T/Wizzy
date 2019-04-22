@@ -15,7 +15,8 @@ namespace Wizzy {
         Shader(const string& file);
 		Shader(const ShaderProgramSource& source);
 
-        void Use();
+        void Bind() const;
+		void Unbind() const;
 
         void SetUniformMat4(const string& name, const mat4& value);
 		void SetUniform3f(const string& name, const vec3& value);

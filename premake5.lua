@@ -26,7 +26,8 @@ include_dir = {
   glfw = "Wizzy/vendor/glfw/include",
   glad = "Wizzy/vendor/glad/include",
   imgui = "Wizzy/vendor/imgui",
-  glm = "Wizzy/vendor/glm"
+  glm = "Wizzy/vendor/glm",
+  stb = "Wizzy/vendor/stb"
 }
 
 include "Wizzy/vendor/glfw/"
@@ -67,10 +68,11 @@ project "Wizzy"
     "%{include_dir.glfw}",
     "%{include_dir.glad}",
     "%{include_dir.imgui}",
-    "%{include_dir.glm}"
+    "%{include_dir.glm}",
+    "%{include_dir.stb}"
   }
 
-  defines {"WZ_EXPORT", "WZ_USE_OPENGL"}
+  defines {"WZ_EXPORT", "WZ_USE_OPENGL", "STB_IMAGE_IMPLEMENTATION"}
 
 ---------------------------------------------------------------------
 --                        WINDOWS
@@ -91,8 +93,8 @@ project "Wizzy"
     -- Windows-specific files
     files
     {
-      "%{prj.name}/src/Wizzy/Platform/Windows/**.h",
-      "%{prj.name}/src/Wizzy/Platform/Windows/**.cpp"
+      "%{prj.name}/src/Wizzy/platform/windows/**.h",
+      "%{prj.name}/src/Wizzy/platform/windows/**.cpp"
     }
 ---------------------------------------------------------------------
 
@@ -109,8 +111,8 @@ project "Wizzy"
     -- Linux-specific files
     files
     {
-      "%{prj.name}/src/Wizzy/Platform/Linux/**.h",
-      "%{prj.name}/src/Wizzy/Platform/Linux/**.cpp"
+      "%{prj.name}/src/Wizzy/platform/linux/**.h",
+      "%{prj.name}/src/Wizzy/platform/linux/**.cpp"
     }
 
 ---------------------------------------------------------------------
@@ -128,8 +130,8 @@ project "Wizzy"
     -- Macosx-specific files
     files
     {
-      "%{prj.name}/src/Wizzy/Platform/MacOS/**.h",
-      "%{prj.name}/src/Wizzy/Platform/MacOS/**.cpp"
+      "%{prj.name}/src/Wizzy/platform/macosx/**.h",
+      "%{prj.name}/src/Wizzy/platform/macosx/**.cpp"
     }
 ---------------------------------------------------------------------
 
@@ -186,7 +188,8 @@ project "Sandbox"
     "%{include_dir.spdlog}",
     "%{include_dir.glfw}",
     "%{include_dir.glad}",
-    "%{include_dir.glm}"
+    "%{include_dir.glm}",
+    "%{include_dir.stb}"
   }
 
   links
@@ -197,7 +200,7 @@ project "Sandbox"
     "glad"
   }
 
-  defines { "WZ_USE_OPENGL" }
+  defines { "WZ_USE_OPENGL", "STB_IMAGE_IMPLEMENTATION" }
 
 ---------------------------------------------------------------------
 --                        LINUX

@@ -18,30 +18,36 @@ namespace Wizzy {
 							 const IndexBuffer& ibo,
 							 const Material& material,
 							 const mat4& transformation) {
-		m_commandQueue.push(RenderCommand(vao, ibo, material, 
+		m_commandQueue.push(RenderCommand(vao, ibo, material,
 										  transformation ));
 	}
 	void Renderer::End() {
+
 		while (m_commandQueue.size() > 0) {
 			auto& _renderCommand = m_commandQueue.front();
-			
+
 			auto& _material = _renderCommand.material;
 
 			_renderCommand.vao.Bind();
 			_renderCommand.ibo.Bind();
 
 			auto _shader = (_material.GetShader());
-			_shader->Use();
+			_shader->Bind();
 
 			_shader->SetUniformMat4("mvp", _renderCommand.transformation);
 			_shader->SetUniform4f("albedo", _material.GetAlbedo().ToVec4());
 
-			GL_CALL(glDrawElements(GL_TRIANGLES, 
-								   _renderCommand.ibo.GetCount(), 
-								   GL_UNSIGNED_INT, 
-								   nullptr));
+			GL_CALL(glDrawElements(GL_TRIANGLES,
+								   _renderCommand.ibo.GetCount(),
+								   GL_UNSIGNED_INT,
+								   0));
 
 			m_commandQueue.pop();
+
+			_shader->Unbind();
+
+			_renderCommand.ibo.Unbind();
+			_renderCommand.vao.Unbind();
 		}
 	}
 
