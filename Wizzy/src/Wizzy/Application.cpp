@@ -65,11 +65,11 @@ namespace Wizzy {
 
 		m_running = true;
 
-		//stbi_set_flip_vertically_on_load(true);
+		stbi_set_flip_vertically_on_load(true);
 
 		int32 _imageWidth, _imageHeight, _imageChannels;
 
-		byte *_textureData = stbi_load("box.jpeg",
+		byte *_textureData = stbi_load("box.png",
 										&_imageWidth,
 										&_imageHeight,
 										& _imageChannels,
@@ -88,9 +88,10 @@ namespace Wizzy {
 		GL_CALL(glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_BORDER));
 
 		GL_CALL(glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_LINEAR));
+		GL_CALL(glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR));
 		GL_CALL(glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR));
 
-		GL_CALL(glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, _imageWidth, _imageHeight, 0, GL_RGB, GL_UNSIGNED_BYTE, _textureData));
+		GL_CALL(glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, _imageWidth, _imageHeight, 0, GL_RGBA, GL_UNSIGNED_BYTE, _textureData));
 
 		GL_CALL(glGenerateMipmap(GL_TEXTURE_2D));
 
@@ -98,40 +99,64 @@ namespace Wizzy {
 
 		float _vertices[] = {
 
-			// close top left
-			-2, 2, -2,
-			1, 1, 1, 1,
-			-1, 1, -1,
-			0, 1,
+			// Pos			// Color		// Normal		// Uv
 
-			// close top right
-			2, 2, -2,
-			1, 1, 1, 1,
-			1, 1, -1,
-			1, 1,
+			// close top left	0
+			-2, 2, -2,		1, 1, 1, 1,		-1, 1, -1,		0, 1,
 
-			// close bot left
-			-2, -2, -2,
-			1, 1, 1, 1,
-			-1, -1, -1,
-			0, 0,
+			// close top right	1
+			2, 2, -2,		1, 1, 1, 1,		1, 1, -1,		1, 1,
 
-			// close bot right
-			2, -2, -2,
-			1, 1, 1, 1,
-			1, -1, -1,
-			1, 0,
+			// close bot left	2
+			-2, -2, -2, 	1, 1, 1, 1, 	-1, -1, -1, 	0, 0,
+
+			// close bot right	3
+			2, -2, -2, 		1, 1, 1, 1, 	1, -1, -1, 		1, 0,
+
+			// far top left		4
+			-2, 2, 2, 		1, 1, 1, 1, 	-1, 1, -1, 		1, 1,
+
+			// far top right	5
+			2, 2, 2, 		1, 1, 1, 1, 	1, 1, -1, 		0, 1,
+
+			// far bot left		6
+			-2, -2, 2, 		1, 1, 1, 1, 	-1, -1, -1, 	1, 0,
+
+			// far bot right	7
+			2, -2, 2, 		1, 1, 1, 1, 	1, -1, -1, 		0, 0,
 
 		};
 
 		u32 _indices[] = {
-			3, 1, 0,
-			0, 2, 3,
+			// front
+			0, 1, 3,
+			3, 2, 0,
+
+			// left
+			6, 4, 0,
+			0, 2, 6,
+
+			// top
+			5, 1, 0,
+			0, 4, 5,
+
+			// right
+			7, 3, 1,
+			1, 5, 7,
+
+			// bot
+			2, 3, 7,
+			7, 6, 2,
+
+			// back
+			7, 5, 4,
+			4, 6, 7,
+
 		};
 
 		VertexArray _vao;
 
-		VertexBuffer _vbo(_vertices, (4 * 3 + 4 * 4 + 4 * 3 + 4 * 2) * sizeof(float));
+		VertexBuffer _vbo(_vertices, (8 * 3 + 8 * 4 + 8 * 3 + 8 * 2) * sizeof(float));
 		VertexBufferLayout _vboLayout;
 		_vboLayout.Push<float>(3);
 		_vboLayout.Push<float>(4);
@@ -139,15 +164,16 @@ namespace Wizzy {
 		_vboLayout.Push<float>(2);
 		_vao.AddBuffer(_vbo, _vboLayout);
 
-		IndexBuffer _ibo(_indices, 6);
+		IndexBuffer _ibo(_indices, 12 * 3);
 
-		Material _material;
+		Material _material1;
+		Material _material2;
 
 		Renderer _renderer;
 
 		vec3 _camPos(0, 0, -10);
 
-		struct Tri {
+		struct Box {
 			vec3 rot;
 			vec3 pos;
 			vec3 scale;
@@ -162,7 +188,8 @@ namespace Wizzy {
 			}
 		};
 
-		Tri tri { vec3(0, 0, 0), vec3(0, 0, 0), vec3(1, 1, 1) };
+		Box box1 { vec3(0, 0, 0), vec3(0, 0, 0), vec3(1, 1, 1) };
+		Box box2 { vec3(5, 0, 0), vec3(0, 0, 0), vec3(1, 1, 1) };
 
 		while (m_running) {
 			m_window->OnFrameBegin();
@@ -173,8 +200,11 @@ namespace Wizzy {
 
 			_renderer.Begin();
 
-			_renderer.SubmitRaw(_vao, _ibo, _material, _proj * tri.View());
-			//_renderer.SubmitRaw(_vao, _ibo, _material, _proj * glm::translate(glm::identity<mat4>(), vec3(3, 2, 0)));
+			_renderer.SubmitRaw(_vao, _ibo, _material1, _proj * box1.View());
+
+			static bool _renderBox2 = true;
+			if (_renderBox2)
+				_renderer.SubmitRaw(_vao, _ibo, _material2, _proj * box2.View());
 
 			GL_CALL(glBindTexture(GL_TEXTURE_2D, _texId));
 
@@ -186,15 +216,31 @@ namespace Wizzy {
 
 			ImGui::DragFloat3("position##0", glm::value_ptr(_camPos), .1f);
 
-			ImGui::Text("Triangle");
-			ImGui::DragFloat3("position##1", glm::value_ptr(tri.pos), .1f);
-			ImGui::DragFloat3("rotation##1", glm::value_ptr(tri.rot), .05f);
-			ImGui::DragFloat3("scale##1", glm::value_ptr(tri.scale), .05f);
+			ImGui::Text("Box1");
+			ImGui::DragFloat3("position##1", glm::value_ptr(box1.pos), .1f);
+			ImGui::DragFloat3("rotation##1", glm::value_ptr(box1.rot), .05f);
+			ImGui::DragFloat3("scale##1", glm::value_ptr(box1.scale), .05f);
 
 			ImGui::Text("Material");
-			Color _albedo = _material.GetAlbedo();
-			ImGui::ColorEdit4("albedo##1", _albedo.rgba);
-			_material.SetAlbedo(_albedo);
+			Color _albedo1 = _material1.GetAlbedo();
+			ImGui::ColorEdit4("albedo##1", _albedo1.rgba);
+			_material1.SetAlbedo(_albedo1);
+
+			ImGui::Checkbox("Render Box2", &_renderBox2);
+
+			if (_renderBox2) {
+				ImGui::Text("Box2");
+				ImGui::DragFloat3("position##2", glm::value_ptr(box2.pos), .1f);
+				ImGui::DragFloat3("rotation##2", glm::value_ptr(box2.rot), .05f);
+				ImGui::DragFloat3("scale##2", glm::value_ptr(box2.scale), .05f);
+
+				ImGui::Text("Material");
+				Color _albedo2 = _material2.GetAlbedo();
+				ImGui::ColorEdit4("albedo##2", _albedo2.rgba);
+				_material2.SetAlbedo(_albedo2);
+			}
+
+
 
 			ImGui::End();
 

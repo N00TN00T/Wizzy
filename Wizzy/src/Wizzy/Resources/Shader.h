@@ -14,6 +14,7 @@ namespace Wizzy {
     public:
         Shader(const string& file);
 		Shader(const ShaderProgramSource& source);
+		~Shader();
 
         void Bind() const;
 		void Unbind() const;

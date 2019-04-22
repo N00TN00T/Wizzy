@@ -28,6 +28,12 @@ namespace Wizzy {
 
 			auto& _material = _renderCommand.material;
 
+			WZ_CORE_DEBUG("DRAWING WITH ALBEDO {0}, {1}, {2}, {3}",
+							_material.GetAlbedo().ToVec4().r,
+							_material.GetAlbedo().ToVec4().g,
+							_material.GetAlbedo().ToVec4().b,
+							_material.GetAlbedo().ToVec4().a);
+
 			_renderCommand.vao.Bind();
 			_renderCommand.ibo.Bind();
 

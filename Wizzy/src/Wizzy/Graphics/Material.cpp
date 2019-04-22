@@ -4,6 +4,8 @@
 
 namespace Wizzy {
 
+	u32 Material::s_idCounter(0);
+
 	Material::Material()
 		: m_albedo(Color::white) {
 		m_shader = DefaultShader();
@@ -17,18 +19,6 @@ namespace Wizzy {
 	Material::~Material() {
 
 	}
-
-	const Color Color::white =		Color(1.f, 1.f, 1.f, 1.f);
-	const Color Color::red =		Color(.8f, .1f, .1f, 1.f);
-	const Color Color::green =		Color(.1f, 1.f, .1f, 1.f);
-	const Color Color::blue =		Color(.1f, .1f, 1.f, 1.f);
-	const Color Color::cyan =		Color(.1f, 1.f, 1.f, 1.f);
-	const Color Color::black =		Color(.0f, .0f, .0f, 1.f);
-	const Color Color::darkGray =	Color(.25f, .25f, .25f, 1.f);
-	const Color Color::gray =		Color(.5f, .5f, .5f, 1.f);
-	const Color Color::lightGray =	Color(.75f, .75f, .75f, 1.f);
-	const Color Color::pink =		Color(1.f, .25f, .35f, 1.f);
-	const Color Color::magenta =	Color(1.f, .1f, .8f, 1.f);
 
 	ShaderPtr Material::DefaultShader() {
 		static ShaderPtr s_defaultShader =

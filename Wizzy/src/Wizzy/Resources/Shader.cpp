@@ -21,6 +21,10 @@ namespace Wizzy {
 		WZ_CORE_ASSERT(Compile(), "Failed compiling shader");
 	}
 
+    Shader::~Shader() {
+        WZ_CORE_TRACE("Destructed shader");
+    }
+
 	void Shader::Bind() const {
 		GL_CALL(glUseProgram(m_shaderId));
     }
@@ -120,6 +124,7 @@ namespace Wizzy {
                 GL_CALL(glGetShaderiv(_vShader, GL_INFO_LOG_LENGTH, &_vLogLength));
                 _vLog = new char[_vLogLength];
                 GL_CALL(glGetShaderInfoLog(_vShader, _vLogLength, &_vLogLength, _vLog));
+                delete _vLog;
             }
             int32 _fLogLength;
             char *_fLog;
@@ -127,6 +132,7 @@ namespace Wizzy {
                 GL_CALL(glGetShaderiv(_fShader, GL_INFO_LOG_LENGTH, &_fLogLength));
                 _fLog = new char[_fLogLength];
                 GL_CALL(glGetShaderInfoLog(_fShader, _fLogLength, &_fLogLength, _fLog));
+                delete _fLog;
             }
 
             if (!_vCompileSuccess) _errMsg += "Failed compiling vertex shader: ' "
@@ -145,8 +151,9 @@ namespace Wizzy {
 
         bool _linkSuccess = _linkResult != GL_FALSE;
 
-        char *_linkLog;
+        char *_linkLog = new char[512];
         GL_CALL(glGetProgramInfoLog(_program, 512, NULL, _linkLog));
+        delete _linkLog;
 
         WZ_CORE_ASSERT(_linkSuccess, "Failed linking shaders into program: '"
                                         + string(_linkLog) + "'");
