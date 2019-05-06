@@ -17,22 +17,20 @@ namespace Wizzy {
 	void Renderer::SubmitRaw(const VertexArray& vao,
 							 const IndexBuffer& ibo,
 							 const Material& material,
-							 const mat4& transformation) {
+							 const mat4& projection,
+							 const mat4& view,
+							 const mat4& model,
+							 const vec3& viewPos) {
 		m_commandQueue.push(RenderCommand(vao, ibo, material,
-										  transformation ));
+										  projection, view,
+										  model, viewPos));
 	}
-	void Renderer::End() {
+	void Renderer::End(const Light& light) {
 
 		while (m_commandQueue.size() > 0) {
 			auto& _renderCommand = m_commandQueue.front();
 
 			auto& _material = _renderCommand.material;
-
-			WZ_CORE_DEBUG("DRAWING WITH ALBEDO {0}, {1}, {2}, {3}",
-							_material.GetAlbedo().ToVec4().r,
-							_material.GetAlbedo().ToVec4().g,
-							_material.GetAlbedo().ToVec4().b,
-							_material.GetAlbedo().ToVec4().a);
 
 			_renderCommand.vao.Bind();
 			_renderCommand.ibo.Bind();
@@ -40,8 +38,26 @@ namespace Wizzy {
 			auto _shader = (_material.GetShader());
 			_shader->Bind();
 
-			_shader->SetUniformMat4("mvp", _renderCommand.transformation);
-			_shader->SetUniform4f("albedo", _material.GetAlbedo().ToVec4());
+			_shader->SetUniformMat4("projection", _renderCommand.projection);
+			_shader->SetUniformMat4("view", _renderCommand.view);
+			_shader->SetUniformMat4("model", _renderCommand.model);
+			
+			_shader->SetUniform3f("viewPos", _renderCommand.projection * 
+											_renderCommand.view *							                   vec4(_renderCommand.viewPos, 1.0));
+
+			_shader->SetUniform3f("light.position", _renderCommand.projection * 
+													_renderCommand.view * 
+													vec4(light.position, 1.0));
+			_shader->SetUniform3f("light.ambient", light.ambient.ToVec4());
+			_shader->SetUniform3f("light.diffuse", light.diffuse.ToVec4());
+			_shader->SetUniform3f("light.specular", light.specular.ToVec4());
+			_shader->SetUniform1f("light.intensity", light.intensity);
+			_shader->SetUniform1f("light.range", light.range);
+
+			_shader->SetUniform4f("material.albedo", _material.GetAlbedo().ToVec4());
+			_shader->SetUniform3f("material.diffuse", _material.GetDiffuse().ToVec4());
+			_shader->SetUniform3f("material.specular", _material.GetSpecular().ToVec4());
+			_shader->SetUniform1f("material.shininess", _material.GetShininess());
 
 			GL_CALL(glDrawElements(GL_TRIANGLES,
 								   _renderCommand.ibo.GetCount(),

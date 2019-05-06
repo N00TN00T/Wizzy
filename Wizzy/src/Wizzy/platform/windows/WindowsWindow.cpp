@@ -70,6 +70,9 @@ namespace Wizzy {
 		GL_CALL(glEnable(GL_CULL_FACE));
 		GL_CALL(glCullFace(GL_BACK));
 
+		GL_CALL();
+		glViewport(0, 0, m_data.width, m_data.height);
+
         glfwSetWindowSizeCallback(m_glfwWindow, [](GLFWwindow *w, int32 width, int32 height){
 
             auto& _data = *((WindowData*)glfwGetWindowUserPointer(w));

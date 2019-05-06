@@ -38,6 +38,14 @@ namespace Wizzy {
                                       GL_FALSE, glm::value_ptr(value)));
     }
 
+	void Shader::SetUniform1f(const string & name, const float & value) {
+		GL_CALL(glUniform1f(U_LOCATION(m_shaderId, name.c_str()), value));
+	}
+
+	void Shader::SetUniform2f(const string & name, const vec2 & value) {
+		GL_CALL(glUniform2f(U_LOCATION(m_shaderId, name.c_str()), value.x, value.y));
+	}
+
 	void Shader::SetUniform3f(const string& name, const vec3& value) {
 		GL_CALL(glUniform3f(U_LOCATION(m_shaderId, name.c_str()), value.x, value.y, value.z));
 	}
@@ -124,7 +132,6 @@ namespace Wizzy {
                 GL_CALL(glGetShaderiv(_vShader, GL_INFO_LOG_LENGTH, &_vLogLength));
                 _vLog = new char[_vLogLength];
                 GL_CALL(glGetShaderInfoLog(_vShader, _vLogLength, &_vLogLength, _vLog));
-                delete _vLog;
             }
             int32 _fLogLength;
             char *_fLog;
@@ -132,7 +139,6 @@ namespace Wizzy {
                 GL_CALL(glGetShaderiv(_fShader, GL_INFO_LOG_LENGTH, &_fLogLength));
                 _fLog = new char[_fLogLength];
                 GL_CALL(glGetShaderInfoLog(_fShader, _fLogLength, &_fLogLength, _fLog));
-                delete _fLog;
             }
 
             if (!_vCompileSuccess) _errMsg += "Failed compiling vertex shader: ' "
@@ -153,7 +159,7 @@ namespace Wizzy {
 
         char *_linkLog = new char[512];
         GL_CALL(glGetProgramInfoLog(_program, 512, NULL, _linkLog));
-        delete _linkLog;
+       
 
         WZ_CORE_ASSERT(_linkSuccess, "Failed linking shaders into program: '"
                                         + string(_linkLog) + "'");
@@ -166,4 +172,155 @@ namespace Wizzy {
 
         return true;
     }
+
+	std::shared_ptr<Shader> Shader::BasicShader() {
+		static ShaderPtr _basicShader(std::make_shared<Shader>(Shader(ShaderProgramSource{
+R"(
+
+#version 410 core
+
+layout (location = 0) in vec4 vertexPosition;
+layout (location = 1) in vec4 vertexColor;
+layout (location = 2) in vec4 vertexNormal;
+layout (location = 3) in vec2 vertexUv;
+
+uniform mat4 projection = mat4(1.0);
+uniform mat4 view = mat4(1.0);
+uniform mat4 model = mat4(1.0);
+
+out DATA {
+	vec4 color;
+	vec2 uv;
+} pass;
+
+void main() {
+	mat4 mvp = projection * view * model;
+	pass.color = vertexColor;
+	pass.uv = vertexUv;
+	vec4 worldPosition = mvp * vertexPosition;
+	gl_Position = worldPosition;
+}
+
+)",
+R"(
+
+#version 410 core
+
+out vec4 finalColor;
+
+uniform vec4 albedo = vec4(1.0, 1.0, 1.0, 1.0);
+uniform sampler2D tex;
+
+in DATA {
+	vec4 color;
+	vec2 uv;
+} pass;
+
+void main() {
+	finalColor = texture(tex, pass.uv) * pass.color * albedo;
+}
+
+)" })));
+		return _basicShader;
+	}
+
+	std::shared_ptr<Shader> Shader::BasicLightingShader() {
+		static ShaderPtr _basicLightingShader(std::make_shared<Shader>(Shader(ShaderProgramSource{
+	R"(
+
+#version 410 core
+
+layout (location = 0) in vec4 vertexPosition;
+layout (location = 1) in vec4 vertexColor;
+layout (location = 2) in vec3 vertexNormal;
+layout (location = 3) in vec2 vertexUv;
+
+uniform mat4 projection = mat4(1.0);
+uniform mat4 view = mat4(1.0);
+uniform mat4 model = mat4(1.0);
+
+out DATA {
+	vec4 color;
+	vec3 normal;
+	vec2 uv;
+	vec3 fragPos;
+} pass;
+
+void main() {
+	mat4 mvp = projection * view * model;
+	pass.color = vertexColor;
+	pass.uv = vertexUv;
+	pass.normal = mat3(transpose(inverse(model))) * vertexNormal;
+	pass.fragPos = (model * vertexPosition).xyz;
+	vec4 worldPosition = mvp * vertexPosition;
+	gl_Position = worldPosition;
+}
+
+)",
+R"(
+
+#version 410 core
+
+out vec4 finalColor;
+
+struct Material {
+	vec4 albedo;
+	vec3 diffuse;
+	vec3 specular;
+	float shininess;
+};
+
+struct Light {
+	vec3 position;
+
+	vec3 ambient;
+	vec3 diffuse;
+	vec3 specular;
+	float intensity;
+	float range;
+};	
+
+uniform Material material;
+uniform Light light;
+
+uniform vec3 viewPos = vec3(0.0, 0.0, 0.0);
+uniform sampler2D tex;
+
+in DATA {
+	vec4 color;
+	vec3 normal;
+	vec2 uv;
+	vec3 fragPos;
+} pass;
+
+void main() {
+
+	vec3 lightDiff = light.position - pass.fragPos;
+
+	float lightDist = length(lightDiff);
+
+	vec3 norm = normalize(pass.normal);
+	vec3 lightDir = normalize(lightDiff);
+	
+	float diff = max(dot(norm, lightDir), 0.0);
+	vec3 diffuse = diff * light.diffuse * material.diffuse;
+
+	vec3 ambient = light.ambient;
+
+	vec3 viewDir = normalize(viewPos - pass.fragPos);
+	vec3 reflectDir = reflect(-lightDir, norm);
+
+	float spec = pow(max(dot(viewDir, reflectDir), 0.0), material.shininess);
+	vec3 specular = material.specular * light.specular * spec;
+
+	float strength = light.intensity * ((light.range - lightDist) / light.range);
+	if (strength < 0) strength = 0;
+
+	vec4 lightResult = vec4((ambient + diffuse + specular) * strength, 1.0) * pass.color;
+	finalColor = texture(tex, pass.uv) * lightResult * material.albedo;
+}
+
+)" })));
+		return _basicLightingShader;
+	}
 }
