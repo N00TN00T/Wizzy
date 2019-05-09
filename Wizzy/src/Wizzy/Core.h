@@ -49,6 +49,9 @@
 
 #define BIT(x) (1 << x)
 
+#define WZ_SHADER_ID_INVALID (0)
+#define WZ_TEXTURE_ID_INVALID (0)
+
 #define WZ_MAKE_VERSION(major, minor, patch) (std::to_string(major) + "." + std::to_string(minor) + "." + std::to_string(patch))
 #define WZ_VERSION_MAJOR 0
 #define WZ_VERSION_MINOR 1
@@ -59,3 +62,18 @@ const std::unordered_map<int, std::string> __WZ_ERROR_STRINGS = {
 	{ WZ_ERR_NONE, "no error" },
 	{ WZ_ERR_INIT_FAILURE, "Initialization failure" },
 };
+
+
+#ifdef __GNUC__
+	#define typestr(T) abi::__cxa_demangle(typeid(T).name(), 0, 0, 0)
+#else
+	#define typestr(T) typeid(T).name()
+#endif
+
+#ifdef __GNUC__
+	#define BASE_DIR ""
+#elif defined (_MSC_VER)
+	#define BASE_DIR ::WinAPI::IsDebuggerPresent() ? "../" : "../../../"
+#else
+	#define BASE_DIR "../../../"
+#endif

@@ -1,6 +1,5 @@
 #pragma once
 
-#include "Wizzy/Core.h"
 #include "Wizzy/Events/AppEvent.h"
 #include "Wizzy/IWindow.h"
 #include "Wizzy/LayerStack.h"

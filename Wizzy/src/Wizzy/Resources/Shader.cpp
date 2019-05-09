@@ -4,25 +4,37 @@
 
 #include "Wizzy/Resources/Shader.h"
 #include "Wizzy/Utils.h"
-#include "Wizzy/Graphics/GLErrorHandling.h"
+#include "Wizzy/platform/OpenGL/GLErrorHandling.h"
 
 #define U_LOCATION(p, n) glGetUniformLocation(p, n)
 
 namespace Wizzy {
-    u32 Shader::s_currentShader(-1);
-
-    Shader::Shader(const string& file) {
-		m_source = ParseShader(file);
-        WZ_CORE_ASSERT(Compile(), "Failed compiling shader");
-    }
-
-	Shader::Shader(const ShaderProgramSource & source)
-		: m_source(source) {
-		WZ_CORE_ASSERT(Compile(), "Failed compiling shader");
-	}
 
     Shader::~Shader() {
-        WZ_CORE_TRACE("Destructed shader");
+        if (!this->IsGarbage()) this->Unload();
+    }
+
+    void Shader::Load() {
+        m_source = ParseShader(this->GetSourceFile());
+        WZ_CORE_ASSERT(this->Compile(), "Failed compiling shader source");
+        WZ_CORE_ASSERT(m_source.vertSource != "" && m_source.fragSource != "",
+                        "Could not parse source for at least a vertex and fragment shader");
+        WZ_CORE_INFO("Successfully compiled Shader and assigned id '{0}'",
+                                                                m_shaderId);
+    }
+    void Shader::Unload() {
+        WZ_CORE_TRACE("Unloading shader with id '{0}'...", m_shaderId);
+        WZ_CORE_ASSERT(!this->IsGarbage(), "Tried unloading a garbage-flagged Shader");
+        GL_CALL(glDeleteProgram(m_shaderId));
+        m_shaderId = WZ_SHADER_ID_INVALID;
+    }
+    void Shader::Reload() {
+        WZ_CORE_TRACE("Reloading shader...");
+        Unload();
+        Load();
+    }
+    void Shader::Save() {
+        
     }
 
 	void Shader::Bind() const {
@@ -37,6 +49,10 @@ namespace Wizzy {
         GL_CALL(glUniformMatrix4fv(U_LOCATION(m_shaderId, name.c_str()), 1,
                                       GL_FALSE, glm::value_ptr(value)));
     }
+
+    void Shader::SetUniform1i(const string & name, const int32 & value) {
+		GL_CALL(glUniform1i(U_LOCATION(m_shaderId, name.c_str()), value));
+	}
 
 	void Shader::SetUniform1f(const string & name, const float & value) {
 		GL_CALL(glUniform1f(U_LOCATION(m_shaderId, name.c_str()), value));
@@ -65,10 +81,11 @@ namespace Wizzy {
 
 		std::stringstream _sourceStream(_allSource.c_str());
 
-		string _vertSource;
-		string _fragSource;
+		string _vertSource = "";
+		string _fragSource = "";
 		ShaderType _shaderType = ShaderType::invalid;
 
+        u32 _lineNum = 1;
 		string _line;
 		while (std::getline(_sourceStream, _line, '\n')) {
 			if (_line.find("#shader") != std::string::npos) {
@@ -76,6 +93,10 @@ namespace Wizzy {
 					_shaderType = ShaderType::vertex;
 				else if (_line.find("fragment") != std::string::npos)
 					_shaderType = ShaderType::fragment;
+                else
+                    WZ_CORE_ASSERT(false, "Unknown #shader token in shader file '"
+                                            + GetSourceFile() + "' on line "
+                                            + std::to_string(_lineNum));
 			} else {
 				switch (_shaderType) {
 				case ShaderType::vertex:
@@ -84,8 +105,13 @@ namespace Wizzy {
 				case ShaderType::fragment:
 					_fragSource += _line + "\n";
 					break;
+                case ShaderType::invalid:
+                    WZ_CORE_WARN("Shader source line '{0}' ignored as no shader source type was declared",
+                                                    _lineNum);
+                    break;
 				}
 			}
+            _lineNum++;
 		}
 
 		return { _vertSource, _fragSource };
@@ -159,7 +185,7 @@ namespace Wizzy {
 
         char *_linkLog = new char[512];
         GL_CALL(glGetProgramInfoLog(_program, 512, NULL, _linkLog));
-       
+
 
         WZ_CORE_ASSERT(_linkSuccess, "Failed linking shaders into program: '"
                                         + string(_linkLog) + "'");
@@ -172,155 +198,4 @@ namespace Wizzy {
 
         return true;
     }
-
-	std::shared_ptr<Shader> Shader::BasicShader() {
-		static ShaderPtr _basicShader(std::make_shared<Shader>(Shader(ShaderProgramSource{
-R"(
-
-#version 410 core
-
-layout (location = 0) in vec4 vertexPosition;
-layout (location = 1) in vec4 vertexColor;
-layout (location = 2) in vec4 vertexNormal;
-layout (location = 3) in vec2 vertexUv;
-
-uniform mat4 projection = mat4(1.0);
-uniform mat4 view = mat4(1.0);
-uniform mat4 model = mat4(1.0);
-
-out DATA {
-	vec4 color;
-	vec2 uv;
-} pass;
-
-void main() {
-	mat4 mvp = projection * view * model;
-	pass.color = vertexColor;
-	pass.uv = vertexUv;
-	vec4 worldPosition = mvp * vertexPosition;
-	gl_Position = worldPosition;
-}
-
-)",
-R"(
-
-#version 410 core
-
-out vec4 finalColor;
-
-uniform vec4 albedo = vec4(1.0, 1.0, 1.0, 1.0);
-uniform sampler2D tex;
-
-in DATA {
-	vec4 color;
-	vec2 uv;
-} pass;
-
-void main() {
-	finalColor = texture(tex, pass.uv) * pass.color * albedo;
-}
-
-)" })));
-		return _basicShader;
-	}
-
-	std::shared_ptr<Shader> Shader::BasicLightingShader() {
-		static ShaderPtr _basicLightingShader(std::make_shared<Shader>(Shader(ShaderProgramSource{
-	R"(
-
-#version 410 core
-
-layout (location = 0) in vec4 vertexPosition;
-layout (location = 1) in vec4 vertexColor;
-layout (location = 2) in vec3 vertexNormal;
-layout (location = 3) in vec2 vertexUv;
-
-uniform mat4 projection = mat4(1.0);
-uniform mat4 view = mat4(1.0);
-uniform mat4 model = mat4(1.0);
-
-out DATA {
-	vec4 color;
-	vec3 normal;
-	vec2 uv;
-	vec3 fragPos;
-} pass;
-
-void main() {
-	mat4 mvp = projection * view * model;
-	pass.color = vertexColor;
-	pass.uv = vertexUv;
-	pass.normal = mat3(transpose(inverse(model))) * vertexNormal;
-	pass.fragPos = (model * vertexPosition).xyz;
-	vec4 worldPosition = mvp * vertexPosition;
-	gl_Position = worldPosition;
-}
-
-)",
-R"(
-
-#version 410 core
-
-out vec4 finalColor;
-
-struct Material {
-	vec4 albedo;
-	vec3 diffuse;
-	vec3 specular;
-	float shininess;
-};
-
-struct Light {
-	vec3 position;
-
-	vec3 ambient;
-	vec3 diffuse;
-	vec3 specular;
-	float intensity;
-	float range;
-};	
-
-uniform Material material;
-uniform Light light;
-
-uniform vec3 viewPos = vec3(0.0, 0.0, 0.0);
-uniform sampler2D tex;
-
-in DATA {
-	vec4 color;
-	vec3 normal;
-	vec2 uv;
-	vec3 fragPos;
-} pass;
-
-void main() {
-
-	vec3 lightDiff = light.position - pass.fragPos;
-
-	float lightDist = length(lightDiff);
-
-	vec3 norm = normalize(pass.normal);
-	vec3 lightDir = normalize(lightDiff);
-	
-	float diff = max(dot(norm, lightDir), 0.0);
-	vec3 diffuse = diff * light.diffuse * material.diffuse;
-
-	vec3 ambient = light.ambient;
-
-	vec3 viewDir = normalize(viewPos - pass.fragPos);
-	vec3 reflectDir = reflect(-lightDir, norm);
-
-	float spec = pow(max(dot(viewDir, reflectDir), 0.0), material.shininess);
-	vec3 specular = material.specular * light.specular * spec;
-
-	float strength = light.intensity * ((light.range - lightDist) / light.range);
-	if (strength < 0) strength = 0;
-
-	vec4 lightResult = vec4((ambient + diffuse + specular) * strength, 1.0) * pass.color;
-	finalColor = texture(tex, pass.uv) * lightResult * material.albedo;
-}
-
-)" })));
-		return _basicLightingShader;
-	}
 }

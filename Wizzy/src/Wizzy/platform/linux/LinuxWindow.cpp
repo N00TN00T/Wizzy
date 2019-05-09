@@ -8,7 +8,7 @@
 #include "Wizzy/Events/MouseEvent.h"
 #include "Wizzy/Events/CharEvent.h"
 #include "Wizzy/Events/KeyEvent.h"
-#include "Wizzy/Graphics/GLErrorHandling.h"
+#include "Wizzy/platform/OpenGL/GLErrorHandling.h"
 
 namespace Wizzy {
     IWindow *IWindow::Create(const WindowProps& props) {
@@ -67,8 +67,8 @@ namespace Wizzy {
 		GL_CALL(glEnable(GL_BLEND));
 		GL_CALL(glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA));
 
-		GL_CALL(glEnable(GL_CULL_FACE));
-		GL_CALL(glCullFace(GL_BACK));
+		//GL_CALL(glEnable(GL_CULL_FACE));
+		//GL_CALL(glCullFace(GL_BACK));
 
         glfwSetWindowSizeCallback(m_glfwWindow, [](GLFWwindow *w, int32 width, int32 height){
 

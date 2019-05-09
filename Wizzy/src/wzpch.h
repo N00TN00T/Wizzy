@@ -39,12 +39,18 @@
 
 /* wizzy headers */
 
+#include "Wizzy/Core.h"
 #include "Wizzy/Log.h"
 #include "Wizzy/Color.h"
 
-/* Platform specific headers */
+/* Platform/Compiler specific headers */
 #ifdef WZ_PLATFORM_WINDOWS
+namespace WinAPI {
     #include <Windows.h>
+}
+#endif
+#ifdef __GNUC__
+    #include <cxxabi.h>
 #endif
 
 /* typedefs */

@@ -12,14 +12,23 @@ namespace Wizzy {
     class Shader
         : public IResource {
     public:
-        Shader(const string& file);
-		Shader(const ShaderProgramSource& source);
+        Shader(const string& file)
+			: IResource(file), m_shaderId(WZ_SHADER_ID_INVALID) {}
 		~Shader();
+
+		virtual void Load() override;
+		virtual void Unload() override;
+		virtual void Reload() override;
+		virtual void Save() override;
+		inline virtual bool IsGarbage() const override {
+			return m_shaderId == WZ_SHADER_ID_INVALID;
+		}
 
         void Bind() const;
 		void Unbind() const;
 
         void SetUniformMat4(const string& name, const mat4& value);
+		void SetUniform1i(const string& name, const int32& value);
 		void SetUniform1f(const string& name, const float& value);
 		void SetUniform2f(const string& name, const vec2& value);
 		void SetUniform3f(const string& name, const vec3& value);

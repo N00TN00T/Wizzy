@@ -8,7 +8,7 @@
 #include "Wizzy/Events/MouseEvent.h"
 #include "Wizzy/Events/CharEvent.h"
 #include "Wizzy/Events/KeyEvent.h"
-#include "Wizzy/Graphics/GLErrorHandling.h"
+#include "Wizzy/platform/OpenGL/ErrorHandling.h"
 
 namespace Wizzy {
     IWindow *IWindow::Create(const WindowProps& props) {

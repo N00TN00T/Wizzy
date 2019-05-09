@@ -94,7 +94,9 @@ project "Wizzy"
     files
     {
       "%{prj.name}/src/Wizzy/platform/windows/**.h",
-      "%{prj.name}/src/Wizzy/platform/windows/**.cpp"
+      "%{prj.name}/src/Wizzy/platform/windows/**.cpp",
+      "%{prj.name}/src/Wizzy/platform/OpenGL/**.h",
+      "%{prj.name}/src/Wizzy/platform/OpenGL/**.cpp"
     }
 ---------------------------------------------------------------------
 
@@ -112,7 +114,9 @@ project "Wizzy"
     files
     {
       "%{prj.name}/src/Wizzy/platform/linux/**.h",
-      "%{prj.name}/src/Wizzy/platform/linux/**.cpp"
+      "%{prj.name}/src/Wizzy/platform/linux/**.cpp",
+      "%{prj.name}/src/Wizzy/platform/OpenGL/**.h",
+      "%{prj.name}/src/Wizzy/platform/OpenGL/**.cpp"
     }
 
 ---------------------------------------------------------------------
