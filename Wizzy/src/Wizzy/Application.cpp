@@ -11,6 +11,7 @@
 #include "Wizzy/Resources/Shader.h"
 #include "Wizzy/Resources/Texture2D.h"
 #include "Wizzy/Resources/ResourceManagement.h"
+#include "Wizzy/Renderer.h"
 
 namespace Wizzy {
 
@@ -62,8 +63,7 @@ namespace Wizzy {
 		PushOverlay(m_imguiLayer);
 
 		m_running = true;
-
-		ResourceManagement::SetResourcePath(BASE_DIR + string("Resources/"));
+		ResourceManagement::SetResourcePath(string(BASE_DIR) + "Resources/");
 
 		ResourceManagement::Import<Texture2D> (
 											"sprite.png",
@@ -74,63 +74,48 @@ namespace Wizzy {
 											"basicShader"
 										);
 
+		mat4 _ortho = glm::ortho<float>(0, 1600, 0, 900);
+
+		Renderer _renderer;
+
 		Shader& _shader = *ResourceManagement::Get<Shader>("basicShader");
 		Texture2D& _tex2d = *ResourceManagement::Get<Texture2D>("sprite");
 
-		float _vertices[] = {
-		    // positions            // texture coords
-		     0.5f,  0.5f, 0.0f,      1.0f, 1.0f,   // top right
-		     0.5f, -0.5f, 0.0f,      1.0f, 0.0f,   // bottom right
-		    -0.5f, -0.5f, 0.0f,      0.0f, 0.0f,   // bottom left
-		    -0.5f,  0.5f, 0.0f,      0.0f, 1.0f    // top left
-		};
-
-		u32 _indices[] = {
-		    0, 1, 3, // first triangle
-		    1, 2, 3  // second triangle
-    	};
-
-		u32 VBO, VAO, EBO;
-	    GL_CALL(glGenVertexArrays(1, &VAO));
-	    GL_CALL(glGenBuffers(1, &VBO));
-	    GL_CALL(glGenBuffers(1, &EBO));
-
-	    GL_CALL(glBindVertexArray(VAO));
-
-	    GL_CALL(glBindBuffer(GL_ARRAY_BUFFER, VBO));
-	    GL_CALL(glBufferData(GL_ARRAY_BUFFER, sizeof(_vertices), _vertices, GL_STATIC_DRAW));
-
-	    GL_CALL(glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, EBO));
-	    GL_CALL(glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(_indices), _indices, GL_STATIC_DRAW));
-
-	    // position attribute
-	    GL_CALL(glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 5 * sizeof(float), (void*)0));
-	    GL_CALL(glEnableVertexAttribArray(0));
-	    // texture coord attribute
-	    GL_CALL(glVertexAttribPointer(2, 2, GL_FLOAT, GL_FALSE, 5 * sizeof(float), (void*)(3 * sizeof(float))));
-	    GL_CALL(glEnableVertexAttribArray(2));
-
-		_shader.Bind();
-
-		_shader.SetUniform1i("ourTexture", 0);
+		vec2 _pos1(2, 0);
+		vec2 _pos2(250, 100);
 
 		while (m_running) {
 			m_window->OnFrameBegin();
 
 			m_layerStack.UpdateLayers();
 
-			_tex2d.Bind(GL_TEXTURE0);
-			_shader.Bind();
+			_renderer.Draw(&_tex2d,
+							&_shader,
+							_ortho *
+							glm::translate(glm::identity<mat4>(), vec3(_pos2, 0)));
 
-			GL_CALL(glBindVertexArray(VAO));
-        	GL_CALL(glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0));
+			_renderer.Draw(&_tex2d, 
+							&_shader, 
+							_ortho *
+							glm::translate(glm::identity<mat4>(), vec3(_pos1, 0)));
 
-			if (Input::GetKey(WZ_KEY_R)) {
-				_tex2d.Unbind();
-				_shader.Unbind();
-				_tex2d.Reload();
-				_shader.Reload();
+			float _speed = 1.f;
+
+			if (Input::GetKey(WZ_KEY_W)) {
+				_pos1.y += _speed;
 			}
+			if (Input::GetKey(WZ_KEY_A)) {
+				_pos1.x -= _speed;
+			}
+			if (Input::GetKey(WZ_KEY_S)) {
+				_pos1.y -= _speed;
+			}
+			if (Input::GetKey(WZ_KEY_D)) {
+				_pos1.x += _speed;
+			}
+
+			_pos2 = Input::GetMousePos();
+			_pos2.y = m_window->GetHeight() - _pos2.y;
 
 			m_imguiLayer->Begin();
 			m_layerStack.OnImguiRender();
@@ -162,7 +147,7 @@ namespace Wizzy {
 	}
 	bool Application::OnWindowResize(WindowResizeEvent& e) {
 		//glViewport(0, 0, e.GetX(), e.GetY());
-
+		
 		return false;
 	}
 }

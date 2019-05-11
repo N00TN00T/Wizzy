@@ -35,7 +35,7 @@ namespace Wizzy {
 		_io.ConfigFlags |= ImGuiConfigFlags_DockingEnable;
 		_io.ConfigFlags |= ImGuiConfigFlags_ViewportsEnable;
 
-		ImGui::StyleColorsDark;
+		ImGui::StyleColorsDark();
 
 		auto& _style = ImGui::GetStyle();
 
@@ -76,7 +76,7 @@ namespace Wizzy {
 
 		double _now = glfwGetTime();
 
-		_io.DeltaTime = _now - _lastTime;
+		_io.DeltaTime = static_cast<float>(_now - _lastTime);
 		
 		_lastTime = _now;
 

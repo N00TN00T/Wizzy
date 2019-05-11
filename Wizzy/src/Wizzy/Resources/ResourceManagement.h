@@ -16,7 +16,7 @@ namespace Wizzy {
         template <typename TResource>
         static TResource* Import(const string& file, const string& alias);
 
-        inline static u32 ResourceCount() {
+        inline static size_t ResourceCount() {
             return s_resourceAliases.size();
         }
 
@@ -26,8 +26,14 @@ namespace Wizzy {
 
         static void Flush(const bool& save = false);
 
+		static void ClearGarbage();
+
         template <typename TResource>
         static TResource* Get(const string& alias);
+
+		inline static const string& AliasFor(IResource *resource) {
+			
+		}
 
         inline static void SetResourcePath(const string& path) {
             s_resourcePath = path;
@@ -35,6 +41,7 @@ namespace Wizzy {
 
     private:
         static string FindNextAvailableAlias(const string& takenAlias);
+		static void UnloadAll();
 
     private:
         static std::set<string> s_resourceAliases;

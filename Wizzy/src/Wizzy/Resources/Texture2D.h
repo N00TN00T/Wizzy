@@ -21,9 +21,10 @@ namespace Wizzy {
             void                Bind(const int32& location) const;
             void                Unbind() const;
 
-            inline const int32& GetWidth() const { return m_width;     }
-            inline const int32& GetHeight() const { return m_height;    }
-            inline const int32& GetChannels() const { return m_channels;  }
+            inline const int32& GetWidth() const {		return m_width;		}
+            inline const int32& GetHeight() const {		return m_height;	}
+            inline const int32& GetChannels() const {	return m_channels;	}
+			inline const u32&	GetVao() const {		return m_vao;		}
 
         private:
             void                Init();
@@ -32,5 +33,6 @@ namespace Wizzy {
             int32               m_width, m_height, m_channels;
             byte*               m_data;
             u32                 m_textureId = WZ_TEXTURE_ID_INVALID;
+			u32					m_vao = 0;
     };
 }

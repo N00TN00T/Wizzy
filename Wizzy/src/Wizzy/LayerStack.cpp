@@ -42,7 +42,7 @@ namespace Wizzy {
 		}
 	}
 	void LayerStack::OnEvent(Event & e) {
-		for (int16 i = m_layers.size() - 1; i >= 0; i--) {
+		for (int16 i = static_cast<int16>(m_layers.size()) - 1; i >= 0; i--) {
 			m_layers.at(i)->OnEvent(e);
 
 			if (e.IsHandled())

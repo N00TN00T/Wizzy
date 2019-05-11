@@ -1,3 +1,4 @@
+#include <wzpch.h>
 
 #include "Wizzy/Resources/ResourceManagement.h"
 
@@ -9,13 +10,13 @@ namespace Wizzy {
     void ResourceManagement::Delete(const string& alias) {
         auto _target = Get<IResource>(alias);
 
-        if (!_target) return;
+		WZ_CORE_ASSERT(_target, "Tried deleting resource with alias '" + alias + "', but no such resource was found.");
 
         if (!_target->IsGarbage()) _target->Unload();
         delete _target;
 
         s_resourceAliases.erase(alias);
-        s_resources[alias] = nullptr;
+		s_resources.erase(alias);
     }
 
     void ResourceManagement::Rename(const string& oldAlias,
@@ -33,12 +34,20 @@ namespace Wizzy {
     }
 
     void ResourceManagement::Flush(const bool& save) {
-        for (const string& _alias : s_resourceAliases) {
-            auto _resource = s_resources[_alias];
-            if (save) _resource->Save();
-            Delete(_alias);
-        }
+		if (save) {
+			for (const string& _alias : s_resourceAliases) {
+				auto _resource = s_resources[_alias];
+				if (!_resource->IsGarbage()) _resource->Save();
+			}
+		}
+		UnloadAll();
+		ClearGarbage();
     }
+
+	void ResourceManagement::ClearGarbage() {
+		for (const string& _alias : s_resourceAliases)
+			if (s_resources[_alias]->IsGarbage()) Delete(_alias);
+	}
 
     string ResourceManagement::FindNextAvailableAlias(const string& takenAlias) {
         if (!Get<IResource>(takenAlias)) return takenAlias;
@@ -50,5 +59,12 @@ namespace Wizzy {
 
         return _freeAlias;
     }
+
+	void ResourceManagement::UnloadAll() {
+		for (const string& _alias : s_resourceAliases) {
+			auto _resource = s_resources[_alias];
+			if (!_resource->IsGarbage()) _resource->Unload();
+		}
+	}
 
 }

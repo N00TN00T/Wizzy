@@ -73,7 +73,7 @@ const std::unordered_map<int, std::string> __WZ_ERROR_STRINGS = {
 #ifdef __GNUC__
 	#define BASE_DIR ""
 #elif defined (_MSC_VER)
-	#define BASE_DIR ::WinAPI::IsDebuggerPresent() ? "../" : "../../../"
+	#define BASE_DIR IsDebuggerPresent() ? "../" : "../../../"
 #else
 	#define BASE_DIR "../../../"
 #endif

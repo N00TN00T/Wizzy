@@ -62,13 +62,11 @@ namespace Wizzy {
         SetVSync(false);
         SetClearColor(.1f, .2f, .5f, 1.f);
 
-        GL_CALL(glEnable(GL_DEPTH_TEST));
-
 		GL_CALL(glEnable(GL_BLEND));
 		GL_CALL(glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA));
 
-		//GL_CALL(glEnable(GL_CULL_FACE));
-		//GL_CALL(glCullFace(GL_BACK));
+		GL_CALL(glEnable(GL_CULL_FACE));
+		GL_CALL(glCullFace(GL_FRONT));
 
         glfwSetWindowSizeCallback(m_glfwWindow, [](GLFWwindow *w, int32 width, int32 height){
 

@@ -1,3 +1,4 @@
+#include <wzpch.h>
 
 #include <stb_image.h>
 #include <glad/glad.h>
@@ -76,7 +77,45 @@ namespace Wizzy {
         GL_CALL(glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, m_width, m_height,
                              0, GL_RGBA, GL_UNSIGNED_BYTE, m_data));
 
-        GL_CALL(glGenerateMipmap(GL_TEXTURE_2D));
+		GL_CALL(glGenerateMipmap(GL_TEXTURE_2D));
+
+		float halfW = (m_width / 2.f) * 0.1f;
+		float halfH = (m_height / 2.f) * 0.1f;
+
+		float _vertices[] = {
+			// positions            // texture coords
+			 halfW,  halfH, 0.0f,      1.0f, 1.0f,   // top right
+			 halfW, -halfH, 0.0f,      1.0f, 0.0f,   // bottom right
+			-halfW, -halfH, 0.0f,      0.0f, 0.0f,   // bottom left
+			-halfW,  halfH, 0.0f,      0.0f, 1.0f    // top left
+		};
+
+		u32 _indices[] = {
+			0, 1, 3, // first triangle
+			1, 2, 3  // second triangle
+		};
+
+		u32 VBO, VAO, EBO;
+		GL_CALL(glGenVertexArrays(1, &VAO));
+		GL_CALL(glGenBuffers(1, &VBO));
+		GL_CALL(glGenBuffers(1, &EBO));
+
+		GL_CALL(glBindVertexArray(VAO));
+
+		GL_CALL(glBindBuffer(GL_ARRAY_BUFFER, VBO));
+		GL_CALL(glBufferData(GL_ARRAY_BUFFER, sizeof(_vertices), _vertices, GL_STATIC_DRAW));
+
+		GL_CALL(glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, EBO));
+		GL_CALL(glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(_indices), _indices, GL_STATIC_DRAW));
+
+		// position attribute
+		GL_CALL(glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 5 * sizeof(float), (void*)0));
+		GL_CALL(glEnableVertexAttribArray(0));
+		// texture coord attribute
+		GL_CALL(glVertexAttribPointer(2, 2, GL_FLOAT, GL_FALSE, 5 * sizeof(float), (void*)(3 * sizeof(float))));
+		GL_CALL(glEnableVertexAttribArray(2));
+
+		m_vao = VAO;
     }
 
 }
