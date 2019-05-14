@@ -77,3 +77,5 @@ const std::unordered_map<int, std::string> __WZ_ERROR_STRINGS = {
 #else
 	#define BASE_DIR "../../../"
 #endif
+
+#define WZ_NULL_ENTITY_HANDLE nullptr

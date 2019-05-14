@@ -79,8 +79,8 @@ namespace Wizzy {
 
 		GL_CALL(glGenerateMipmap(GL_TEXTURE_2D));
 
-		float halfW = (m_width / 2.f) * 0.1f;
-		float halfH = (m_height / 2.f) * 0.1f;
+		float halfW = m_width / 2.f;
+		float halfH = m_height / 2.f;
 
 		float _vertices[] = {
 			// positions            // texture coords

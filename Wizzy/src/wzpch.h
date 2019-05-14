@@ -11,6 +11,7 @@
 #include <signal.h>
 #include <typeinfo>
 #include <assert.h>
+#include <new>
 
 /* std data structures */
 #include <string>
