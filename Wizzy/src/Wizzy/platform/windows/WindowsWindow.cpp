@@ -174,8 +174,20 @@ namespace Wizzy {
     }
 
     void WindowsWindow::OnFrameEnd() {
-		glfwPollEvents();
+        this->PollEvents();
 		glfwSwapBuffers(m_glfwWindow);
+    }
+
+    void WindowsWindow::PollEvents() {
+
+        double _now = glfwGetTime();
+        float _delta = static_cast<float>(_now - m_lastTime);
+        m_data.deltaTime = _delta;
+        m_lastTime = _now;
+        AppUpdateEvent _updateEvent(_delta);
+        m_data.eventCallbackFn(_updateEvent);
+
+		glfwPollEvents();
     }
 
     void WindowsWindow::SetVSync(bool enabled) {

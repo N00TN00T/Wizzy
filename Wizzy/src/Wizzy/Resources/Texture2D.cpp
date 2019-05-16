@@ -62,10 +62,10 @@ namespace Wizzy {
 
         GL_CALL(glTexParameteri(GL_TEXTURE_2D,
                                 GL_TEXTURE_WRAP_S,
-                                GL_REPEAT));
+                                GL_CLAMP_TO_EDGE));
         GL_CALL(glTexParameteri(GL_TEXTURE_2D,
                                 GL_TEXTURE_WRAP_T,
-                                GL_REPEAT));
+                                GL_CLAMP_TO_EDGE));
 
         GL_CALL(glTexParameteri(GL_TEXTURE_2D,
                                 GL_TEXTURE_MIN_FILTER,
@@ -75,7 +75,7 @@ namespace Wizzy {
                                 GL_LINEAR));
 
         GL_CALL(glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, m_width, m_height,
-                             0, GL_RGBA, GL_UNSIGNED_BYTE, m_data));
+                             0, GL_RGB, GL_UNSIGNED_BYTE, m_data));
 
 		GL_CALL(glGenerateMipmap(GL_TEXTURE_2D));
 

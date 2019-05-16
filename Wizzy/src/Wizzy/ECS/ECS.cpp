@@ -2,6 +2,8 @@
 
 #include "Wizzy/ECS/ECS.h"
 
+#include <GLFW/glfw3.h>
+
 namespace Wizzy {
 	ECS::ECS() {
 		WZ_CORE_TRACE("Constructing ECS-System");
@@ -28,8 +30,8 @@ namespace Wizzy {
 			}
 		}
 	}
-	EntityHandle ECS::CreateEntity(IComponent **components, 
-									const StaticCId * ids, 
+	EntityHandle ECS::CreateEntity(IComponent **components,
+									const StaticCId * ids,
 									size_t numComponents) {
 		WZ_CORE_TRACE("Creating entity with {0} components...", numComponents);
 
@@ -50,14 +52,14 @@ namespace Wizzy {
 	}
 	void ECS::RemoveEntity(EntityHandle handle) {
 		auto _entityDataRef = ToEntityData(handle);
-		
+
 		for (const auto& _dataRefPair : _entityDataRef) {
 			const auto& _componentId = _dataRefPair.first;
 			const auto& _memIndex = _dataRefPair.second;
 
 			DeleteComponent(_componentId, _memIndex);
 		}
-		
+
 		/* Move the last entity to overwrite the
 			entity being removed					*/
 		const auto& _destIndex = ToEntityMemIndex(handle);
@@ -69,9 +71,76 @@ namespace Wizzy {
 	}
 
 	void ECS::UpdateSystems(const SystemLayer& systems, const float& deltaTime) {
-		std::vector<IComponent*> _componentsToUpdate;
-		std::vector<ComponentMem*> _componentMemPools;
+		double start = glfwGetTime();
 		for (size_t i = 0; i < systems.SystemCount(); i++) {
+			auto* _system = systems[i];
+			const auto& _systemTypes = _system->GetTypeIds();
+			const auto& _systemFlags = _system->GetFlags();
+			if (_systemTypes.size() == 1) {
+				const auto& _componentType = _systemTypes[0];
+				const auto& _typeSize = IComponent::StaticInfo(_componentType).size;
+				const auto& _memPool = m_components[_componentType];
+				for (size_t j = 0; j < _memPool.size(); j += _typeSize) {
+					IComponent* _component = (IComponent*)&_memPool[i];
+					_system->OnUpdate(deltaTime, &_component);
+				}
+			} else {
+				/* _lc = least common */
+				u32 _lcIndex = FindLeastCommonComponentIndex(_systemTypes,
+															 _systemFlags);
+				StaticCId _lcType = _systemTypes[_lcIndex];
+				const auto& _lcTypeSize = IComponent::StaticInfo(_lcType).size;
+				auto _lcMemPool = m_components[_lcType];
+
+				bool _isValid = true;
+				/* Iterate through the components of the least common of the
+					system types, instead of just iterating through the first
+					typegroup of components as it could be any amount of
+					components. */
+				for (size_t j = 0; j < _lcMemPool.size(); j += _lcTypeSize) {
+					std::vector<IComponent*> _componentsToUpdate;
+					IComponent *_ofFirstType = (IComponent*)&_lcMemPool[j];
+					//_componentsToUpdate.push_back(_ofFirstType);
+
+					Entity *_entity = ToRawType(_ofFirstType->entity);
+					for (int k = 0; k < _systemTypes.size(); k++) {
+						const auto& _systemType = _systemTypes[k];
+						const auto& _systemFlag = _systemFlags[k];
+						IComponent *_entityComp = GetComponentInternal(
+													_entity,
+													m_components[_systemType],
+													_systemType
+												);
+
+						if (!_entityComp &&
+							(_systemFlag & System::FLAG_OPTIONAL) == 0) {
+							/* Entity does not have a component of a system
+							 	component type AND that component is not optional*/
+							_isValid = false;
+							break;
+						}
+						WZ_CORE_ASSERT(_entityComp->entity == _ofFirstType->entity,
+										"Entity handle mismatch on grouped components. "
+										+ std::to_string(reinterpret_cast<uintptr_t>(_entityComp->entity))
+										+ ", "
+										+ std::to_string(reinterpret_cast<uintptr_t>(_ofFirstType->entity))
+										+ " | "
+									 	+ std::to_string(ToRawType(_entityComp->entity)->first)
+										+ ", "
+										+ std::to_string(ToRawType(_entityComp->entity)->second.size()));
+						_componentsToUpdate.push_back(_entityComp);
+					}
+
+					if (_isValid) {
+						_system->OnUpdate(deltaTime, &_componentsToUpdate[0]);
+					}
+				}
+			}
+		}
+
+		WZ_CORE_DEBUG((glfwGetTime() - start) * 1000.0);
+
+		/*for (size_t i = 0; i < systems.SystemCount(); i++) {
 			auto* _system = systems[i];
 			const auto& _componentTypes = _system->GetTypeIds();
 			if (_componentTypes.size() == 1) {
@@ -83,10 +152,10 @@ namespace Wizzy {
 					_system->OnUpdate(deltaTime, &_component);
 				}
 			} else {
-				
+
 				const auto& _componentFlags = _system->GetFlags();
 
-				_componentsToUpdate.resize(std::max(_componentsToUpdate.size(), 
+				_componentsToUpdate.resize(std::max(_componentsToUpdate.size(),
 													_componentTypes.size()));
 				_componentMemPools.resize(std::max(_componentMemPools.size(),
 													_componentTypes.size()));
@@ -107,10 +176,10 @@ namespace Wizzy {
 						if (k == _leastCommonIndex) continue;
 
 						_componentsToUpdate[k] = GetComponentInternal(_entity, *_componentMemPools[k], _componentTypes[k]);
-						if (!_componentsToUpdate[k] && 
+						if (!_componentsToUpdate[k] &&
 							(_componentFlags[k] & System::FLAG_OPTIONAL) == 0) {
-							/* Entity does not have all components for system
-								and missing component is not optional */
+							// Entity does not have all components for system
+							// and missing component is not optional
 							_isValid = false;
 							break;
 						}
@@ -119,17 +188,16 @@ namespace Wizzy {
 						_system->OnUpdate(deltaTime, &_componentsToUpdate[0]);
 					}
 				}
-				
+
 			}
-		}
+		}*/
 	}
-	void ECS::AddComponentInternal(Entity *entity, 
+	void ECS::AddComponentInternal(Entity *entity,
 									const StaticCId & componentId,
 									IComponent *component) {
 		WZ_CORE_ASSERT(IComponent::IsTypeValid(componentId), "Tried creating a component on entity with invalid ID ('" + std::to_string(componentId) + "')", componentId);
 		const auto& _createFn = IComponent::StaticInfo(componentId).createFn;
 		int hej = 5;
-		m_components[componentId] = ComponentMem();
 		entity->second.push_back({
 			componentId,
 			_createFn(
@@ -152,23 +220,23 @@ namespace Wizzy {
 			}
 		}
 	}
-	IComponent* ECS::GetComponentInternal(Entity * entity, 
-											const ComponentMem& memPool, 
+	IComponent* ECS::GetComponentInternal(Entity * entity,
+											const ComponentMem& memPool,
 											const StaticCId & componentId) {
-		const auto& _entityData = entity->second;
+		const auto& _entityComps = entity->second;
 
-		for (const auto& _dataPair : _entityData) {
-			const auto& _componentId = _dataPair.first;
-			const auto& _memIndex = _dataPair.second;
-
-			return (IComponent*)&memPool[_memIndex];
+		for (const auto& _comp : _entityComps) {
+			const auto& _compId = _comp.first;
+			const auto& _memIndex = _comp.second;
+			if (componentId == _compId) return (IComponent*)&memPool[_memIndex];
 		}
+
 		return nullptr;
 	}
-	void ECS::DeleteComponent(const StaticCId & componentId, 
+	void ECS::DeleteComponent(const StaticCId & componentId,
 								const MemIndex & memIdx) {
 		ComponentMem& _memPool = m_components[componentId];
-		
+
 		const auto& _typeInfo = IComponent::StaticInfo(componentId);
 		auto _freeFn = _typeInfo.freeFn;
 		size_t _typeSize = _typeInfo.size;
@@ -183,7 +251,7 @@ namespace Wizzy {
 		if (memIdx == _srcIndex) {
 			_memPool.resize(_srcIndex);
 			return;
-		} 
+		}
 
 		memcpy(_destComponent, _srcComponent, _typeSize);
 
@@ -197,7 +265,7 @@ namespace Wizzy {
 
 		_memPool.resize(_srcIndex);
 	}
-	u32 ECS::FindLeastCommonComponentIndex(const std::vector<StaticCId>& types, 
+	u32 ECS::FindLeastCommonComponentIndex(const std::vector<StaticCId>& types,
 											const std::vector<System::ComponentFlags>& flags) {
 		size_t _minNumComponents = SIZE_MAX;
 		u32 _minIndex = UINT32_MAX;

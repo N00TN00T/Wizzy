@@ -29,9 +29,15 @@ namespace Wizzy {
 
 		inline virtual void* GetNativeWindow() { return m_glfwWindow; }
 
+        inline virtual float GetDeltaTime() const override {
+            return m_data.deltaTime;
+        }
+
     private:
         virtual void Init(const WindowProps& props);
         virtual void Shutdown();
+
+        void PollEvents();
     private:
         struct WindowData {
             string title;
@@ -39,8 +45,12 @@ namespace Wizzy {
             u32 width;
             u32 height;
             bool vsync;
+            float deltaTime = 1.0f / 60.0f;
         } m_data;
         GLFWwindow *m_glfwWindow;
+        double m_lastTime = 0;
+
+    private:
         static bool s_glfwInitialized;
     };
 

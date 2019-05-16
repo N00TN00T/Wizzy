@@ -3,7 +3,7 @@
 namespace Wizzy {
 
 	typedef void* EntityHandle;
-	typedef std::deque<u8> ComponentMem;
+	typedef std::vector<byte> ComponentMem;
 	typedef u16 StaticCId;
 	typedef u64 DynamicCId;
 	struct IComponent;
@@ -35,7 +35,7 @@ namespace Wizzy {
 			return s_componentTypes;
 		}
 	};
-	
+
 
 	template <typename TComponent>
 	struct Component
@@ -48,7 +48,7 @@ namespace Wizzy {
 
 	template <typename TComponent>
 	inline u32 __COMPONENT_CREATE(ComponentMem& memory,
-									EntityHandle entity, 
+									EntityHandle entity,
 									IComponent *component) {
 		u32 _index = static_cast<u32>(memory.size());
 		memory.resize(_index + TComponent::size);
@@ -58,7 +58,7 @@ namespace Wizzy {
 		} catch (const std::bad_alloc& e) {
 			WZ_CORE_ASSERT(false, "BAD ALLOC: '{0}'", e.what());
 		}
-		
+
 		_c->entity = entity;
 		return _index;
 	}

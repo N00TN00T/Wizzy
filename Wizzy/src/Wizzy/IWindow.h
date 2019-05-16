@@ -44,6 +44,8 @@ namespace Wizzy {
 
 		virtual void* GetNativeWindow() = 0;
 
+        virtual float GetDeltaTime() const = 0;
+
         static IWindow *Create(const WindowProps& props = WindowProps());
     };
 }

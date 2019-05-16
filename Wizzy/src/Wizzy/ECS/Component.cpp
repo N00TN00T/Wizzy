@@ -1,6 +1,6 @@
 #include "wzpch.h"
 
-#include "Wizzy/ecs/Component.h"
+#include "Wizzy/ECS/Component.h"
 
 namespace Wizzy {
 
@@ -12,7 +12,7 @@ namespace Wizzy {
 			freeFn,
 			size
 		});
-		
+
 		return static_cast<StaticCId>(componentTypes().size() - 1);
 	}
 	const ComponentInfo & IComponent::StaticInfo(StaticCId componentType) {

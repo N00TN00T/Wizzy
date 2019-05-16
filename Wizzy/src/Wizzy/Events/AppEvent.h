@@ -81,10 +81,22 @@ namespace Wizzy {
 	class  AppUpdateEvent
 		: public Event {
 	public:
-		inline AppUpdateEvent() {}
+		inline AppUpdateEvent(const float& deltaTime)
+		 	: m_deltaTime(deltaTime) {}
 
 		EVENT_CLASS_TYPE(app_update)
 		EVENT_CLASS_CATEGORY(category_application)
+
+		inline const float& GetDeltaTime() const {
+			return m_deltaTime;
+		}
+
+		inline virtual string ToString() const override {
+			return GetName() + " deltaTime: " + std::to_string(m_deltaTime);
+		}
+
+	private:
+		float m_deltaTime;
 	};
 
 	class  AppRenderEvent

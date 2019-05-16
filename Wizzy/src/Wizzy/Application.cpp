@@ -96,14 +96,12 @@ namespace Wizzy {
 			if (Input::GetKey(WZ_KEY_D)) {
 				_position.value.x += _move;
 			}
-
-			WZ_TRACE("PLAYER");
 		}
 	};
 
 	class RenderSystem
 		: public System {
-		
+
 	public:
 		RenderSystem() {
 			AddComponentType<Position>();
@@ -123,7 +121,7 @@ namespace Wizzy {
 			_renderer.Draw(_sprite.texture, _sprite.shader, _projection.ortho * _translation);
 		}
 	};
-	
+
 
 	Application *Application::s_instance;
 
@@ -173,7 +171,7 @@ namespace Wizzy {
 		PushOverlay(m_imguiLayer);
 
 		m_running = true;
-		ResourceManagement::SetResourcePath("C:\\dev\\Wizzy\\Resources\\");
+		ResourceManagement::SetResourcePath(string(BASE_DIR) + "Resources/");
 
 		ResourceManagement::Import<Texture2D> (
 											"sprite.png",
@@ -189,67 +187,59 @@ namespace Wizzy {
 		Shader& _shader = *ResourceManagement::Get<Shader>("basicShader");
 		Texture2D& _tex2d = *ResourceManagement::Get<Texture2D>("sprite");
 
-		ECS _ecs;
+		ECS _ecs;;
 
-		Position	_playerPos;	
-		_playerPos.value.x = 51; 
-		_playerPos.value.y = 55;
-		Sprite		_playerSprite; 
-		_playerSprite.texture = &_tex2d; 
-		_playerSprite.shader = &_shader;
-		Projection	_playerProjection; 
-		_playerProjection.ortho = _ortho;
-		PlayerData	_playerData;
-		_playerData.moveSpeed = 100;
-
-		IComponent* _playerComponents[] = {
-			&_playerPos, &_playerSprite, &_playerProjection, 
-			&_playerData
-		};
-		StaticCId _playerIds[] = {
-			_playerPos.staticId, _playerSprite.staticId, _playerProjection.staticId,
-			_playerData.staticId
-		};
-
-		//_ecs.CreateEntity(_playerComponents, _playerIds, 4);
-
-		Position	_thingPos;
-		_thingPos.value.x = 850;
-		_thingPos.value.y = 200;
-		Sprite		_thingSprite;
-		_thingSprite.texture = &_tex2d;
-		_thingSprite.shader = &_shader;
-		Projection	_thingProjection;
-		_thingProjection.ortho = _ortho;
+		Position	_position;
+		Sprite		_sprite;
+		Projection	_projection;
 		ThingData	_thingData;
-		_thingData.speed = vec2(10, 10);
-		_thingData.dir = vec2(1, 1);
-		_thingData.max = vec2(1600, 900);
-		_thingData.min = vec2(0, 0);
+		PlayerData _playerData;
 
-		IComponent* _thingComponents[] = {
-			&_thingPos, &_thingSprite, &_thingProjection,
-			&_thingData
-		};
-		StaticCId _thingIds[] = {
-			_thingPos.staticId, _thingSprite.staticId, _thingProjection.staticId,
-			_thingData.staticId
-		};
+		srand(time(NULL));
 
-		_ecs.CreateEntity(_thingComponents, _thingIds, 4);
-		
-		SystemLayer _systems;
+		for (u32 i = 0; i < 1000; i++) {
+			_position.value.x = rand() % 1600;
+			_position.value.y = rand() % 900;
 
-		_systems.AddSystem<PlayerSystem>();
-		_systems.AddSystem<ThingSystem>();
-		_systems.AddSystem<RenderSystem>();
+			_sprite.texture = &_tex2d;
+			_sprite.shader = &_shader;
+
+			_projection.ortho = _ortho;
+
+			_thingData.speed = vec2(150 - rand() % 15, 150 - rand() % 15);
+			_thingData.max = vec2(1600, 900);
+			_thingData.min = vec2(0, 0);
+			_thingData.dir = vec2(rand() % 2 == 1 ? 1 : -1, rand() % 2 == 1 ? 1 : -1);
+
+			IComponent* _components[] = {
+				&_position, &_sprite, &_projection,
+				&_thingData
+			};
+			StaticCId _ids[] = {
+				_position.staticId, _sprite.staticId, _projection.staticId,
+				_thingData.staticId
+			};
+
+			_ecs.CreateEntity(_components, _ids, 4);
+		}
+
+		SystemLayer _systems1;
+
+		_systems1.AddSystem<PlayerSystem>();
+		_systems1.AddSystem<ThingSystem>();
+
+		SystemLayer _systems2;
+		_systems2.AddSystem<RenderSystem>();
 
 		while (m_running) {
 			m_window->OnFrameBegin();
 
-			m_layerStack.UpdateLayers();
+			WZ_CORE_DEBUG("SYSTEMS 1");
+			_ecs.UpdateSystems(_systems1, m_window->GetDeltaTime());
+			WZ_CORE_DEBUG("SYSTEMS 2");
+			_ecs.UpdateSystems(_systems2, m_window->GetDeltaTime());
 
-			_ecs.UpdateSystems(_systems, 1.0f / 60.0f);
+			m_layerStack.UpdateLayers();
 
 			m_imguiLayer->Begin();
 			m_layerStack.OnImguiRender();
@@ -280,8 +270,8 @@ namespace Wizzy {
 		return false;
 	}
 	bool Application::OnWindowResize(WindowResizeEvent& e) {
-		//glViewport(0, 0, e.GetX(), e.GetY());
-		
+		glViewport(0, 0, e.GetX(), e.GetY());
+
 		return false;
 	}
 }
