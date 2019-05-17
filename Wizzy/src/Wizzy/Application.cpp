@@ -50,14 +50,14 @@ namespace Wizzy {
 	public:
 		ThingSystem() {
 			AddComponentType<Position>();
-			AddComponentType<Sprite>();
 			AddComponentType<ThingData>();
 		}
 
-		virtual void OnUpdate(const float& deltaTime, IComponent** components) const {
-			Position& _position = *static_cast<Position*>(components[0]);
-			Sprite& _sprite = *static_cast<Sprite*>(components[1]);
-			ThingData& _thing = *static_cast<ThingData*>(components[2]);
+		virtual void OnUpdate(const float& deltaTime,
+								const ComponentGroup& components) const {
+			WZ_CORE_ASSERT(components.Get<Position>(), "wtf dude");
+			Position& _position = *components.Get<Position>();
+			ThingData& _thing = *components.Get<ThingData>();
 
 			_position.value += (_thing.speed * _thing.dir) * deltaTime;
 
@@ -73,14 +73,12 @@ namespace Wizzy {
 	public:
 		PlayerSystem() {
 			AddComponentType<Position>();
-			AddComponentType<Sprite>();
 			AddComponentType<PlayerData>();
 		}
 
-		virtual void OnUpdate(const float& deltaTime, IComponent** components) const {
-			Position& _position = *static_cast<Position*>(components[0]);
-			Sprite& _sprite = *static_cast<Sprite*>(components[1]);
-			PlayerData& _player = *static_cast<PlayerData*>(components[2]);
+		virtual void OnUpdate(const float& deltaTime, const ComponentGroup& components) const {
+			Position& _position = *components.Get<Position>();
+			PlayerData& _player = *components.Get<PlayerData>();
 
 			float _move = _player.moveSpeed * deltaTime;
 
@@ -109,11 +107,10 @@ namespace Wizzy {
 			AddComponentType<Projection>();
 		}
 
-		virtual void OnUpdate(const float & deltaTime, IComponent ** components) const override {
-
-			Position& _position = *static_cast<Position*>(components[0]);
-			Sprite& _sprite = *static_cast<Sprite*>(components[1]);
-			Projection& _projection = *static_cast<Projection*>(components[2]);
+		virtual void OnUpdate(const float & deltaTime, const ComponentGroup& components) const override {
+			Position& _position = *components.Get<Position>();
+			Sprite& _sprite = *components.Get<Sprite>();
+			Projection& _projection = *components.Get<Projection>();
 
 			Renderer _renderer;
 
@@ -234,9 +231,7 @@ namespace Wizzy {
 		while (m_running) {
 			m_window->OnFrameBegin();
 
-			WZ_CORE_DEBUG("SYSTEMS 1");
 			_ecs.UpdateSystems(_systems1, m_window->GetDeltaTime());
-			WZ_CORE_DEBUG("SYSTEMS 2");
 			_ecs.UpdateSystems(_systems2, m_window->GetDeltaTime());
 
 			m_layerStack.UpdateLayers();

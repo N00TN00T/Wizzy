@@ -9,7 +9,7 @@ namespace Wizzy {
 			FLAG_NONE = 0, FLAG_OPTIONAL = 1,
 		};
 		virtual void OnUpdate(const float& deltaTime,
-								IComponent** components) const = 0;
+								const ComponentGroup& components) const = 0;
 		inline const std::vector<StaticCId>& GetTypeIds() const { return m_typeIds; }
 		inline const std::vector<ComponentFlags>& GetFlags() const { return m_flags; }
 		inline const bool& IsValid() const { return m_isValid; }

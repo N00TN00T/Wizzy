@@ -86,4 +86,40 @@ namespace Wizzy {
 
 	template <typename TComponent>
 	const ComponentFreeFn Component<TComponent>::__FREE_FN(__COMPONENT_FREE<TComponent>);
+
+	class ComponentGroup {
+	public:
+
+		template <typename TComponent>
+		inline bool Has() const {
+			return Has(TComponent::staticId);
+		}
+
+		inline bool Has(const StaticCId& type) const {
+			return (m_componentBitset & type) != 0
+					|| (type == 0 && m_has0);
+		}
+
+		template <typename TComponent>
+		inline TComponent* Get() const {
+			return static_cast<TComponent*>(Get(TComponent::staticId));
+		}
+
+		inline IComponent* Get(const StaticCId& type) const {
+			if (this->Has(type)) return m_componentHash.at(type);
+			else return nullptr;
+		}
+
+		inline void Push(IComponent* component, const StaticCId& type) {
+			WZ_CORE_ASSERT(component, "Argument null");
+			m_componentHash[type] = component;
+			if (type == 0) m_has0 = true;
+			else m_componentBitset |= type;
+		}
+
+	private:
+		std::unordered_map<StaticCId, IComponent*> m_componentHash;
+		u16 m_componentBitset = 0;
+		bool m_has0 = false;
+	};
 }

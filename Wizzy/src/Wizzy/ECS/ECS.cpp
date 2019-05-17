@@ -2,8 +2,6 @@
 
 #include "Wizzy/ECS/ECS.h"
 
-#include <GLFW/glfw3.h>
-
 namespace Wizzy {
 	ECS::ECS() {
 		WZ_CORE_TRACE("Constructing ECS-System");
@@ -71,7 +69,7 @@ namespace Wizzy {
 	}
 
 	void ECS::UpdateSystems(const SystemLayer& systems, const float& deltaTime) {
-		double start = glfwGetTime();
+
 		for (size_t i = 0; i < systems.SystemCount(); i++) {
 			auto* _system = systems[i];
 			const auto& _systemTypes = _system->GetTypeIds();
@@ -81,8 +79,9 @@ namespace Wizzy {
 				const auto& _typeSize = IComponent::StaticInfo(_componentType).size;
 				const auto& _memPool = m_components[_componentType];
 				for (size_t j = 0; j < _memPool.size(); j += _typeSize) {
-					IComponent* _component = (IComponent*)&_memPool[i];
-					_system->OnUpdate(deltaTime, &_component);
+					ComponentGroup _group;
+					_group.Push((IComponent*)&_memPool[i], _componentType);
+					_system->OnUpdate(deltaTime, _group);
 				}
 			} else {
 				/* _lc = least common */
@@ -98,9 +97,8 @@ namespace Wizzy {
 					typegroup of components as it could be any amount of
 					components. */
 				for (size_t j = 0; j < _lcMemPool.size(); j += _lcTypeSize) {
-					std::vector<IComponent*> _componentsToUpdate;
+					ComponentGroup _componentsToUpdate;
 					IComponent *_ofFirstType = (IComponent*)&_lcMemPool[j];
-					//_componentsToUpdate.push_back(_ofFirstType);
 
 					Entity *_entity = ToRawType(_ofFirstType->entity);
 					for (int k = 0; k < _systemTypes.size(); k++) {
@@ -128,17 +126,15 @@ namespace Wizzy {
 									 	+ std::to_string(ToRawType(_entityComp->entity)->first)
 										+ ", "
 										+ std::to_string(ToRawType(_entityComp->entity)->second.size()));
-						_componentsToUpdate.push_back(_entityComp);
+						_componentsToUpdate.Push(_entityComp, _systemType);
 					}
 
 					if (_isValid) {
-						_system->OnUpdate(deltaTime, &_componentsToUpdate[0]);
+						_system->OnUpdate(deltaTime, _componentsToUpdate);
 					}
 				}
 			}
 		}
-
-		WZ_CORE_DEBUG((glfwGetTime() - start) * 1000.0);
 
 		/*for (size_t i = 0; i < systems.SystemCount(); i++) {
 			auto* _system = systems[i];
