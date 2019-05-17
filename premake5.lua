@@ -27,12 +27,14 @@ include_dir = {
   glad = "Wizzy/vendor/glad/include",
   imgui = "Wizzy/vendor/imgui",
   glm = "Wizzy/vendor/glm",
-  stb = "Wizzy/vendor/stb"
+  stb = "Wizzy/vendor/stb",
+  rttr = "Wizzy/vendor/rttr"
 }
 
 include "Wizzy/vendor/glfw/"
 include "Wizzy/vendor/glad/"
 include "Wizzy/vendor/imgui/"
+include "Wizzy/vendor/rttr"
 
 --[[------------------------------------------------------------------------------------
        CORE PROJECT
@@ -69,7 +71,8 @@ project "Wizzy"
     "%{include_dir.glad}",
     "%{include_dir.imgui}",
     "%{include_dir.glm}",
-    "%{include_dir.stb}"
+    "%{include_dir.stb}",
+    "%{include_dir.rttr}"
   }
 
   defines {"WZ_EXPORT", "WZ_USE_OPENGL", "STB_IMAGE_IMPLEMENTATION"}
@@ -193,7 +196,8 @@ project "Sandbox"
     "%{include_dir.glfw}",
     "%{include_dir.glad}",
     "%{include_dir.glm}",
-    "%{include_dir.stb}"
+    "%{include_dir.stb}",
+    "%{include_dir.rttr}"
   }
 
   links
