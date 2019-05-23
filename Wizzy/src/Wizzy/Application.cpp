@@ -13,6 +13,7 @@
 #include "Wizzy/Resources/ResourceManagement.h"
 #include "Wizzy/Renderer.h"
 #include "Wizzy/ECS/ECS.h"
+#include "Wizzy/LuaContext.h"
 
 namespace Wizzy {
 
@@ -178,11 +179,24 @@ namespace Wizzy {
 											"basic.shader",
 											"basicShader"
 										);
+        ResourceManagement::Import<Script> (
+											"test.lua",
+											"testScript"
+										);
 
 		mat4 _ortho = glm::ortho<float>(0, 1600, 0, 900);
 
 		Shader& _shader = *ResourceManagement::Get<Shader>("basicShader");
 		Texture2D& _tex2d = *ResourceManagement::Get<Texture2D>("sprite");
+        Script& _script = *ResourceManagement::Get<Script>("testScript");
+
+        LuaContext _lc;
+        
+        _lc.DoScript(&_script);
+        
+        WZ_CORE_TRACE("x1:{0}, y1:{1}, x2:{2}, y2:{3}", _lc.GetNumber("x1"), _lc.GetNumber("y1"), _lc.GetNumber("x2"), _lc.GetNumber("y2"));
+        
+        _lc.Close();
 
 		ECS _ecs;;
 

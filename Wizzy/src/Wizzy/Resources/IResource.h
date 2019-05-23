@@ -4,8 +4,7 @@ namespace Wizzy {
     class IResource {
     public:
 
-        IResource(const string& sourceFile)
-            : m_sourceFile(sourceFile) {}
+        IResource(const string& sourceFile);
         virtual ~IResource() {}
 
         virtual void Load() = 0;

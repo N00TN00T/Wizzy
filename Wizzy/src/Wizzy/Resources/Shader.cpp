@@ -71,13 +71,13 @@ namespace Wizzy {
 	}
 
 	ShaderProgramSource Shader::ParseShader(const string & file) {
-
+        
 		enum class ShaderType { invalid = -1, vertex = 0, fragment = 1 };
 
 		WZ_CORE_TRACE("Parsing a shader program source from '{0}'", file);
 
 		string _allSource;
-		WZ_CORE_ASSERT(read_file(file, &_allSource), "Failed reading shader file '" + file + "'");
+		WZ_CORE_ASSERT(File::read(file, &_allSource), "Failed reading shader file '" + file + "'");
 
 		std::stringstream _sourceStream(_allSource.c_str());
 
@@ -153,14 +153,14 @@ namespace Wizzy {
         string _errMsg = "";
         if (!_vCompileSuccess || !_fCompileSuccess) {
             int32 _vLogLength;
-            char *_vLog;
+            char *_vLog = NULL;
             if (!_vCompileSuccess) {
                 GL_CALL(glGetShaderiv(_vShader, GL_INFO_LOG_LENGTH, &_vLogLength));
                 _vLog = new char[_vLogLength];
                 GL_CALL(glGetShaderInfoLog(_vShader, _vLogLength, &_vLogLength, _vLog));
             }
             int32 _fLogLength;
-            char *_fLog;
+            char *_fLog = NULL;
             if (!_fCompileSuccess) {
                 GL_CALL(glGetShaderiv(_fShader, GL_INFO_LOG_LENGTH, &_fLogLength));
                 _fLog = new char[_fLogLength];

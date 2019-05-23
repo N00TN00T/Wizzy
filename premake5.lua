@@ -12,6 +12,8 @@ workspace "Wizzy"
     "DistARM"
   }
 
+  files { "**premake5.lua" }
+
   filter "configurations:*64"
     architecture "x64"
 
@@ -27,12 +29,15 @@ include_dir = {
   glad = "Wizzy/vendor/glad/include",
   imgui = "Wizzy/vendor/imgui",
   glm = "Wizzy/vendor/glm",
-  stb = "Wizzy/vendor/stb"
+  stb = "Wizzy/vendor/stb",
+  lua = "Wizzy/vendor/lua",
+  pybind11 = "Wizzy/vendor/pybind11/include"
 }
 
 include "Wizzy/vendor/glfw/"
 include "Wizzy/vendor/glad/"
 include "Wizzy/vendor/imgui/"
+include "Wizzy/vendor/lua"
 
 --[[------------------------------------------------------------------------------------
        CORE PROJECT
@@ -48,11 +53,13 @@ project "Wizzy"
 
   pchheader "wzpch.h"
   pchsource "Wizzy/src/wzpch.cpp"
+  
+  buildoptions { "-Wall" }
 
   files
   {
     "%{prj.name}/src/**.h",
-    "%{prj.name}/src/**.cpp"
+    "%{prj.name}/src/**.cpp",
   }
 
   -- Exclude all Platform-specific ones to later include the ones the target Platform will use
@@ -69,10 +76,18 @@ project "Wizzy"
     "%{include_dir.glad}",
     "%{include_dir.imgui}",
     "%{include_dir.glm}",
-    "%{include_dir.stb}"
+    "%{include_dir.stb}",
+    "%{include_dir.lua}",
+    "%{include_dir.pybind11}"
   }
 
   defines {"WZ_EXPORT", "WZ_USE_OPENGL", "STB_IMAGE_IMPLEMENTATION"}
+  
+  filter "action:codelite"
+    defines "__CODELITE__"
+    
+  filter "action:xcode4"
+    defines "__XCODE__"
 
 ---------------------------------------------------------------------
 --                        WINDOWS
@@ -119,6 +134,10 @@ project "Wizzy"
       "%{prj.name}/src/Wizzy/platform/OpenGL/**.cpp"
     }
 
+    includedirs { "/usr/include/python3.6" }
+    
+    
+
 ---------------------------------------------------------------------
 
 ---------------------------------------------------------------------
@@ -147,14 +166,11 @@ project "Wizzy"
   filter "configurations:Release*"
     defines "WZ_CONFIG_RELEASE"
     runtime "Release"
+    symbols "On"
     optimize "On"
 
   filter "configurations:Dist*"
-    defines
-    {
-      "WZ_CONFIG_DIST",
-      "WZ_DISABLE_ASSERTS"
-    }
+    defines { "WZ_CONFIG_DIST", "WZ_DISABLE_ASSERTS" }
     runtime "Release"
     optimize "On"
 
@@ -175,6 +191,8 @@ project "Sandbox"
 
   pchheader "spch.h"
   pchsource "Sandbox/src/spch.cpp"
+  
+  buildoptions { "-Wall" }
 
   files
   {
@@ -193,7 +211,9 @@ project "Sandbox"
     "%{include_dir.glfw}",
     "%{include_dir.glad}",
     "%{include_dir.glm}",
-    "%{include_dir.stb}"
+    "%{include_dir.stb}",
+    "%{include_dir.lua}",
+    "%{include_dir.pybind11}"
   }
 
   links
@@ -201,7 +221,8 @@ project "Sandbox"
     "Wizzy",
     "imgui",
     "glfw",
-    "glad"
+    "glad",
+    "lua"
   }
 
   defines { "WZ_USE_OPENGL", "STB_IMAGE_IMPLEMENTATION" }
@@ -227,8 +248,11 @@ project "Sandbox"
       "Xrandr",
       "pthread",
       "Xi",
-      "dl"
+      "dl",
+      "stdc++fs"
     }
+
+    includedirs { "/usr/include/python3.6" }
 ---------------------------------------------------------------------
 
 ---------------------------------------------------------------------
@@ -292,14 +316,11 @@ project "Sandbox"
   filter "configurations:Release*"
     defines "WZ_CONFIG_RELEASE"
     runtime "Release"
+    symbols "On"
     optimize "On"
 
   filter "configurations:Dist*"
-    defines
-    {
-      "WZ_CONFIG_DIST",
-      "WZ_DISABLE_ASSERTS"
-    }
+    defines { "WZ_CONFIG_DIST", "WZ_DISABLE_ASSERTS" }
     runtime "Release"
     optimize "On"
 

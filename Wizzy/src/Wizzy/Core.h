@@ -65,17 +65,31 @@ const std::unordered_map<int, std::string> __WZ_ERROR_STRINGS = {
 
 
 #ifdef __GNUC__
-	#define typestr(T) abi::__cxa_demangle(typeid(T).name(), 0, 0, 0)
+	#define typestr(T) string(abi::__cxa_demangle(typeid(T).name(), 0, 0, 0))
 #else
-	#define typestr(T) typeid(T).name()
+	#define typestr(T) string(typeid(T).name())
 #endif
 
-#ifdef __GNUC__
-	#define BASE_DIR ""
-#elif defined (_MSC_VER)
-	#define BASE_DIR IsDebuggerPresent() ? "../" : "../../../"
+
+/* DECIDING THE BASE DIRECTORY */
+#ifndef WZ_CONFIG_DIST
+    #ifdef __GNUC__
+        #ifdef __CODELITE__
+            #define BASE_DIR "../"
+        #elif defined(__XCODE__)
+            #error Wizzy is not yet set up for compiling with xcode
+        #else
+            #define BASE_DIR ""
+        #endif /* ifdef __CODELITE__ */
+    #elif defined (_MSC_VER)
+        #define BASE_DIR IsDebuggerPresent() ? "../" : "../../../"
+    #else
+        #define BASE_DIR "../../../"
+    #endif /* defined (_MSC_VER) */
 #else
-	#define BASE_DIR "../../../"
-#endif
+    #error Wizzy is not set up for distribution yet
+#endif /* ifndef WZ_CONFIG_DIST */
 
 #define WZ_NULL_ENTITY_HANDLE nullptr
+
+#define WZ_LUA_NEW_SCRIPT_CODE R"(-- This is a lua script for Wizzy)"

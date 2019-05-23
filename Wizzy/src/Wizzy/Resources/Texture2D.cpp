@@ -5,6 +5,7 @@
 
 #include "Wizzy/Resources/Texture2D.h"
 #include "Wizzy/platform/OpenGL/GLErrorHandling.h"
+#include "Wizzy/Utils.h"
 
 namespace Wizzy {
 
@@ -15,15 +16,15 @@ namespace Wizzy {
     void Texture2D::Load() {
         const string& _file = GetSourceFile();
 
-        WZ_CORE_TRACE("Loading Texture2D from file '{0}' ...", _file);
-
+        WZ_CORE_TRACE("Loading Texture2D from file '{0}' ...", File::to_absolute(_file));
+        
         stbi_set_flip_vertically_on_load(true);
 
         m_data = stbi_load(_file.c_str(), &m_width, &m_height,
                                         &m_channels, 0);
 
         WZ_CORE_ASSERT(m_data, "Failed loading Texture2D; invalid file");
-
+        
         Init();
 
         WZ_CORE_INFO("Successfully loaded Texture2D and assigned id '{0}'",

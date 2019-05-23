@@ -2,6 +2,7 @@
 
 #include "Wizzy/Resources/Texture2D.h"
 #include "Wizzy/Resources/Shader.h"
+#include "Wizzy/Resources/Script.h"
 
 /* Ownership of ALL resources imported with ResourceManagement
     belongs to ResourceManagement. The only correct way to unload
@@ -30,10 +31,6 @@ namespace Wizzy {
 
         template <typename TResource>
         static TResource* Get(const string& alias);
-
-		inline static const string& AliasFor(IResource *resource) {
-			
-		}
 
         inline static void SetResourcePath(const string& path) {
             s_resourcePath = path;

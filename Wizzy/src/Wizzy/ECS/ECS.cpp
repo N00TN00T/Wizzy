@@ -101,7 +101,7 @@ namespace Wizzy {
 					IComponent *_ofFirstType = (IComponent*)&_lcMemPool[j];
 
 					Entity *_entity = ToRawType(_ofFirstType->entity);
-					for (int k = 0; k < _systemTypes.size(); k++) {
+					for (size_t k = 0; k < _systemTypes.size(); k++) {
 						const auto& _systemType = _systemTypes[k];
 						const auto& _systemFlag = _systemFlags[k];
 						IComponent *_entityComp = GetComponentInternal(
@@ -193,7 +193,6 @@ namespace Wizzy {
 									IComponent *component) {
 		WZ_CORE_ASSERT(IComponent::IsTypeValid(componentId), "Tried creating a component on entity with invalid ID ('" + std::to_string(componentId) + "')", componentId);
 		const auto& _createFn = IComponent::StaticInfo(componentId).createFn;
-		int hej = 5;
 		entity->second.push_back({
 			componentId,
 			_createFn(
