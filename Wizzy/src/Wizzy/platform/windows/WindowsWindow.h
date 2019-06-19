@@ -1,6 +1,7 @@
 #pragma once
 
 #include "Wizzy/IWindow.h"
+#include "Wizzy/Renderer/GraphicsContext.h"
 
 struct GLFWwindow;
 
@@ -36,7 +37,7 @@ namespace Wizzy {
     private:
         virtual void Init(const WindowProps& props);
         virtual void Shutdown();
-        void PollEvents();
+
     private:
         struct WindowData {
             string title;
@@ -48,6 +49,7 @@ namespace Wizzy {
         } m_data;
         GLFWwindow *m_glfwWindow;
         double m_lastTime = 0;
+        GraphicsContext *m_context;
 
     private:
         static bool s_glfwInitialized;

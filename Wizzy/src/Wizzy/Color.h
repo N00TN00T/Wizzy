@@ -15,6 +15,16 @@ namespace Wizzy {
 		glm::vec4 ToVec4() const {
 			return glm::vec4(r, g, b, a);
 		}
+        
+        Color& Add(const Color& other);
+        Color& Subtract(const Color& other);
+        Color& Multiply(const Color& other);
+        Color& Divide(const Color& other);
+        
+        friend Color operator+(Color left, const Color& right);
+        friend Color operator-(Color left, const Color& right);
+        friend Color operator*(Color left, const Color& right);
+        friend Color operator/(Color left, const Color& right);
 
 		static const Color white;
 		static const Color red;
@@ -27,5 +37,9 @@ namespace Wizzy {
 		static const Color lightGray;
 		static const Color pink;
 		static const Color magenta;
+        
+        inline static Color Lerp(const Color& a, const Color& b, float f) {
+            return Color(a.r + f, a.g + f, a.b + f, a.a + f) * (b - a);
+        }
 	};
 }

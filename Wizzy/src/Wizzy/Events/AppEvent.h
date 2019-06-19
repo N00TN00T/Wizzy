@@ -107,4 +107,46 @@ namespace Wizzy {
 		EVENT_CLASS_TYPE(app_render)
 		EVENT_CLASS_CATEGORY(category_application)
 	};
+
+	class AppFrameBeginEvent
+		: public Event {
+	public:
+		inline AppFrameBeginEvent(const float& deltaTime)
+			: m_deltaTime(deltaTime) {}
+
+		EVENT_CLASS_TYPE(app_frame_begin)
+		EVENT_CLASS_CATEGORY(category_application)
+
+		inline const float& GetDeltaTime() const {
+			return m_deltaTime;
+		}
+
+		inline virtual string ToString() const override {
+			return GetName() + " deltaTime: " + std::to_string(m_deltaTime);
+		}
+
+	private:
+		float m_deltaTime;
+	};
+
+	class AppFrameEndEvent
+		: public Event {
+	public:
+		inline AppFrameEndEvent(const float& deltaTime)
+			: m_deltaTime(deltaTime) {}
+
+		EVENT_CLASS_TYPE(app_frame_end)
+		EVENT_CLASS_CATEGORY(category_application)
+
+		inline const float& GetDeltaTime() const {
+			return m_deltaTime;
+		}
+
+		inline virtual string ToString() const override {
+			return GetName() + " deltaTime: " + std::to_string(m_deltaTime);
+		}
+
+	private:
+		float m_deltaTime;
+	};
 }

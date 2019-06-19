@@ -4,138 +4,66 @@
 #include "Events/AppEvent.h"
 #include "Wizzy/Input.h"
 
-#include "Wizzy/platform/OpenGL/GLErrorHandling.h"
 #include <glad/glad.h>
 #include <imgui.h>
 
+#include "Wizzy/platform/OpenGL/GLErrorHandling.h"
 #include "Wizzy/Resources/Shader.h"
-#include "Wizzy/Resources/Texture2D.h"
 #include "Wizzy/Resources/ResourceManagement.h"
-#include "Wizzy/Renderer.h"
-#include "Wizzy/ECS/ECS.h"
 #include "Wizzy/LuaContext.h"
+#include "Wizzy/ImGuiSystem.h"
+#include "Wizzy/Renderer/API.h"
 
 namespace Wizzy {
 
-	struct Position
-		: public Component<Position> {
-		vec2 value;
-	};
-	struct Sprite
-		: public Component<Sprite> {
-		Texture2D *texture;
-		Shader *shader;
-	};
-	struct Projection
-		: public Component<Projection> {
-		mat4 ortho;
-	};
-	struct Text
-		: public Component<Text> {
-		const char *value;
-	};
-	struct ThingData
-		: public Component<ThingData> {
-		vec2 speed;
-		vec2 max;
-		vec2 min;
-		vec2 dir;
-	};
-	struct PlayerData
-		: public Component<PlayerData> {
-		float moveSpeed;
+	struct GameComponent
+		: public ecs::Component<GameComponent> {
+		GameComponent(const GameComponent& src) { // TODO: wtf?
+			gameManager = src.gameManager;
+			systems = src.systems;
+		}
+		ecs::ECSManager gameManager;
+		ecs::SystemLayer systems;
 	};
 
-	class ThingSystem
-		: public System {
+	class GameSystem
+		: public ecs::System {
 	public:
-		ThingSystem() {
-			AddComponentType<Position>();
-			AddComponentType<ThingData>();
+
+		GameSystem() {
+			AddComponentType<GameComponent>();
+
+			SubscribeAll();
 		}
 
-		virtual void OnUpdate(const float& deltaTime,
-								const ComponentGroup& components) const {
-			WZ_CORE_ASSERT(components.Get<Position>(), "wtf dude");
-			Position& _position = *components.Get<Position>();
-			ThingData& _thing = *components.Get<ThingData>();
+		virtual void OnEvent(const void* eventHandle,
+							 ecs::ComponentGroup& components) const override {
+			const Event& _e = *static_cast<const Event*>(eventHandle);
 
-			_position.value += (_thing.speed * _thing.dir) * deltaTime;
-
-			if (_position.value.x >= _thing.max.x) _thing.dir.x = -1;
-			if (_position.value.x <= _thing.min.x) _thing.dir.x = 1;
-			if (_position.value.y >= _thing.max.y) _thing.dir.y = -1;
-			if (_position.value.y <= _thing.min.y) _thing.dir.y = 1;
+			GameComponent& _game = *components.Get<GameComponent>();
+			_game.gameManager.NotifySystems(_game.systems,
+											eventHandle,
+											(int32)_e.GetEventType());
 		}
 	};
 
-	class PlayerSystem
-		: public System{
-	public:
-		PlayerSystem() {
-			AddComponentType<Position>();
-			AddComponentType<PlayerData>();
-		}
-
-		virtual void OnUpdate(const float& deltaTime, const ComponentGroup& components) const {
-			Position& _position = *components.Get<Position>();
-			PlayerData& _player = *components.Get<PlayerData>();
-
-			float _move = _player.moveSpeed * deltaTime;
-
-			if (Input::GetKey(WZ_KEY_W)) {
-				_position.value.y += _move;
-			}
-			if (Input::GetKey(WZ_KEY_A)) {
-				_position.value.x -= _move;
-			}
-			if (Input::GetKey(WZ_KEY_S)) {
-				_position.value.y -= _move;
-			}
-			if (Input::GetKey(WZ_KEY_D)) {
-				_position.value.x += _move;
-			}
-		}
-	};
-
-	class RenderSystem
-		: public System {
-
-	public:
-		RenderSystem() {
-			AddComponentType<Position>();
-			AddComponentType<Sprite>();
-			AddComponentType<Projection>();
-		}
-
-		virtual void OnUpdate(const float & deltaTime, const ComponentGroup& components) const override {
-			Position& _position = *components.Get<Position>();
-			Sprite& _sprite = *components.Get<Sprite>();
-			Projection& _projection = *components.Get<Projection>();
-
-			Renderer _renderer;
-
-			mat4 _translation = glm::translate(glm::identity<mat4>(), vec3(_position.value, 0));
-			_renderer.Draw(_sprite.texture, _sprite.shader, _projection.ortho * _translation);
-		}
-	};
-
-
-	Application *Application::s_instance;
+	Application* Application::s_instance(nullptr);
 
 	Application::Application() {
-		WZ_CORE_ASSERT(!s_instance, "The Application class should be used as a singleton, but a second instance was created");
-	}
 
+	}
 	Application::~Application() {
+
 	}
 
 	void Application::OnEvent(Event& e) {
 		EventDispatcher _dispatcher(e);
+
 		_dispatcher.Dispatch<WindowCloseEvent>(WZ_BIND_FN(Application::OnWindowClose));
 		_dispatcher.Dispatch<WindowResizeEvent>(WZ_BIND_FN(Application::OnWindowResize));
 
-		m_layerStack.OnEvent(e);
+		void *_eHandle = static_cast<void*>(&e);
+		m_engineManager.NotifySystems(m_mainLayer, _eHandle, (int32)e.GetEventType());
 	}
 
 	void Application::Run() {
@@ -164,17 +92,9 @@ namespace Wizzy {
 
 		m_window = std::unique_ptr<IWindow>(IWindow::Create(_windowProps));
 		m_window->SetEventCallback(WZ_BIND_FN(Application::OnEvent));
-
-		m_imguiLayer = new ImguiLayer();
-		PushOverlay(m_imguiLayer);
-
 		m_running = true;
 		ResourceManagement::SetResourcePath(string(BASE_DIR) + "Resources/");
 
-		ResourceManagement::Import<Texture2D> (
-											"sprite.png",
-											"sprite"
-										);
 		ResourceManagement::Import<Shader> (
 											"basic.shader",
 											"basicShader"
@@ -187,91 +107,57 @@ namespace Wizzy {
 		mat4 _ortho = glm::ortho<float>(0, 1600, 0, 900);
 
 		Shader& _shader = *ResourceManagement::Get<Shader>("basicShader");
-		Texture2D& _tex2d = *ResourceManagement::Get<Texture2D>("sprite");
-        Script& _script = *ResourceManagement::Get<Script>("testScript");
 
-        LuaContext _lc;
-        
-        _lc.DoScript(&_script);
-        
-        WZ_CORE_TRACE("x1:{0}, y1:{1}, x2:{2}, y2:{3}", _lc.GetNumber("x1"), _lc.GetNumber("y1"), _lc.GetNumber("x2"), _lc.GetNumber("y2"));
-        
-        _lc.Close();
+		float _vertices[] = {
+			-0.5f, -0.5f, 0.0f,		0.8f, 0.2f, 0.8f, 1.0f,
+			 0.5f, -0.5f, 0.0f,		0.2f, 0.3f, 0.8f, 1.0f,
+			 0.0f,  0.5f, 0.0f,		0.8f, 0.8f, 0.2f, 1.0f
+		};
 
-		ECS _ecs;;
+		VertexBuffer *_vbo = VertexBuffer::Create(_vertices, sizeof(_vertices));
 
-		Position	_position;
-		Sprite		_sprite;
-		Projection	_projection;
-		ThingData	_thingData;
-		PlayerData _playerData;
+		BufferLayout _layout = {
+			{ ShaderDataType::FLOAT3, "vertexPosition" }
+		};
 
-		srand(time(NULL));
+		u32 _indices[] = { 0, 1, 2 };
+		IndexBuffer *_ibo = IndexBuffer::Create(_indices, 3);
 
-		for (u32 i = 0; i < 1000; i++) {
-			_position.value.x = rand() % 1600;
-			_position.value.y = rand() % 900;
+		ImGuiComponent _imguiComponent;
 
-			_sprite.texture = &_tex2d;
-			_sprite.shader = &_shader;
+		ecs::IComponent *_imguiComponents[] = {
+			&_imguiComponent
+		};
+		ecs::StaticCId _imguiIds[] = {
+			ImGuiComponent::staticId
+		};
 
-			_projection.ortho = _ortho;
+		m_engineManager.CreateEntity(_imguiComponents, _imguiIds, 1);
 
-			_thingData.speed = vec2(150 - rand() % 15, 150 - rand() % 15);
-			_thingData.max = vec2(1600, 900);
-			_thingData.min = vec2(0, 0);
-			_thingData.dir = vec2(rand() % 2 == 1 ? 1 : -1, rand() % 2 == 1 ? 1 : -1);
-
-			IComponent* _components[] = {
-				&_position, &_sprite, &_projection,
-				&_thingData
-			};
-			StaticCId _ids[] = {
-				_position.staticId, _sprite.staticId, _projection.staticId,
-				_thingData.staticId
-			};
-
-			_ecs.CreateEntity(_components, _ids, 4);
-		}
-
-		SystemLayer _systems1;
-
-		_systems1.AddSystem<PlayerSystem>();
-		_systems1.AddSystem<ThingSystem>();
-
-		SystemLayer _systems2;
-		_systems2.AddSystem<RenderSystem>();
+		m_mainLayer.AddSystem<ImGuiSystem>();
 
 		while (m_running) {
 			m_window->OnFrameBegin();
+			{
+				auto _e = AppFrameBeginEvent(m_window->GetDeltaTime());
+				this->OnEvent(_e);
+			}
 
-			_ecs.UpdateSystems(_systems1, m_window->GetDeltaTime());
-			_ecs.UpdateSystems(_systems2, m_window->GetDeltaTime());
+			{
+				auto _e = AppUpdateEvent(m_window->GetDeltaTime());
+				this->OnEvent(_e);
+			}
+			{
+				auto _e = AppRenderEvent();
+				this->OnEvent(_e);
+			}
 
-			m_layerStack.UpdateLayers();
-
-			m_imguiLayer->Begin();
-			m_layerStack.OnImguiRender();
-			m_imguiLayer->End();
-
+			{
+				auto _e = AppFrameEndEvent(m_window->GetDeltaTime());
+				this->OnEvent(_e);
+			}
 			m_window->OnFrameEnd();
 		}
-	}
-
-	void Application::PushLayer(Layer * layer) {
-		m_layerStack.PushLayer(layer);
-	}
-
-	void Application::PushOverlay(Layer * overlay) {
-		m_layerStack.PushOverlay(overlay);
-	}
-
-	void Application::PopLayer(Layer * layer) {
-		m_layerStack.PopLayer(layer);
-	}
-
-	void Application::PopOverlay(Layer * overlay) {
-		m_layerStack.PopOverlay(overlay);
 	}
 
 	bool Application::OnWindowClose(WindowCloseEvent& e) {

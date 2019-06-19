@@ -7,9 +7,9 @@ namespace Wizzy {
     
     void Script::Load() {
         WZ_CORE_TRACE("Loading script from '{0}'...", GetSourceFile());
-        WZ_CORE_ASSERT(File::read(this->GetSourceFile(), &m_sourceCode), "Failed reading script file");
+        WZ_CORE_ASSERT(ulib::File::read(this->GetSourceFile(), &m_sourceCode), "Failed reading script file");
         
-        string _extension = File::extension_of(this->GetSourceFile());
+        string _extension = ulib::File::extension_of(this->GetSourceFile());
         
         string _typeStr = "";
         
@@ -34,6 +34,6 @@ namespace Wizzy {
     }
     void Script::Save() {
         WZ_CORE_TRACE("Saving script to file '{0}'", this->GetSourceFile());
-        WZ_CORE_ASSERT(File::write(this->GetSourceFile(), m_sourceCode), "Failed writing to script file...");
+        WZ_CORE_ASSERT(ulib::File::write(this->GetSourceFile(), m_sourceCode), "Failed writing to script file...");
     }
 }

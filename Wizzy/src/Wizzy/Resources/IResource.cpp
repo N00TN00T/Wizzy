@@ -8,6 +8,6 @@ namespace Wizzy {
     u32 IResource::s_idCounter(0);
 
     IResource::IResource(const string& sourceFile)
-            : m_sourceFile(File::to_absolute(sourceFile)) {}
+            : m_sourceFile(ulib::File::to_absolute(sourceFile)) {}
 
 }

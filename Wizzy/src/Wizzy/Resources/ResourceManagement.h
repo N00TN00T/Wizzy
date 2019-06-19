@@ -59,7 +59,7 @@ namespace Wizzy {
         bool _aliasFree = s_resourceAliases.emplace(alias).second;
 
         if (_aliasFree) {
-            _import = new TResource(_fullPath);
+            _import = TResource::Create(_fullPath);
             _import->Load();
             s_resources[alias] = static_cast<IResource*>(_import);
         } else {

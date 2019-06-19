@@ -1,14 +1,13 @@
 #include "wzpch.h"
 #include "WindowsWindow.h"
 
-#include <glad/glad.h>
 #include <GLFW/glfw3.h>
 
 #include "Wizzy/Events/AppEvent.h"
 #include "Wizzy/Events/MouseEvent.h"
 #include "Wizzy/Events/CharEvent.h"
 #include "Wizzy/Events/KeyEvent.h"
-#include "Wizzy/platform/OpenGL/GLErrorHandling.h"
+#include "Wizzy/platform/OpenGL/OpenGLContext.h"
 
 namespace Wizzy {
     IWindow *IWindow::Create(const WindowProps& props) {
@@ -51,24 +50,15 @@ namespace Wizzy {
                         props.title);
 
         m_glfwWindow = glfwCreateWindow(props.width, props.height, props.title.c_str(), nullptr, nullptr);
-        glfwMakeContextCurrent(m_glfwWindow);
 
-		WZ_CORE_TRACE("Initializing glad...");
-		auto _status = gladLoadGLLoader((GLADloadproc)glfwGetProcAddress);
-		WZ_CORE_ASSERT(_status, "Failed to intitialize glad");
+        m_context = new OpenGLContext(m_glfwWindow);
+
+        m_context->Init();
 
         glfwSetWindowUserPointer(m_glfwWindow, &m_data);
 
         SetVSync(false);
         SetClearColor(.1f, .2f, .5f, 1.f);
-
-		GL_CALL(glEnable(GL_BLEND));
-		GL_CALL(glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA));
-
-		GL_CALL(glEnable(GL_CULL_FACE));
-		GL_CALL(glCullFace(GL_FRONT));
-
-		GL_CALL(glViewport(0, 0, m_data.width, m_data.height));
 
         glfwSetWindowSizeCallback(m_glfwWindow, [](GLFWwindow *w, int32 width, int32 height){
 
@@ -161,7 +151,8 @@ namespace Wizzy {
         });
 
         WZ_CORE_INFO("Welcome to Wizzy for Windows!");
-        WZ_CORE_INFO("Version: {0}", glGetString(GL_VERSION));
+        WZ_CORE_INFO("API version: {0}", m_context->APIVersion());
+        WZ_CORE_INFO("API vendor: {0}", m_context->APIVendor());
     }
 
     void WindowsWindow::Shutdown() {
@@ -169,25 +160,18 @@ namespace Wizzy {
     }
 
     void WindowsWindow::OnFrameBegin() {
-		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-
+		m_context->ClearBuffer();
     }
 
     void WindowsWindow::OnFrameEnd() {
-        this->PollEvents();
-		glfwSwapBuffers(m_glfwWindow);
-    }
-
-    void WindowsWindow::PollEvents() {
 
         double _now = glfwGetTime();
         float _delta = static_cast<float>(_now - m_lastTime);
         m_data.deltaTime = _delta;
         m_lastTime = _now;
-        AppUpdateEvent _updateEvent(_delta);
-        m_data.eventCallbackFn(_updateEvent);
 
-		glfwPollEvents();
+        glfwPollEvents();
+        m_context->SwapBuffers();
     }
 
     void WindowsWindow::SetVSync(bool enabled) {
@@ -200,7 +184,7 @@ namespace Wizzy {
     }
 
     void WindowsWindow::SetClearColor(float r, float g, float b, float a) {
-        glClearColor(r, g, b, a);
+        m_context->SetClearColor(r, g, b, a);
     }
 
     void WindowsWindow::SetWidth(u32 width){

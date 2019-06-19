@@ -4,16 +4,16 @@
 namespace Wizzy {
 
 	enum class EventType {
-		none = 0,
+		event_none = 0,
 		window_close, window_resize, window_focus, window_unfocus, window_move,
-		app_tick, app_update, app_render,
+		app_tick, app_update, app_render, app_frame_begin, app_frame_end,
 		key_press, key_release, key_repeat,
 		char_sent,
 		mouse_press, mouse_release, mouse_move, mouse_scroll,
 	};
 
 	enum EventCategory {
-		none = 0,
+		category_none = 0,
 		category_application = BIT(0),
 		category_input = BIT(1),
 		category_keyboard = BIT(2),
@@ -26,7 +26,7 @@ namespace Wizzy {
 								virtual const string GetName() const override { return #type; }
 	#define EVENT_CLASS_CATEGORY(category) virtual int GetCategoryFlags() const override { return category; }
 
-	class  Event {
+	class Event {
 	private:
 		friend class EventDispatcher;
 	protected:

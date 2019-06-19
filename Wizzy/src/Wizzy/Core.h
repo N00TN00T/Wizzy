@@ -1,5 +1,19 @@
 #pragma once
 
+#ifdef WZ_PLATFORM_WINDOWS
+	#ifdef WZ_EXPORT
+		#define WZ_API __declspec(dllexport)
+	#else
+		#define WZ_API __declspec(dllimport)
+	#endif
+#else
+	#ifdef WZ_EXPORT
+		#define WZ_API __attribute__((visibility("default")))
+	#else
+		#define WZ_API
+	#endif
+#endif
+
 #if !defined(WZ_PLATFORM_WINDOWS) && !defined(WZ_PLATFORM_LINUX)
 	#error Wizzy is currently only supported on Windows and Linux
 #endif
@@ -25,12 +39,11 @@
 
 #ifndef WZ_DISABLE_ASSERTS
 
-	#define ASSERT_MSG (("Assertion failed: '{0}' in " + string(__FILENAME__) + ":" + std::to_string(__LINE__)).c_str())
+	#define ASSERT_MSG (("Assertion failed: '{0}' in " + std::string(__FILENAME__) + ":" + std::to_string(__LINE__)).c_str())
 
 	#define WZ_ASSERT(x, ...) if (!(x)) { WZ_CRITICAL(ASSERT_MSG, __VA_ARGS__); WZ_BREAK; }
 	#define WZ_CORE_ASSERT(x, ...) if (!(x)) { WZ_CORE_CRITICAL(ASSERT_MSG, __VA_ARGS__); WZ_BREAK; }
-
-	#define WZ_ASSERT_ERROR(e) WZ_CORE_ASSERT(e == WZ_ERR_NONE, "Wizzy error! (code " + std::to_string(e) + "): '" + WZ_ERR_STRING(e) + "'")
+    #define WZ_LUA_ASSERT(x, msg) if (!(x)) { throw std::exception(msg); }
 
 #else
 
@@ -40,8 +53,6 @@
 
 	#define WZ_ASSERT(x, ...) EMMIT_ASSERTION_IF_FALSE(x, __VA_ARGS__)
 	#define WZ_CORE_ASSERT(x, ...) EMMIT_ASSERTION_IF_FALSE(x, __VA_ARGS__)
-
-	#define WZ_ASSERT_ERROR(e) if (e != WZ_ERR_NONE) WZ_CRITICAL("Critical error! Code {0}: {1}", e, WZ_ERR_STRING(e))
 
 #endif
 
@@ -57,12 +68,6 @@
 #define WZ_VERSION_MINOR 1
 #define WZ_VERSION_PATCH 1
 #define WZ_VERSION	WZ_MAKE_VERSION(WZ_VERSION_MAJOR, WZ_VERSION_MINOR, WZ_VERSION_PATCH)
-
-const std::unordered_map<int, std::string> __WZ_ERROR_STRINGS = {
-	{ WZ_ERR_NONE, "no error" },
-	{ WZ_ERR_INIT_FAILURE, "Initialization failure" },
-};
-
 
 #ifdef __GNUC__
 	#define typestr(T) string(abi::__cxa_demangle(typeid(T).name(), 0, 0, 0))
@@ -93,3 +98,20 @@ const std::unordered_map<int, std::string> __WZ_ERROR_STRINGS = {
 #define WZ_NULL_ENTITY_HANDLE nullptr
 
 #define WZ_LUA_NEW_SCRIPT_CODE R"(-- This is a lua script for Wizzy)"
+
+#define IS_INT(T)       typestr(T) == typestr(u8) || typestr(T) == typestr(int8) || typestr(T) == typestr(u16) || typestr(T) == typestr(int16) || typestr(T) == typestr(u32) || typestr(T) == typestr(int32) || typestr(T) == typestr(u64) || typestr(T) == typestr(int64)
+
+#define IS_DECIMAL(T)   typestr(T) == typestr(float) || typestr(T) == typestr(double)
+
+#define IS_STRING(T)    typestr(T) == typestr(string) || typestr(T) == typestr(char*)
+
+#define IS_BOOL(T)      typestr(T) == typestr(bool)
+
+namespace Wizzy {
+    enum BufferUsage {
+        WZ_STATIC = 0, WZ_DYNAMIC = 1, WZ_STREAM = 2
+    };
+
+    class Application;
+    typedef Wizzy::Application* (*create_application_fn)();
+}

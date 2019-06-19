@@ -4,10 +4,11 @@
 
 #include "Wizzy/Application.h"
 #include "Wizzy/Input.h"
+#include "Wizzy/Resources/ResourceManagement.h"
 #include <imgui.h>
 
 /****************ENTRY POINT******************/
 
-#include "Wizzy/Entry.h"
+//#include "Wizzy/Entry.h"
 
 /*********************************************/

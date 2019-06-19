@@ -11,16 +11,19 @@
 
 namespace Wizzy {
 
-	typedef char int8;
+    enum LogType {
+        LOG_CORE, LOG_CLIENT,
+    };
 
-	typedef int8 LogLevel;
+    typedef std::shared_ptr<spdlog::logger> LoggerPtr;
+    typedef char LogLevel;
 
-	class  Log {
+	class Log {
 	public:
-		static void Init();
+		static void Init(LogType logType);
 
-		inline static std::shared_ptr<spdlog::logger>& GetCoreLogger() { return s_coreLogger; }
-		inline static std::shared_ptr<spdlog::logger>& GetClientLogger() { return s_clientLogger; }
+		inline static LoggerPtr& GetCoreLogger() { return s_coreLogger; }
+		inline static LoggerPtr& GetClientLogger() { return s_clientLogger; }
 
 		inline static void SetCoreLogLevel(LogLevel level) {
 			s_coreLogger->set_level((spdlog::level::level_enum)level);
@@ -31,8 +34,8 @@ namespace Wizzy {
 		}
 
 	private:
-		static std::shared_ptr<spdlog::logger> s_coreLogger;
-		static std::shared_ptr<spdlog::logger> s_clientLogger;
+		static LoggerPtr s_coreLogger;
+		static LoggerPtr s_clientLogger;
 	};
 }
 

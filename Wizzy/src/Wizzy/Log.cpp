@@ -4,16 +4,18 @@
 
 namespace Wizzy {
 	
-	std::shared_ptr<spdlog::logger> Log::s_coreLogger;
-	std::shared_ptr<spdlog::logger> Log::s_clientLogger;
+	LoggerPtr Log::s_coreLogger;
+	LoggerPtr Log::s_clientLogger;
 
-	void Log::Init() {
+	void Log::Init(LogType logType) {
 		spdlog::set_pattern("[%H:%M:%S:%e] %n: %^(%l) %v%$");
 
-		s_coreLogger = spdlog::stdout_color_mt("CORE");
-		SetCoreLogLevel(LOG_LEVEL_TRACE);
-		
-		s_clientLogger = spdlog::stdout_color_mt("CLIENT");
-		SetClientLogLevel(LOG_LEVEL_TRACE);
+        if (logType == LOG_CORE && !s_coreLogger) {
+            s_coreLogger = spdlog::stdout_color_mt("CORE");
+            SetCoreLogLevel(LOG_LEVEL_TRACE);
+        } else if (logType == LOG_CLIENT && !s_clientLogger) {
+            s_clientLogger = spdlog::stdout_color_mt("CLIENT");
+            SetClientLogLevel(LOG_LEVEL_TRACE);
+        }
 	}
 }

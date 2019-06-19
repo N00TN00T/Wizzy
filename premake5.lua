@@ -2,42 +2,180 @@
 
 workspace "Wizzy"
 
+  startproject "Launcher"
+
+  architecture "x64"
+
   configurations
   {
     "Debug64",
     "Release64",
     "Dist64",
-    "DebugARM",
-    "ReleaseARM",
-    "DistARM"
   }
 
   files { "**premake5.lua" }
 
-  filter "configurations:*64"
-    architecture "x64"
+  output_dir = "%{cfg.buildcfg}-%{cfg.system}-%{cfg.architecture}"
 
-filter "configurations:*ARM"
-    architecture "ARM"
+  -- Include directories relative to root directory
+  include_dir = {
+    spdlog = "Wizzy/vendor/spdlog/include",
+    glfw = "Wizzy/vendor/glfw/include",
+    glad = "Wizzy/vendor/glad/include",
+    imgui = "Wizzy/vendor/imgui",
+    glm = "Wizzy/vendor/glm",
+    stb = "Wizzy/vendor/stb",
+    lua = "Wizzy/vendor/lua",
+    pybind11 = "Wizzy/vendor/pybind11/include",
+    pybind11 = "Wizzy/vendor/ulib/include",
+    pdoes = "Wizzy/vendor/pdoes"
+  }
 
-output_dir = "%{cfg.buildcfg}-%{cfg.system}-%{cfg.architecture}"
+  include "Wizzy/vendor/glfw/"
+  include "Wizzy/vendor/glad/"
+  include "Wizzy/vendor/imgui/"
+  include "Wizzy/vendor/lua"
+  include "Wizzy/vendor/pdoes"
 
--- Include directories relative to root directory
-include_dir = {
-  spdlog = "Wizzy/vendor/spdlog/include",
-  glfw = "Wizzy/vendor/glfw/include",
-  glad = "Wizzy/vendor/glad/include",
-  imgui = "Wizzy/vendor/imgui",
-  glm = "Wizzy/vendor/glm",
-  stb = "Wizzy/vendor/stb",
-  lua = "Wizzy/vendor/lua",
-  pybind11 = "Wizzy/vendor/pybind11/include"
-}
+--[[------------------------------------------------------------------------------------
+       LAUNCHER PROJECT
+----------------------------------------------------------------------------------------]]
 
-include "Wizzy/vendor/glfw/"
-include "Wizzy/vendor/glad/"
-include "Wizzy/vendor/imgui/"
-include "Wizzy/vendor/lua"
+project "Launcher"
+	location "Launcher"
+	kind "ConsoleApp"
+  language "C++"
+
+	targetdir ("bin/" .. output_dir .. "/%{prj.name}/")
+  objdir ("bin-int/" .. output_dir .. "/%{prj.name}/")
+
+  buildoptions { "-Wall" }
+
+  files
+  {
+    "%{prj.name}/src/**.h",
+    "%{prj.name}/src/**.cpp",
+  }
+
+  includedirs
+  {
+		"Wizzy/src",
+    "%{prj.name}/src",
+    "%{include_dir.spdlog}",
+    "%{include_dir.glfw}",
+    "%{include_dir.glad}",
+    "%{include_dir.imgui}",
+    "%{include_dir.glm}",
+    "%{include_dir.stb}",
+    "%{include_dir.lua}",
+    "%{include_dir.pybind11}",
+    "%{include_dir.ulib}",
+    "%{include_dir.pdoes}"
+  }
+
+	defines
+  {
+      "WZ_USE_OPENGL",
+      "STB_IMAGE_IMPLEMENTATION",
+      "ULIB_NO_INCLUDE"
+  }
+
+	links
+  {
+	"Sandbox",
+    "Wizzy",
+    "imgui",
+    "glfw",
+    "glad",
+    "lua",
+    "pdoes"
+  }
+
+---------------------------------------------------------------------
+--                        WINDOWS
+---------------------------------------------------------------------
+  filter "system:windows"
+    cppdialect "C++17"
+    staticruntime "On"
+    systemversion "latest"
+
+    defines
+    {
+      "WZ_PLATFORM_WINDOWS",
+      "GLFW_INCLUDE_NONE",
+      "PDOES_API=__declspec(dllimport)"
+    }
+
+    links { "opengl32.lib", "glu32.lib" }
+
+---------------------------------------------------------------------
+
+
+---------------------------------------------------------------------
+--                        LINUX
+---------------------------------------------------------------------
+  filter "system:linux"
+    cppdialect "C++17"
+    staticruntime "On"
+    systemversion "latest"
+    pic "On"
+    defines {
+        "WZ_PLATFORM_LINUX"
+    }
+
+    links
+    {
+      "GL",
+      "GLU",
+      "X11",
+      "Xxf86vm",
+      "Xrandr",
+      "pthread",
+      "Xi",
+      "dl",
+      "stdc++fs"
+    }
+
+    includedirs { "/usr/include/python3.6" }
+
+
+
+---------------------------------------------------------------------
+
+---------------------------------------------------------------------
+--                        MACOSX
+---------------------------------------------------------------------
+  filter "system:macosx"
+    cppdialect "C++17"
+    staticruntime "On"
+    systemversion "latest"
+    pic "On"
+    defines {
+        "WZ_PLATFORM_MACOSX"
+    }
+---------------------------------------------------------------------
+
+  filter "configurations:Debug*"
+    defines "WZ_CONFIG_DEBUG"
+    runtime "Debug"
+    symbols "On"
+
+  filter "configurations:Release*"
+    defines "WZ_CONFIG_RELEASE"
+    runtime "Release"
+    symbols "On"
+    optimize "On"
+
+  filter "configurations:Dist*"
+    defines { "WZ_CONFIG_DIST", "WZ_DISABLE_ASSERTS" }
+    runtime "Release"
+    optimize "On"
+
+  filter "action:codelite"
+    defines { "__CODELITE__" }
+
+  filter "action:xcode4"
+    defines { "__XCODE__" }
 
 --[[------------------------------------------------------------------------------------
        CORE PROJECT
@@ -53,7 +191,7 @@ project "Wizzy"
 
   pchheader "wzpch.h"
   pchsource "Wizzy/src/wzpch.cpp"
-  
+
   buildoptions { "-Wall" }
 
   files
@@ -78,16 +216,23 @@ project "Wizzy"
     "%{include_dir.glm}",
     "%{include_dir.stb}",
     "%{include_dir.lua}",
-    "%{include_dir.pybind11}"
+    "%{include_dir.pybind11}",
+    "%{include_dir.ulib}",
+    "%{include_dir.pdoes}"
   }
 
-  defines {"WZ_EXPORT", "WZ_USE_OPENGL", "STB_IMAGE_IMPLEMENTATION"}
-  
+  defines
+  {
+    "WZ_EXPORT",
+    "WZ_USE_OPENGL",
+    "STB_IMAGE_IMPLEMENTATION"
+  }
+
   filter "action:codelite"
-    defines "__CODELITE__"
-    
+    defines { "__CODELITE__" }
+
   filter "action:xcode4"
-    defines "__XCODE__"
+    defines { "__XCODE__" }
 
 ---------------------------------------------------------------------
 --                        WINDOWS
@@ -100,10 +245,9 @@ project "Wizzy"
     defines
     {
       "WZ_PLATFORM_WINDOWS",
-      "GLFW_INCLUDE_NONE"
+      "GLFW_INCLUDE_NONE",
+      "PDOES_API=__declspec(dllimport)"
     }
-
-    links "opengl32.lib"
 
     -- Windows-specific files
     files
@@ -123,7 +267,11 @@ project "Wizzy"
     staticruntime "On"
     systemversion "latest"
     pic "On"
-    defines "WZ_PLATFORM_LINUX"
+
+    defines {
+        "WZ_PLATFORM_LINUX",
+        "PDOES_API=__attribute__((visibility(\"default\")))"
+    }
 
     -- Linux-specific files
     files
@@ -135,8 +283,8 @@ project "Wizzy"
     }
 
     includedirs { "/usr/include/python3.6" }
-    
-    
+
+
 
 ---------------------------------------------------------------------
 
@@ -182,7 +330,7 @@ project "Wizzy"
 ----------------------------------------------------------------------------------------]]
 project "Sandbox"
   location "Sandbox"
-  kind "ConsoleApp"
+  kind "SharedLib"
   language "C++"
   architecture "x64"
 
@@ -191,7 +339,7 @@ project "Sandbox"
 
   pchheader "spch.h"
   pchsource "Sandbox/src/spch.cpp"
-  
+
   buildoptions { "-Wall" }
 
   files
@@ -204,7 +352,6 @@ project "Sandbox"
   {
     "Wizzy/src",
     "Sandbox/src",
-    "Wizzy/vendor/spdlog/include",
     "%{include_dir.imgui}",
     "%{include_dir.glm}",
     "%{include_dir.spdlog}",
@@ -213,19 +360,36 @@ project "Sandbox"
     "%{include_dir.glm}",
     "%{include_dir.stb}",
     "%{include_dir.lua}",
-    "%{include_dir.pybind11}"
+    "%{include_dir.pybind11}",
+    "%{include_dir.ulib}",
+    "%{include_dir.pdoes}"
+  }
+
+  defines
+  {
+      "WZ_USE_OPENGL",
+      "STB_IMAGE_IMPLEMENTATION",
+      "ULIB_NO_INCLUDE",
+      "WZ_EXPORT"
   }
 
   links
   {
-    "Wizzy",
+	"Wizzy",
     "imgui",
     "glfw",
     "glad",
-    "lua"
+    "lua",
+    "pdoes"
   }
 
-  defines { "WZ_USE_OPENGL", "STB_IMAGE_IMPLEMENTATION" }
+  postbuildcommands { ("cp %{cfg.buildtarget.relpath} ../bin/" .. output_dir .. "/Launcher/SandboxModule") }
+
+  filter "action:codelite"
+    defines { "__CODELITE__" }
+
+  filter "action:xcode4"
+    defines { "__XCODE__" }
 
 ---------------------------------------------------------------------
 --                        LINUX
@@ -237,9 +401,12 @@ project "Sandbox"
 
     pic "On"
 
-    defines "WZ_PLATFORM_LINUX"
+    defines {
+        "WZ_PLATFORM_LINUX",
+        "PDOES_API=__attribute__((visibility(\"default\")))"
+    }
 
-    links
+		links
     {
       "GL",
       "GLU",
@@ -266,8 +433,11 @@ project "Sandbox"
     defines
     {
       "WZ_PLATFORM_WINDOWS",
-      "GLFW_INCLUDE_NONE"
+      "GLFW_INCLUDE_NONE",
+      "PDOES_API=__declspec(dllexport)"
     }
+
+		links { "opengl32.lib", "glu32.lib" }
 
     -- Windows-specific files
     files
@@ -275,8 +445,6 @@ project "Sandbox"
       "%{prj.name}/src/Wizzy/Platform/windows/**.h",
       "%{prj.name}/src/Wizzy/Platform/windows/**.cpp"
     }
-
-    links { "opengl32.lib", "glu32.lib" }
 
 ----------------------------------------------------------------------
 
@@ -288,7 +456,10 @@ project "Sandbox"
     staticruntime "On"
     systemversion "latest"
 
-    defines "WZ_PLATFORM_MACOSX"
+    defines {
+        "WZ_PLATFORM_MACOSX",
+        "PDOES_API=__attribute__((visibility(\"default\")))"
+    }
 
     -- Macosx-specific files
     files

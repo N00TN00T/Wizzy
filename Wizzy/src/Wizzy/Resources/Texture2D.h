@@ -26,6 +26,8 @@ namespace Wizzy {
             inline const int32& GetChannels() const {	return m_channels;	}
 			inline const u32&	GetVao() const {		return m_vao;		}
 
+            static Texture2D* Create(const string& file);
+
         private:
             void                Init();
 

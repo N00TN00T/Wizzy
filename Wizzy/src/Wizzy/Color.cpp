@@ -12,6 +12,52 @@ namespace Wizzy {
 
 	}
 
+    Color& Color::Add(const Color& other) {
+        this->r += other.r;
+        this->g += other.g;
+        this->b += other.b;
+        this->a += other.a;
+        
+        return *this;
+    }
+    Color& Color::Subtract(const Color& other) {
+        this->r -= other.r;
+        this->g -= other.g;
+        this->b -= other.b;
+        this->a -= other.a;
+        
+        return *this;
+    }
+    Color& Color::Multiply(const Color& other) {
+        this->r *= other.r;
+        this->g *= other.g;
+        this->b *= other.b;
+        this->a *= other.a;
+        
+        return *this;
+    }
+    Color& Color::Divide(const Color& other) {
+        this->r /= other.r;
+        this->g /= other.g;
+        this->b /= other.b;
+        this->a /= other.a;
+        
+        return *this;
+    }
+    
+    Color operator+(Color left, const Color& right) {
+        return left.Add(right);
+    }
+    Color operator-(Color left, const Color& right) {
+        return left.Subtract(right);
+    }
+    Color operator*(Color left, const Color& right) {
+        return left.Multiply(right);
+    }
+    Color operator/(Color left, const Color& right) {
+        return left.Divide(right);
+    }
+
 	const Color Color::white =		Color(1.f, 1.f, 1.f, 1.f);
 	const Color Color::red =		Color(.8f, .1f, .1f, 1.f);
 	const Color Color::green =		Color(.1f, 1.f, .1f, 1.f);

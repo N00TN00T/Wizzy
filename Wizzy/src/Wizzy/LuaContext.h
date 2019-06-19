@@ -6,8 +6,20 @@ namespace Wizzy {
     
     class Script;
     
-    struct LuaVec2 {
+    enum class LuaDataType {
+        NIL = 0, INT = 1, DECIMAL = 2, STRING = 3, BOOL = 4, USER_DATA = 5
+    };
+    
+    struct LuaVec2 { // temporary
         float x, y;
+    };
+    
+    struct LuaMethod {
+        string name;
+        lua_CFunction fn;
+        
+        LuaMethod(const string& name, const lua_CFunction& fn)
+            : name(name), fn(fn) {}
     };
     
     template <typename T>
@@ -22,16 +34,13 @@ namespace Wizzy {
     
         template <typename TProp>
         inline void Property(const string& name) {
-            if (typestr(TProp) == typestr(u8)     ||    typestr(TProp) == typestr(int8)    ||
-                typestr(TProp) == typestr(u16)    ||    typestr(TProp) == typestr(int16)   ||
-                typestr(TProp) == typestr(u32)    ||    typestr(TProp) == typestr(int32)   ||
-                typestr(TProp) == typestr(u64)    ||    typestr(TProp) == typestr(int64)    ) {
+            if (IS_INT(TProp)) {
                 m_integers.push_back(name);
-            } else if (typestr(TProp) == typestr(float) || typestr(TProp) == typestr(double)) {
+            } else if (IS_DECIMAL(TProp)) {
                 m_numbers.push_back(name);    
-            } else if (typestr(TProp) == typestr(string) || typestr(TProp) == typestr(const char *)) {
+            } else if (IS_STRING(TProp)) {
                 m_strings.push_back(name);
-            } else if (typestr(TProp) == typestr(bool)) {
+            } else if (IS_BOOL(TProp)) {
                 m_booleans.push_back(name);
             } else {
                 WZ_CORE_ERROR("{0}, {1}", typestr(TProp), typestr(float));
@@ -39,33 +48,41 @@ namespace Wizzy {
             }
         }
     
+        inline void Method(const string& name, 
+                           lua_CFunction& fn) {
+            m_methods.push_back(LuaMethod(name, fn));
+        }
     
         inline void Bind(lua_State *L) {
             
             auto _newFn = [](lua_State *L) {
                 WZ_CORE_ASSERT(lua_gettop(L) == 1, "Expected 1 argument for new(), got " + std::to_string(lua_gettop(L)));
-                WZ_CORE_ASSERT(lua_isuserdata(L, -1) || lua_isstring(L, -1), "Incorrect arguments given for new()");
+                WZ_CORE_ASSERT(lua_isuserdata(L, -1), "Incorrect argument given for new()");
                 
-                size_t _size = 0;
-                
-                if (lua_isstring(L, -1)) {
-                    _size = s_typeSizeByName[string(lua_tostring(L, -1))];
-                    lua_getglobal(L, lua_tostring(L, -1));
-                } else if (lua_isuserdata(L, -1)) {
-                    _size = s_typeSizeByPtr[reinterpret_cast<uintptr_t>(lua_touserdata(L, -1))];
-                } else {
-                    WZ_CORE_ASSERT(false, "yikes"); // Shouldn't really be possible to ever happen
-                }                                   // considering the assertion above
-                
+                size_t _size  = s_typeSizeByPtr[reinterpret_cast<uintptr_t>(lua_touserdata(L, -1))];
+                lua_newuserdata(L, _size); /* TODO: Save ptr somewhere to track memory in lua from C++ */
+                int32 _newUserDataIdx = lua_gettop(L);
                 lua_getuservalue(L, -1);    // Get the table from user data argument
-                s_test.push_back(new(lua_newuserdata(L, _size)) T);  // Create a new userdata
-                lua_pushvalue(L, -2);       // Push a COPY of the table associated with user data argument
-                lua_setuservalue(L, -2);    // Set the table associated with the new user data to the copy
+                /* Create a copy of the table */
+                lua_newtable(L);
+                int32 _destValueIdx = lua_gettop(L);
+                lua_pushnil(L);  /* first key */
+                WZ_CORE_DEBUG(lua_next(L, _destValueIdx));
+                while (lua_next(L, _destValueIdx) != 0) {
+                    WZ_CORE_DEBUG("YUH1");
+                    lua_pushvalue(L, -2); // make copies of the
+                    lua_pushvalue(L, -2); // key-value pair
+                    lua_settable(L, _destValueIdx); // Add keyvalue pair to destination and pop them
+                    lua_remove(L, -1); // Pop the value and leave the key for lua_next
+                }
+                lua_pushvalue(L, _newUserDataIdx);
+                lua_pushvalue(L, _destValueIdx);
                 
-                lua_getuservalue(L, -1);    // Leave the new value of the new user data at the top of the stack
+                WZ_CORE_ASSERT(lua_istable(L, - 1) && lua_isuserdata(L, -2), "Copying userdata value failed");
                 
-                //lua_remove(L, )
+                lua_setuservalue(L, -2);
                 
+                lua_getuservalue(L, -1);
                 
                 return 1;
             };
@@ -73,31 +90,9 @@ namespace Wizzy {
             lua_pushcfunction(L, _newFn);
             lua_setglobal(L, "new");
             
-            WZ_CORE_ASSERT((string(m_name) + "MetaTable").size() < 128, "Name of lua type too long");
-            char _metaTableName[128] = "";
-            strcat(_metaTableName, m_name);
-            strcat(_metaTableName, "MetaTable");
+            void* _dataPtr = lua_newuserdata(L, sizeof(T));
             
-            /*luaL_newmetatable(L, _metaTableName);
-            
-            lua_pushstring(LuaState::Get(), "__index");
-			lua_pushcfunction(LuaState::Get(), [](lua_State *L) {
-                
-            });
-            lua_settable(LuaState::Get(), -3);
-            
-            lua_pushstring(LuaState::Get(), "__newindex");
-			lua_pushcfunction(LuaState::Get(), [](lua_State *L) {
-                
-            });
-            lua_settable(LuaState::Get(), -3);*/
-            
-            m_masterInstance = new(lua_newuserdata(L, sizeof(T))) T;
-            
-            /*luaL_getmetatable(L, _metaTableName);
-            lua_setmetatable(L, -2);*/
-            
-            s_typeSizeByPtr[reinterpret_cast<uintptr_t>(m_masterInstance)] = sizeof(T);
+            s_typeSizeByPtr[reinterpret_cast<uintptr_t>(_dataPtr)] = sizeof(T);
             lua_newtable(L);
             
             for (const auto& _name : m_numbers) {
@@ -124,32 +119,40 @@ namespace Wizzy {
                 lua_settable(L, -3);
             }
             
+            for (const LuaMethod& _method : m_methods) {
+                char _name[1024] = "";
+                strcpy(_name, _method.name.c_str());
+                lua_pushstring(L, _name);
+                lua_pushcfunction(L, _method.fn);
+                lua_settable(L, -3);
+            }
+            
+            string _typeStr = typestr(T);
+            lua_pushstring(L, "_typestr_");
+            lua_pushstring(L, _typeStr.c_str());
+            lua_settable(L, -3);
+            
             /* Set master instance data to the table created above */
             lua_setuservalue(L, -2); 
             
             lua_setglobal(L, m_name);
             
         }
+        
     private:
-        std::vector<string>                         m_numbers, m_integers, m_booleans, m_strings;
+        std::vector<string>                             m_numbers, m_integers, m_booleans, m_strings;
+        std::vector<LuaMethod>                          m_methods;
         
-        T*                                          m_masterInstance;
+        char *                                          m_name;
         
-        char *                                      m_name;
-        
-        static std::unordered_map <string, size_t>  s_typeSizeByName;
-        static std::unordered_map <uintptr_t, size_t>  s_typeSizeByPtr;
-        
-    public:
-        static std::vector <T*> s_test;
+        static std::unordered_map <string, size_t>      s_typeSizeByName;
+        static std::unordered_map <uintptr_t, size_t>   s_typeSizeByPtr;
     };
     
     template <typename T>
     std::unordered_map<string, size_t>  LuaType<T>::s_typeSizeByName;
     template <typename T>
     std::unordered_map<uintptr_t, size_t>  LuaType<T>::s_typeSizeByPtr;
-    template <typename T>
-    std::vector <T*> LuaType<T>::s_test;
     
     class LuaContext {
     public:

@@ -13,44 +13,33 @@ namespace Wizzy {
         : public IResource {
     public:
         Shader(const string& file)
-			: IResource(file), m_shaderId(WZ_SHADER_ID_INVALID) {}
-		~Shader();
+			: IResource(file) {}
+		virtual ~Shader();
 
 		virtual void Load() override;
 		virtual void Unload() override;
 		virtual void Reload() override;
 		virtual void Save() override;
-		inline virtual bool IsGarbage() const override {
-			return m_shaderId == WZ_SHADER_ID_INVALID;
-		}
 
-        void Bind() const;
-		void Unbind() const;
+        virtual void Bind() const = 0;
+		virtual void Unbind() const = 0;
 
-        void SetUniformMat4(const string& name, const mat4& value);
-		void SetUniform1i(const string& name, const int32& value);
-		void SetUniform1f(const string& name, const float& value);
-		void SetUniform2f(const string& name, const vec2& value);
-		void SetUniform3f(const string& name, const vec3& value);
-		void SetUniform4f(const string& name, const vec4& value);
+        virtual void SetUniformMat4(const string& name, const mat4& value) = 0;
+		virtual void SetUniform1i(const string& name, const int32& value)  = 0;
+		virtual void SetUniform1f(const string& name, const float& value)  = 0;
+		virtual void SetUniform2f(const string& name, const vec2& value)  = 0;
+		virtual void SetUniform3f(const string& name, const vec3& value)  = 0;
+		virtual void SetUniform4f(const string& name, const vec4& value)  = 0;
 
-    private:
-		ShaderProgramSource ParseShader(const string& file);
-
-        bool        Compile();
-        bool        __Compile_OpenGL();
-
-    private:
-		ShaderProgramSource m_source;
-        u32					m_shaderId;
+    protected:
+		virtual void ParseShader(const string& file) = 0;
+        virtual bool Compile() = 0;
+		virtual void Delete() = 0;
 
 	public:
-		static std::shared_ptr<Shader> BasicShader();
-		static std::shared_ptr<Shader> BasicLightingShader();
+		static Shader* Create(const string& file);
 
     private:
         static u32 s_currentShader;
     };
-
-	typedef std::shared_ptr<Shader> ShaderPtr;
 }

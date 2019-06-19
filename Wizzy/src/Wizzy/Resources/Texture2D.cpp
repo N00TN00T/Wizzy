@@ -16,13 +16,13 @@ namespace Wizzy {
     void Texture2D::Load() {
         const string& _file = GetSourceFile();
 
-        WZ_CORE_TRACE("Loading Texture2D from file '{0}' ...", File::to_absolute(_file));
+        WZ_CORE_TRACE("Loading Texture2D from file '{0}' ...", ulib::File::to_absolute(_file));
         
         stbi_set_flip_vertically_on_load(true);
 
         m_data = stbi_load(_file.c_str(), &m_width, &m_height,
                                         &m_channels, 0);
-
+        
         WZ_CORE_ASSERT(m_data, "Failed loading Texture2D; invalid file");
         
         Init();

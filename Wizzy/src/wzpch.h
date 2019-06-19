@@ -1,3 +1,4 @@
+
 /* std libraries */
 #include <iostream>
 #include <stdio.h>
@@ -12,6 +13,9 @@
 #include <typeinfo>
 #include <assert.h>
 #include <new>
+#include <cmath>
+#include <stdarg.h>
+#include <experimental/filesystem>
 
 /* std data structures */
 #include <string>
@@ -30,6 +34,7 @@
 
 #include <spdlog/spdlog.h>
 #include <spdlog/fmt/ostr.h>
+
 #include <glm/vec2.hpp>
 #include <glm/vec3.hpp>
 #include <glm/vec4.hpp>
@@ -37,6 +42,10 @@
 #include <glm/gtc/matrix_transform.hpp>
 #include <glm/gtc/matrix_inverse.hpp>
 #include <glm/gtc/type_ptr.hpp>
+
+#include <ulib.hpp>
+
+#include <ECS.hpp>
 
 /* wizzy headers */
 
@@ -70,8 +79,6 @@ typedef uint32 u32;
 typedef long long int64;
 typedef unsigned long long uint64;
 typedef uint64 u64;
-
-typedef u32 size_bytes;
 
 typedef glm::vec2 vec2;
 typedef glm::vec3 vec3;
