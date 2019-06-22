@@ -1,3 +1,3 @@
 #pragma once
 
-int start_wizzy(int argc, char** argv);
+int main(int argc, char** argv);

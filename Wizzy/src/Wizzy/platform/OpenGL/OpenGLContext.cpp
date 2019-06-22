@@ -18,22 +18,14 @@ namespace Wizzy {
 		auto _status = gladLoadGLLoader((GLADloadproc)glfwGetProcAddress);
 		WZ_CORE_ASSERT(_status, "Failed to intitialize glad");
 
-        GL_CALL(glEnable(GL_BLEND));
-		GL_CALL(glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA));
-
 		GL_CALL(glEnable(GL_CULL_FACE));
-		GL_CALL(glCullFace(GL_FRONT));
+		GL_CALL(glCullFace(GL_BACK));
+
+        //GL_CALL(glEnable(GL_DEPTH_TEST));
+        //GL_CALL(glDepthFunc(GL_GREATER));
     }
     void OpenGLContext::SwapBuffers() {
         glfwSwapBuffers(m_windowHandle);
-    }
-
-    void OpenGLContext::ClearBuffer() {
-        GL_CALL(glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT));
-    }
-
-    void OpenGLContext::SetClearColor(float r, float g, float b, float a) {
-        GL_CALL(glClearColor(r, g, b, a));
     }
 
     string OpenGLContext::APIVersion() {

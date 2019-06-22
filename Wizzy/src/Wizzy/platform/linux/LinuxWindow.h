@@ -26,8 +26,6 @@ namespace Wizzy {
         virtual void SetVSync(bool enabled) override;
         virtual bool IsVsync() const override;
 
-		virtual void SetClearColor(float r, float g, float b, float a) override;
-
 		inline virtual void* GetNativeWindow() { return m_glfwWindow; }
 
         inline virtual float GetDeltaTime() const override {

@@ -8,6 +8,7 @@
 #include "Wizzy/Events/CharEvent.h"
 #include "Wizzy/Events/KeyEvent.h"
 #include "Wizzy/platform/OpenGL/OpenGLContext.h"
+#include "Wizzy/Renderer/RendererAPI.h"
 
 namespace Wizzy {
     IWindow *IWindow::Create(const WindowProps& props) {
@@ -58,7 +59,6 @@ namespace Wizzy {
         glfwSetWindowUserPointer(m_glfwWindow, &m_data);
 
         SetVSync(false);
-        SetClearColor(.1f, .2f, .5f, 1.f);
 
         glfwSetWindowSizeCallback(m_glfwWindow, [](GLFWwindow *w, int32 width, int32 height){
 
@@ -160,7 +160,7 @@ namespace Wizzy {
     }
 
     void LinuxWindow::OnFrameBegin() {
-		m_context->ClearBuffer();
+        
     }
 
     void LinuxWindow::OnFrameEnd() {
@@ -181,10 +181,6 @@ namespace Wizzy {
 
     bool LinuxWindow::IsVsync() const {
         return m_data.vsync;
-    }
-
-    void LinuxWindow::SetClearColor(float r, float g, float b, float a) {
-        m_context->SetClearColor(r, g, b, a);
     }
 
     void LinuxWindow::SetWidth(u32 width){

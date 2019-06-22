@@ -7,8 +7,8 @@
 namespace Wizzy {
     int32 ShaderDataTypeToAPIType(ShaderDataType sType) {
         switch (Renderer::GetAPI()) {
-            case RendererAPI::NONE: break;
-            case RendererAPI::OPENGL: return GLShaderDataTypeToAPIType(sType);
+            case RendererAPI::API_NONE: break;
+            case RendererAPI::API_OPENGL: return GLShaderDataTypeToAPIType(sType);
         }
 
         WZ_CORE_ASSERT(false, "Invalid renderer API selected ({0})", std::to_string((int32)sType));

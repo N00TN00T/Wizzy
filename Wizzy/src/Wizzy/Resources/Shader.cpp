@@ -8,7 +8,7 @@
 namespace Wizzy {
 
     Shader::~Shader() {
-        
+
     }
 
     void Shader::Load() {
@@ -31,8 +31,8 @@ namespace Wizzy {
 
     Shader* Shader::Create(const string& file) {
         switch (Renderer::GetAPI()) {
-            case RendererAPI::NONE: WZ_CORE_ERROR("No renderer API is selected"); return nullptr;
-            case RendererAPI::OPENGL: return new GLShader(file); break;
+            case RendererAPI::API_NONE: WZ_CORE_ERROR("No renderer API is selected"); return nullptr;
+            case RendererAPI::API_OPENGL: return new GLShader(file); break;
         }
 
         WZ_CORE_ASSERT(false, "Invalid renderer API selected");

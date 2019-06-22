@@ -2,16 +2,20 @@
 
 #version 330 core
 
-layout(location = 0) in vec3 vertexPosition;
+layout(location = 0) in vec4 vertexPosition;
 layout(location = 1) in vec4 vertexColor;
 
-out vec3 worldPosition;
+uniform mat4 projection;
+uniform mat4 view;
+uniform mat4 model;
+
+out vec4 worldPosition;
 out vec4 fragColor;
 
 void main() {
-    worldPosition = vertexPosition;
+    worldPosition = projection * view * model * vertexPosition;
     fragColor = vertexColor;
-    gl_Position = vec4(worldPosition, 1.0);
+    gl_Position = worldPosition;
 }
 
 #shader fragment
@@ -21,7 +25,7 @@ void main() {
 out vec4 outColor;
 in vec4 fragColor;
 
-in vec3 worldPosition;
+in vec4 worldPosition;
 
 void main()
 {

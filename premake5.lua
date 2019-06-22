@@ -2,7 +2,7 @@
 
 workspace "Wizzy"
 
-  startproject "Launcher"
+  startproject "Sandbox"
 
   architecture "x64"
 
@@ -36,146 +36,6 @@ workspace "Wizzy"
   include "Wizzy/vendor/imgui/"
   include "Wizzy/vendor/lua"
   include "Wizzy/vendor/pdoes"
-
---[[------------------------------------------------------------------------------------
-       LAUNCHER PROJECT
-----------------------------------------------------------------------------------------]]
-
-project "Launcher"
-	location "Launcher"
-	kind "ConsoleApp"
-  language "C++"
-
-	targetdir ("bin/" .. output_dir .. "/%{prj.name}/")
-  objdir ("bin-int/" .. output_dir .. "/%{prj.name}/")
-
-  buildoptions { "-Wall" }
-
-  files
-  {
-    "%{prj.name}/src/**.h",
-    "%{prj.name}/src/**.cpp",
-  }
-
-  includedirs
-  {
-		"Wizzy/src",
-    "%{prj.name}/src",
-    "%{include_dir.spdlog}",
-    "%{include_dir.glfw}",
-    "%{include_dir.glad}",
-    "%{include_dir.imgui}",
-    "%{include_dir.glm}",
-    "%{include_dir.stb}",
-    "%{include_dir.lua}",
-    "%{include_dir.pybind11}",
-    "%{include_dir.ulib}",
-    "%{include_dir.pdoes}"
-  }
-
-	defines
-  {
-      "WZ_USE_OPENGL",
-      "STB_IMAGE_IMPLEMENTATION",
-      "ULIB_NO_INCLUDE"
-  }
-
-	links
-  {
-	"Sandbox",
-    "Wizzy",
-    "imgui",
-    "glfw",
-    "glad",
-    "lua",
-    "pdoes"
-  }
-
----------------------------------------------------------------------
---                        WINDOWS
----------------------------------------------------------------------
-  filter "system:windows"
-    cppdialect "C++17"
-    staticruntime "On"
-    systemversion "latest"
-
-    defines
-    {
-      "WZ_PLATFORM_WINDOWS",
-      "GLFW_INCLUDE_NONE",
-      "PDOES_API=__declspec(dllimport)"
-    }
-
-    links { "opengl32.lib", "glu32.lib" }
-
----------------------------------------------------------------------
-
-
----------------------------------------------------------------------
---                        LINUX
----------------------------------------------------------------------
-  filter "system:linux"
-    cppdialect "C++17"
-    staticruntime "On"
-    systemversion "latest"
-    pic "On"
-    defines {
-        "WZ_PLATFORM_LINUX"
-    }
-
-    links
-    {
-      "GL",
-      "GLU",
-      "X11",
-      "Xxf86vm",
-      "Xrandr",
-      "pthread",
-      "Xi",
-      "dl",
-      "stdc++fs"
-    }
-
-    includedirs { "/usr/include/python3.6" }
-
-
-
----------------------------------------------------------------------
-
----------------------------------------------------------------------
---                        MACOSX
----------------------------------------------------------------------
-  filter "system:macosx"
-    cppdialect "C++17"
-    staticruntime "On"
-    systemversion "latest"
-    pic "On"
-    defines {
-        "WZ_PLATFORM_MACOSX"
-    }
----------------------------------------------------------------------
-
-  filter "configurations:Debug*"
-    defines "WZ_CONFIG_DEBUG"
-    runtime "Debug"
-    symbols "On"
-
-  filter "configurations:Release*"
-    defines "WZ_CONFIG_RELEASE"
-    runtime "Release"
-    symbols "On"
-    optimize "On"
-
-  filter "configurations:Dist*"
-    defines { "WZ_CONFIG_DIST", "WZ_DISABLE_ASSERTS" }
-    runtime "Release"
-    optimize "On"
-
-  filter "action:codelite"
-    defines { "__CODELITE__" }
-
-  filter "action:xcode4"
-    defines { "__XCODE__" }
 
 --[[------------------------------------------------------------------------------------
        CORE PROJECT
@@ -330,7 +190,7 @@ project "Wizzy"
 ----------------------------------------------------------------------------------------]]
 project "Sandbox"
   location "Sandbox"
-  kind "SharedLib"
+  kind "ConsoleApp"
   language "C++"
   architecture "x64"
 
@@ -382,8 +242,6 @@ project "Sandbox"
     "lua",
     "pdoes"
   }
-
-  postbuildcommands { ("cp %{cfg.buildtarget.relpath} ../bin/" .. output_dir .. "/Launcher/SandboxModule") }
 
   filter "action:codelite"
     defines { "__CODELITE__" }

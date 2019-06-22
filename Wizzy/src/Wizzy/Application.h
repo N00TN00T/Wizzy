@@ -1,6 +1,5 @@
 #pragma once
 
-#include "Wizzy/Events/AppEvent.h"
 #include "Wizzy/IWindow.h"
 
 namespace Wizzy {
@@ -31,18 +30,19 @@ namespace Wizzy {
 
         inline bool WantRestart() const { return m_wantRestart; }
 
-	private:
-		bool OnWindowClose(WindowCloseEvent& e);
-		bool OnWindowResize(WindowResizeEvent& e);
+	protected:
+		virtual void Init() = 0;
+
 	protected:
 		std::unique_ptr<IWindow> m_window;
+		ecs::ECSManager m_ecs;
+		ecs::SystemLayer m_engineSystems;
+		ecs::SystemLayer m_gameSystems;
 
 	private:
 		bool m_running;
         bool m_wantRestart = false;
 		ApplicationProps m_props;
-		ecs::ECSManager m_engineManager;
-		ecs::SystemLayer m_mainLayer;
 
 	public:
 		inline static Application& Get() { return *s_instance; }

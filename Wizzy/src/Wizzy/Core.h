@@ -39,10 +39,10 @@
 
 #ifndef WZ_DISABLE_ASSERTS
 
-	#define ASSERT_MSG (("Assertion failed: '{0}' in " + std::string(__FILENAME__) + ":" + std::to_string(__LINE__)).c_str())
+	#define ASSERT_MSG(x) (("Assertion failed for expression '" + string(#x) + "': '{0}' in " + std::string(__FILENAME__) + ":" + std::to_string(__LINE__)).c_str())
 
-	#define WZ_ASSERT(x, ...) if (!(x)) { WZ_CRITICAL(ASSERT_MSG, __VA_ARGS__); WZ_BREAK; }
-	#define WZ_CORE_ASSERT(x, ...) if (!(x)) { WZ_CORE_CRITICAL(ASSERT_MSG, __VA_ARGS__); WZ_BREAK; }
+	#define WZ_ASSERT(x, ...) if (!(x)) { WZ_CRITICAL(ASSERT_MSG(x), __VA_ARGS__); WZ_BREAK; }
+	#define WZ_CORE_ASSERT(x, ...) if (!(x)) { WZ_CORE_CRITICAL(ASSERT_MSG(x), __VA_ARGS__); WZ_BREAK; }
     #define WZ_LUA_ASSERT(x, msg) if (!(x)) { throw std::exception(msg); }
 
 #else

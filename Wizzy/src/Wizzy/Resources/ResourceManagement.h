@@ -54,20 +54,18 @@ namespace Wizzy {
 
         string _fullPath = s_resourcePath + file;
 
-        TResource *_import = nullptr;
-
         bool _aliasFree = s_resourceAliases.emplace(alias).second;
 
         if (_aliasFree) {
-            _import = TResource::Create(_fullPath);
-            _import->Load();
-            s_resources[alias] = static_cast<IResource*>(_import);
+            auto _resource = TResource::Create(_fullPath);
+            _resource->Load();
+            s_resources[alias] = _resource;
         } else {
             WZ_CORE_ERROR("Failed importing '{0}', alias '{1}' is already taken",
                                         typestr(TResource), alias);
         }
 
-        return _import;
+        return static_cast<TResource*>(s_resources[alias]);
     }
 
     template <typename TResource>

@@ -67,7 +67,7 @@ namespace Wizzy {
                 normalized(normalized) {}
 
         inline
-        u32 GetElementCount() const { return ShaderDataTypeElementCount(type); }
+        u32 GetComponentCount() const { return ShaderDataTypeElementCount(type); }
     };
 
     class BufferLayout {
@@ -136,7 +136,10 @@ namespace Wizzy {
         IndexBuffer* Create(u32 *data, u32 count);
     };
 
-    /*class VertexArray {
+    typedef std::shared_ptr<IndexBuffer> IndexBufferPtr;
+    typedef std::shared_ptr<VertexBuffer> VertexBufferPtr;
+
+    class VertexArray {
     public:
         virtual
         ~VertexArray() {}
@@ -146,9 +149,20 @@ namespace Wizzy {
         virtual
         void Unbind() const = 0;
 
+        virtual
+        void PushVertexBuffer(const VertexBufferPtr& buffer) = 0;
+        virtual
+        void SetIndexBuffer(const IndexBufferPtr& buffer) = 0;
+
+        virtual
+        const std::vector<VertexBufferPtr>& GetVertexBuffers() const = 0;
+        virtual
+        const IndexBufferPtr& GetIndexBuffer() const = 0;
 
         static
         VertexArray* Create();
-    }*/
+    };
+
+    typedef std::shared_ptr<VertexArray> VertexArrayPtr;
 
 }

@@ -92,30 +92,28 @@ namespace Wizzy {
 		m_source = { _vertSource, _fragSource };
     }
     bool GLShader::Compile() {
+        WZ_CORE_DEBUG("Got ere");
         WZ_CORE_TRACE("Compiling OpenGL Shader...");
+        WZ_CORE_DEBUG("Got ere");
         GL_CALL(u32 _program = glCreateProgram());
+        WZ_CORE_DEBUG("Got ere");
 		GL_CALL(u32 _vShader = glCreateShader(GL_VERTEX_SHADER));
 		GL_CALL(u32 _fShader = glCreateShader(GL_FRAGMENT_SHADER));
 
 		const char *_vSource = m_source.vertSource.c_str();
 		const char *_fSource = m_source.fragSource.c_str();
-
         GL_CALL(glShaderSource(_vShader, 1, &_vSource, NULL));
 		GL_CALL(glShaderSource(_fShader, 1, &_fSource, NULL));
-
 		// COMPILE VERTEX SHADER
 		GL_CALL(glCompileShader(_vShader));
 		int32 _vCompileResult;
 		GL_CALL(glGetShaderiv(_vShader, GL_COMPILE_STATUS, &_vCompileResult));
-
 		// COMPILE FRAGMENT SHADER
 		GL_CALL(glCompileShader(_fShader));
 		int32 _fCompileResult;
 		GL_CALL(glGetShaderiv(_fShader, GL_COMPILE_STATUS, &_fCompileResult));
-
         bool _vCompileSuccess = _vCompileResult != GL_FALSE;
         bool _fCompileSuccess = _fCompileResult != GL_FALSE;
-
         string _errMsg = "";
         if (!_vCompileSuccess || !_fCompileSuccess) {
             int32 _vLogLength;

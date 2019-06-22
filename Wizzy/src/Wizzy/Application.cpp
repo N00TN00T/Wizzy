@@ -4,7 +4,6 @@
 #include "Events/AppEvent.h"
 #include "Wizzy/Input.h"
 
-#include <glad/glad.h>
 #include <imgui.h>
 
 #include "Wizzy/platform/OpenGL/GLErrorHandling.h"
@@ -14,38 +13,9 @@
 #include "Wizzy/ImGuiSystem.h"
 #include "Wizzy/Renderer/API.h"
 
+#define DISPATCH_EVENT_LOCAL(eType, ...) { auto _e = eType(__VA_ARGS__); this->OnEvent(_e); } [](){return 0;}()
+
 namespace Wizzy {
-
-	struct GameComponent
-		: public ecs::Component<GameComponent> {
-		GameComponent(const GameComponent& src) { // TODO: wtf?
-			gameManager = src.gameManager;
-			systems = src.systems;
-		}
-		ecs::ECSManager gameManager;
-		ecs::SystemLayer systems;
-	};
-
-	class GameSystem
-		: public ecs::System {
-	public:
-
-		GameSystem() {
-			AddComponentType<GameComponent>();
-
-			SubscribeAll();
-		}
-
-		virtual void OnEvent(const void* eventHandle,
-							 ecs::ComponentGroup& components) const override {
-			const Event& _e = *static_cast<const Event*>(eventHandle);
-
-			GameComponent& _game = *components.Get<GameComponent>();
-			_game.gameManager.NotifySystems(_game.systems,
-											eventHandle,
-											(int32)_e.GetEventType());
-		}
-	};
 
 	Application* Application::s_instance(nullptr);
 
@@ -59,11 +29,14 @@ namespace Wizzy {
 	void Application::OnEvent(Event& e) {
 		EventDispatcher _dispatcher(e);
 
-		_dispatcher.Dispatch<WindowCloseEvent>(WZ_BIND_FN(Application::OnWindowClose));
-		_dispatcher.Dispatch<WindowResizeEvent>(WZ_BIND_FN(Application::OnWindowResize));
+		_dispatcher.Dispatch<WindowCloseEvent>([this](WindowCloseEvent& e) {
+			m_running = false;
+			return false;
+		});
 
 		void *_eHandle = static_cast<void*>(&e);
-		m_engineManager.NotifySystems(m_mainLayer, _eHandle, (int32)e.GetEventType());
+		m_ecs.NotifySystems(m_engineSystems, _eHandle, (int32)e.GetEventType());
+		m_ecs.NotifySystems(m_gameSystems, _eHandle, (int32)e.GetEventType());
 	}
 
 	void Application::Run() {
@@ -92,36 +65,8 @@ namespace Wizzy {
 
 		m_window = std::unique_ptr<IWindow>(IWindow::Create(_windowProps));
 		m_window->SetEventCallback(WZ_BIND_FN(Application::OnEvent));
+
 		m_running = true;
-		ResourceManagement::SetResourcePath(string(BASE_DIR) + "Resources/");
-
-		ResourceManagement::Import<Shader> (
-											"basic.shader",
-											"basicShader"
-										);
-        ResourceManagement::Import<Script> (
-											"test.lua",
-											"testScript"
-										);
-
-		mat4 _ortho = glm::ortho<float>(0, 1600, 0, 900);
-
-		Shader& _shader = *ResourceManagement::Get<Shader>("basicShader");
-
-		float _vertices[] = {
-			-0.5f, -0.5f, 0.0f,		0.8f, 0.2f, 0.8f, 1.0f,
-			 0.5f, -0.5f, 0.0f,		0.2f, 0.3f, 0.8f, 1.0f,
-			 0.0f,  0.5f, 0.0f,		0.8f, 0.8f, 0.2f, 1.0f
-		};
-
-		VertexBuffer *_vbo = VertexBuffer::Create(_vertices, sizeof(_vertices));
-
-		BufferLayout _layout = {
-			{ ShaderDataType::FLOAT3, "vertexPosition" }
-		};
-
-		u32 _indices[] = { 0, 1, 2 };
-		IndexBuffer *_ibo = IndexBuffer::Create(_indices, 3);
 
 		ImGuiComponent _imguiComponent;
 
@@ -132,41 +77,22 @@ namespace Wizzy {
 			ImGuiComponent::staticId
 		};
 
-		m_engineManager.CreateEntity(_imguiComponents, _imguiIds, 1);
+		m_ecs.CreateEntity(_imguiComponents, _imguiIds, 1);
 
-		m_mainLayer.AddSystem<ImGuiSystem>();
+		m_engineSystems.AddSystem<ImGuiSystem>();
+
+		this->Init();
 
 		while (m_running) {
 			m_window->OnFrameBegin();
-			{
-				auto _e = AppFrameBeginEvent(m_window->GetDeltaTime());
-				this->OnEvent(_e);
-			}
+			DISPATCH_EVENT_LOCAL(AppFrameBeginEvent, m_window->GetDeltaTime());
 
-			{
-				auto _e = AppUpdateEvent(m_window->GetDeltaTime());
-				this->OnEvent(_e);
-			}
-			{
-				auto _e = AppRenderEvent();
-				this->OnEvent(_e);
-			}
+			DISPATCH_EVENT_LOCAL(AppUpdateEvent, m_window->GetDeltaTime());
 
-			{
-				auto _e = AppFrameEndEvent(m_window->GetDeltaTime());
-				this->OnEvent(_e);
-			}
+			DISPATCH_EVENT_LOCAL(AppRenderEvent);
+
+			DISPATCH_EVENT_LOCAL(AppFrameEndEvent, m_window->GetDeltaTime());
 			m_window->OnFrameEnd();
 		}
-	}
-
-	bool Application::OnWindowClose(WindowCloseEvent& e) {
-		m_running = false;
-		return false;
-	}
-	bool Application::OnWindowResize(WindowResizeEvent& e) {
-		glViewport(0, 0, e.GetX(), e.GetY());
-
-		return false;
 	}
 }

@@ -11,16 +11,12 @@
 
 namespace Wizzy {
 
-    enum LogType {
-        LOG_CORE, LOG_CLIENT,
-    };
-
     typedef std::shared_ptr<spdlog::logger> LoggerPtr;
     typedef char LogLevel;
 
 	class Log {
 	public:
-		static void Init(LogType logType);
+		static void Init();
 
 		inline static LoggerPtr& GetCoreLogger() { return s_coreLogger; }
 		inline static LoggerPtr& GetClientLogger() { return s_clientLogger; }

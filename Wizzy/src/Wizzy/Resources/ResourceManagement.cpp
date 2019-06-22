@@ -13,7 +13,6 @@ namespace Wizzy {
 		WZ_CORE_ASSERT(_target, "Tried deleting resource with alias '" + alias + "', but no such resource was found.");
 
         if (!_target->IsGarbage()) _target->Unload();
-        delete _target;
 
         s_resourceAliases.erase(alias);
 		s_resources.erase(alias);

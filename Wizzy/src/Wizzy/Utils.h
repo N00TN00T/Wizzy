@@ -10,7 +10,14 @@ namespace Wizzy {
     bool set_contains(std::set<T> set, T value) {
         return std::find(set.begin(), set.end(), value) != set.end();
     }
+
+    double inline to_radians(double deg)  {
+        return deg * 0.0174532925;
+    }
+
+    double inline to_degrees(double rad)  {
+        return rad * 57.2957795;
+    }
+
+
 }
-
-
-
