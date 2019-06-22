@@ -14,9 +14,7 @@ namespace Wizzy {
 	ImGuiSystem::ImGuiSystem() {
 		AddComponentType<ImGuiComponent>();
 
-		Subscribe((int32)AppFrameBeginEvent::GetStaticType());
-		Subscribe((int32)AppUpdateEvent::GetStaticType());
-		Subscribe((int32)AppFrameEndEvent::GetStaticType());
+		Subscribe((int32)AppRenderEvent::GetStaticType());
 
 		InitImgui();
 	}
@@ -26,27 +24,14 @@ namespace Wizzy {
 	void ImGuiSystem::OnEvent(const void* eventHandle,
 							ecs::ComponentGroup& components) const {
 		const Event& _event = *static_cast<const Event*>(eventHandle);
+		ImGuiComponent& _imguiComponent = *components.Get<ImGuiComponent>();
 
 		switch ((EventType)_event.GetEventType()) {
-			case EventType::app_frame_begin:
-			{
-				const AppFrameBeginEvent& _frameBeginEvent
-						= *static_cast<const AppFrameBeginEvent*>(eventHandle);
-				OnFrameBegin(_frameBeginEvent.GetDeltaTime());
-				break;
-			}
-			case EventType::app_update:
+			case EventType::app_render:
 			{
 				const AppUpdateEvent& _updateEvent
 						= *static_cast<const AppUpdateEvent*>(eventHandle);
-				OnUpdate(_updateEvent.GetDeltaTime());
-				break;
-			}
-			case EventType::app_frame_end:
-			{
-				const AppFrameEndEvent& _frameEndEvent
-						= *static_cast<const AppFrameEndEvent*>(eventHandle);
-				OnFrameEnd(_frameEndEvent.GetDeltaTime());
+				OnRender(_updateEvent.GetDeltaTime());
 				break;
 			}
 			default: break;
@@ -93,20 +78,20 @@ namespace Wizzy {
 		ImGui_ImplGlfw_Shutdown();
 		ImGui::DestroyContext();
 	}
-	void ImGuiSystem::OnFrameBegin(float delta) const {
+	void ImGuiSystem::ImguiBeginLayer(float delta) const {
 		ImGui_ImplOpenGL3_NewFrame();
 		ImGui_ImplGlfw_NewFrame();
 		ImGui::NewFrame();
 	}
-	void ImGuiSystem::OnUpdate(float delta) const {
-		ImGui::Begin("Test window");
-		ImGui::Text("This is text");
-		if (ImGui::Button("Press me")) {
-			WZ_CORE_DEBUG("I press >:)");
+	void ImGuiSystem::OnRender(float delta, const ImGuiComponent& imguiComponent) const {
+		const auto& _imguiLayers = ImGuiComponent.imguiLayers;
+		while (!_imguiLayers.empty()) {
+			auto _imguiLayerFn = _imguiLayers.pop();
+			_imguiLayerFn();
 		}
-		ImGui::End();
+		ImguiComponent.imguiLayers.clear();
 	}
-	void ImGuiSystem::OnFrameEnd(float delta) const {
+	void ImGuiSystem::ImguiEndLayer(float delta) const {
 		auto& _io = ImGui::GetIO();
 		auto& _app = Application::Get();
 		_io.DisplaySize = ImVec2((float)_app.GetWindow().GetWidth(),

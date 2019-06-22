@@ -42,6 +42,7 @@ class RendererSetupSystem
 public:
 	RendererSetupSystem() {
 		AddComponentType<RenderEnvironmentComponent>();
+        AddComponentType<ImGuiComponent>();
 
 		Subscribe((int32)wz::AppFrameBeginEvent::GetStaticType());
         Subscribe((int32)wz::AppUpdateEvent::GetStaticType());
@@ -64,13 +65,16 @@ public:
         wz::RenderCommand::SetViewport(0, 0, e.GetX(), e.GetY());
     }
 
-    void OnUpdate(RenderEnvironmentComponent& env) const {
-        ImGui::Begin("Camera");
+    void OnUpdate(RenderEnvironmentComponent& env,
+                    const ImGuiComponent& imguiComponent) const {
+        imguiComponent.imguiLayers.push([&](){
+            ImGui::Begin("Camera");
 
-        ImGui::DragFloat3("Position", glm::value_ptr(env.view) + 12, 0.05f);
-        ImGui::DragFloat("FOV", glm::value_ptr(env.view) + 16, 0.01f);
+            ImGui::DragFloat3("Position", glm::value_ptr(env.view) + 12, 0.05f);
+            ImGui::DragFloat("FOV", glm::value_ptr(env.view) + 16, 0.01f);
 
-        ImGui::End();
+            ImGui::End();
+        });
     }
 
 	virtual
@@ -78,13 +82,14 @@ public:
 						 ecs::ComponentGroup& components) const override {
 		const wz::Event& _e = *static_cast<const wz::Event*>(eventHandle);
 		RenderEnvironmentComponent& _env = *components.Get<RenderEnvironmentComponent>();
+        ImGuiComponent& _imguiComponent = *components.Get<ImGuiComponent>();
 
 		switch (_e.GetEventType()) {
 			case wz::EventType::app_frame_begin:
 				BeginRenderer(_env);
 				break;
             case wz::EventType::app_update:
-				OnUpdate(_env);
+				OnUpdate(_env, _imguiComponent);
 				break;
 			case wz::EventType::app_frame_end:
 				EndRenderer(_env);
@@ -162,14 +167,17 @@ public:
 		}
 	}
 
-	void OnRender(TransformComponent& transform) const {
-		ImGui::Begin("Test triangle");
+	void OnRender(TransformComponent& transform,
+                    const ImGuiComponent& imguiComponent) const {
+        imguiComponent.imguiLayers.push([&](){
+            ImGui::Begin("Test triangle");
 
-		ImGui::DragFloat3("Position", glm::value_ptr(transform.position), 0.1f);
-		ImGui::DragFloat3("Rotation", glm::value_ptr(transform.rotation), 0.1f);
-		ImGui::DragFloat3("Scale", glm::value_ptr(transform.scale), 0.1f);
+    		ImGui::DragFloat3("Position", glm::value_ptr(transform.position), 0.1f);
+    		ImGui::DragFloat3("Rotation", glm::value_ptr(transform.rotation), 0.1f);
+    		ImGui::DragFloat3("Scale", glm::value_ptr(transform.scale), 0.1f);
 
-		ImGui::End();
+    		ImGui::End();
+        });
 	}
 
 	virtual void OnEvent(const void* eventHandle,
@@ -177,6 +185,7 @@ public:
 		const wz::Event& _e = *static_cast<const wz::Event*>(eventHandle);
 		TransformComponent& _transform =
 								*components.Get<TransformComponent>();
+        ImGuiComponent& _imguiComponent = *components.Get<ImGuiComponent>();
 
 		switch (_e.GetEventType()) {
 			case wz::EventType::app_update:
@@ -188,7 +197,7 @@ public:
 				break;
 			}
 			case wz::EventType::app_render:
-				OnRender(_transform);
+				OnRender(_transform, _imguiComponent);
 				break;
 			default: break;
 		}
@@ -301,9 +310,11 @@ public:
 		CreateTriangle(_vao, { _shader }, vec3(1.5f, 0.f, 0.f), vec3(0, 0, 0));
 		CreateTriangle(_vao, { _shader }, vec3(0.f, 0.f, 0.f), vec3(0, 0, 0), true);
 
-		m_gameSystems.AddSystem<RendererSetupSystem>();
+		m_engineSystems.AddSystem<RendererSetupSystem>();
+
 		m_gameSystems.AddSystem<TestTriangleSystem>();
 		m_gameSystems.AddSystem<RenderSystem>();
+
 		wz::RenderCommand::SetClearColor(.1f, .2f, .5f, 1.f);
 	}
 

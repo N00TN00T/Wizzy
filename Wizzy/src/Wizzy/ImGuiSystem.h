@@ -4,7 +4,7 @@ namespace Wizzy {
 
 	struct ImGuiComponent
 		: public ecs::Component<ImGuiComponent> {
-
+		std::queue<std::function<void()>> imguiLayers;
 	};
 
 	class ImGuiSystem
