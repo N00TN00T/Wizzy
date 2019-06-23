@@ -31,7 +31,7 @@ namespace Wizzy {
 			{
 				const AppUpdateEvent& _updateEvent
 						= *static_cast<const AppUpdateEvent*>(eventHandle);
-				OnRender(_updateEvent.GetDeltaTime());
+				OnRender(_updateEvent.GetDeltaTime(), _imguiComponent);
 				break;
 			}
 			default: break;
@@ -79,19 +79,25 @@ namespace Wizzy {
 		ImGui::DestroyContext();
 	}
 	void ImGuiSystem::ImguiBeginLayer(float delta) const {
+		WZ_CORE_TRACE("Beginning imgui layer...");
 		ImGui_ImplOpenGL3_NewFrame();
 		ImGui_ImplGlfw_NewFrame();
 		ImGui::NewFrame();
 	}
-	void ImGuiSystem::OnRender(float delta, const ImGuiComponent& imguiComponent) const {
-		const auto& _imguiLayers = ImGuiComponent.imguiLayers;
-		while (!_imguiLayers.empty()) {
-			auto _imguiLayerFn = _imguiLayers.pop();
+	void ImGuiSystem::OnRender(float delta, ImGuiComponent& imguiComponent) const {
+		WZ_CORE_TRACE("Doing imgui layers...");
+		auto& _imguiLayers = imguiComponent.imguiLayers;
+		while (/*!_imguiLayers.IsEmpty()*/0) {
+			ImguiBeginLayer(delta);
+			auto& _imguiLayerFn = _imguiLayers.Pop();
+			WZ_CORE_TRACE("Invoking imgui layer...");
 			_imguiLayerFn();
+			ImguiEndLayer(delta);
 		}
-		ImguiComponent.imguiLayers.clear();
+		WZ_CORE_TRACE("Imgui layers done");
 	}
 	void ImGuiSystem::ImguiEndLayer(float delta) const {
+		WZ_CORE_TRACE("Ending imgui layer...");
 		auto& _io = ImGui::GetIO();
 		auto& _app = Application::Get();
 		_io.DisplaySize = ImVec2((float)_app.GetWindow().GetWidth(),

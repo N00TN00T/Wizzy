@@ -4,7 +4,7 @@ namespace Wizzy {
 
 	struct ImGuiComponent
 		: public ecs::Component<ImGuiComponent> {
-		std::queue<std::function<void()>> imguiLayers;
+		ulib::Queue<std::function<void()>> imguiLayers;
 	};
 
 	class ImGuiSystem
@@ -17,8 +17,8 @@ namespace Wizzy {
 	private:
 		void InitImgui() const;
 		void DeinitImgui() const;
-		void OnFrameBegin(float delta) const;
-		void OnUpdate(float delta) const;
-		void OnFrameEnd(float delta) const;
+		void ImguiBeginLayer(float delta) const;
+		void OnRender(float delta, ImGuiComponent& imguiComponent) const;
+		void ImguiEndLayer(float delta) const;
 	};
 }

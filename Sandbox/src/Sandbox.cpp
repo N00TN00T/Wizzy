@@ -23,11 +23,6 @@ struct TransformComponent
 		return _ret;
 	}
 };
-struct RenderEnvironmentComponent
-	: public ecs::Component<RenderEnvironmentComponent> {
-	mat4 view;
-	mat4 projection;
-};
 struct TestTriangleComponent
 	: public ecs::Component<TestTriangleComponent> {
 
@@ -35,75 +30,6 @@ struct TestTriangleComponent
 struct PlayerTestTriangleComponent
 	: public ecs::Component<PlayerTestTriangleComponent> {
 
-};
-
-class RendererSetupSystem
-	: public ecs::System {
-public:
-	RendererSetupSystem() {
-		AddComponentType<RenderEnvironmentComponent>();
-        AddComponentType<ImGuiComponent>();
-
-		Subscribe((int32)wz::AppFrameBeginEvent::GetStaticType());
-        Subscribe((int32)wz::AppUpdateEvent::GetStaticType());
-		Subscribe((int32)wz::AppFrameEndEvent::GetStaticType());
-        Subscribe((int32)wz::WindowResizeEvent::GetStaticType());
-	}
-
-	void BeginRenderer(const RenderEnvironmentComponent& env) const {
-		wz::RenderCommand::Clear();
-		wz::Renderer::Begin(env.view, env.projection);
-	}
-
-	void EndRenderer(const RenderEnvironmentComponent& env) const {
-		wz::Renderer::End();
-	}
-
-    void OnWindowResize(const wz::WindowResizeEvent& e, RenderEnvironmentComponent& env) const {
-        env.projection =
-            glm::perspective<float>(wz::to_radians(90), e.GetX() / e.GetY(), .01f, 10000);
-        wz::RenderCommand::SetViewport(0, 0, e.GetX(), e.GetY());
-    }
-
-    void OnUpdate(RenderEnvironmentComponent& env,
-                    const ImGuiComponent& imguiComponent) const {
-        imguiComponent.imguiLayers.push([&](){
-            ImGui::Begin("Camera");
-
-            ImGui::DragFloat3("Position", glm::value_ptr(env.view) + 12, 0.05f);
-            ImGui::DragFloat("FOV", glm::value_ptr(env.view) + 16, 0.01f);
-
-            ImGui::End();
-        });
-    }
-
-	virtual
-    void OnEvent(const void* eventHandle,
-						 ecs::ComponentGroup& components) const override {
-		const wz::Event& _e = *static_cast<const wz::Event*>(eventHandle);
-		RenderEnvironmentComponent& _env = *components.Get<RenderEnvironmentComponent>();
-        ImGuiComponent& _imguiComponent = *components.Get<ImGuiComponent>();
-
-		switch (_e.GetEventType()) {
-			case wz::EventType::app_frame_begin:
-				BeginRenderer(_env);
-				break;
-            case wz::EventType::app_update:
-				OnUpdate(_env, _imguiComponent);
-				break;
-			case wz::EventType::app_frame_end:
-				EndRenderer(_env);
-				break;
-            case wz::EventType::window_resize:
-            {
-                const wz::WindowResizeEvent& _windowResizeEvent =
-                        *static_cast<const wz::WindowResizeEvent*>(eventHandle);
-				OnWindowResize(_windowResizeEvent, _env);
-				break;
-            }
-			default: break;
-		}
-	}
 };
 
 class RenderSystem
@@ -118,6 +44,7 @@ public:
 
 	void Submit(const RenderComponent& renderComponent,
 				const TransformComponent& transformComponent) const {
+        WZ_CORE_TRACE("Submitting from render system");
 		wz::Renderer::Submit(renderComponent.va, renderComponent.material,
 						 transformComponent.ToMat4());
 	}
@@ -153,7 +80,8 @@ public:
 	}
 
 	void OnPlayerUpdate(TransformComponent& transform, float delta) const {
-		if (wz::Input::GetKey(WZ_KEY_W)) {
+        WZ_CORE_TRACE("Player update");
+        if (wz::Input::GetKey(WZ_KEY_W)) {
 			transform.position.y += delta * 100.f;
 		}
 		if (wz::Input::GetKey(WZ_KEY_A)) {
@@ -168,8 +96,8 @@ public:
 	}
 
 	void OnRender(TransformComponent& transform,
-                    const ImGuiComponent& imguiComponent) const {
-        imguiComponent.imguiLayers.push([&](){
+                    wz::ImGuiComponent& imguiComponent) const {
+        std::function<void()> _fn = [&](){
             ImGui::Begin("Test triangle");
 
     		ImGui::DragFloat3("Position", glm::value_ptr(transform.position), 0.1f);
@@ -177,7 +105,9 @@ public:
     		ImGui::DragFloat3("Scale", glm::value_ptr(transform.scale), 0.1f);
 
     		ImGui::End();
-        });
+        };
+        WZ_CORE_TRACE("Test triangle gui");
+        imguiComponent.imguiLayers.Push(_fn);
 	}
 
 	virtual void OnEvent(const void* eventHandle,
@@ -185,7 +115,7 @@ public:
 		const wz::Event& _e = *static_cast<const wz::Event*>(eventHandle);
 		TransformComponent& _transform =
 								*components.Get<TransformComponent>();
-        ImGuiComponent& _imguiComponent = *components.Get<ImGuiComponent>();
+        wz::ImGuiComponent& _imguiComponent = *components.Get<wz::ImGuiComponent>();
 
 		switch (_e.GetEventType()) {
 			case wz::EventType::app_update:
@@ -207,25 +137,6 @@ public:
 class Sandbox
 	: public Wizzy::Application {
 public:
-
-	void CreateRendererManager() {
-		RenderEnvironmentComponent _envComp;
-		_envComp.view = glm::lookAt(vec3(0, 0, -10), vec3(0, 0, 0), vec3(0, 1, 0));
-		_envComp.projection =
-                        glm::perspectiveFov<float>(90,
-                                                    m_window->GetWidth(),
-                                                    m_window->GetHeight(),
-                                                    .1f,
-                                                    10000);
-		ecs::IComponent* _comps[] = {
-			&_envComp
-		};
-		ecs::StaticCId _ids[] = {
-			_envComp.staticId
-		};
-
-		m_ecs.CreateEntity(_comps, _ids, 1);
-	}
 
 	void CreateTriangle(const wz::VertexArrayPtr& va, const wz::Material& mat, vec3 pos, vec3 rot, bool isPlayer = false) {
 		RenderComponent _renderComp;
@@ -305,12 +216,9 @@ public:
 		_vao->PushVertexBuffer(_vbo);
 		_vao->SetIndexBuffer(_ibo);
 
-		CreateRendererManager();
 		CreateTriangle(_vao, { _shader }, vec3(-1.5f, 0.f, 0.f), vec3(0, 0, 0));
 		CreateTriangle(_vao, { _shader }, vec3(1.5f, 0.f, 0.f), vec3(0, 0, 0));
 		CreateTriangle(_vao, { _shader }, vec3(0.f, 0.f, 0.f), vec3(0, 0, 0), true);
-
-		m_engineSystems.AddSystem<RendererSetupSystem>();
 
 		m_gameSystems.AddSystem<TestTriangleSystem>();
 		m_gameSystems.AddSystem<RenderSystem>();
