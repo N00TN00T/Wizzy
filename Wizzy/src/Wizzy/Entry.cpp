@@ -2,7 +2,6 @@
 #include "Entry.h"
 #include "Log.h"
 #include "Wizzy/Application.h"
-#include <dlfcn.h>
 
 extern Wizzy::Application* CreateApplication();
 

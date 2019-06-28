@@ -280,6 +280,7 @@ public:
         if (ImGui::BeginCombo("Diffuse mode", _diffuseModePreview.c_str())) {
             if (ImGui::MenuItem("Texture##mode")) {
                 if (!_material.diffuseTexture) {
+					_diffuseModePreview = "Color";
                     for (const auto& _alias : wz::ResourceManagement::GetAliases()) {
                         if (wz::ResourceManagement::Get<wz::Texture>(_alias) != nullptr) {
                             _material.diffuseTexture =
@@ -531,7 +532,7 @@ public:
 		CreateTriangle(_vao, { _shader }, vec3(1.5f, 0.f, 0.f), vec3(0, 0, 0));
         wz::Material _playerMaterial(_shader);
         _playerMaterial.diffuseTexture = _texture;
-		//CreateTriangle(_vao, _playerMaterial, vec3(0.f, 0.f, 0.f), vec3(0, 0, 0), true);
+		CreateTriangle(_vao, _playerMaterial, vec3(0.f, 0.f, 0.f), vec3(0, 0, 0), true);
 
         m_clientSystems.AddSystem<CameraSystem>();
         m_clientSystems.AddSystem<TestTriangleSystem>();

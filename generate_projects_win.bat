@@ -15,5 +15,5 @@
 @echo.
 set /p prj="Input project type to generate: "
 @echo on
-call vendor\premake5\windows\premake5.exe %prj%
+call vendor\bin\premake\windows\premake5.exe %prj%
 pause
