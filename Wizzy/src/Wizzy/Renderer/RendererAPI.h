@@ -1,6 +1,7 @@
 #pragma once
 
 #include "Wizzy/Renderer/Buffers.h"
+#include "Wizzy/Renderer/API.h"
 
 namespace Wizzy {
     class RendererAPI {
@@ -28,6 +29,11 @@ namespace Wizzy {
         void SetViewport(vec2 pos, vec2 size) {
             SetViewport(pos.x, pos.y, size.x, size.y);
         }
+
+        virtual
+        void SetCullMode(CullMode mode) = 0;
+        virtual
+        void ToggleDepthTesting(bool value) = 0;
 
         inline static
         int8 GetAPI() { return s_API; }

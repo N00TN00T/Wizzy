@@ -32,12 +32,13 @@ namespace Wizzy {
 
 	protected:
 		virtual void Init() = 0;
+		virtual void Shutdown() = 0;
 
 	protected:
 		std::unique_ptr<IWindow> m_window;
 		ecs::ECSManager m_ecs;
 		ecs::SystemLayer m_engineSystems;
-		ecs::SystemLayer m_gameSystems;
+		ecs::SystemLayer m_clientSystems;
 
 	private:
 		bool m_running;

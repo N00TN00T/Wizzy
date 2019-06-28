@@ -9,6 +9,7 @@
 #include "Wizzy/Events/KeyEvent.h"
 #include "Wizzy/platform/OpenGL/OpenGLContext.h"
 #include "Wizzy/Renderer/RendererAPI.h"
+#include "Wizzy/Renderer/API.h"
 
 namespace Wizzy {
     IWindow *IWindow::Create(const WindowProps& props) {
@@ -151,16 +152,17 @@ namespace Wizzy {
         });
 
         WZ_CORE_INFO("Welcome to Wizzy for Linux!");
-        WZ_CORE_INFO("API version: {0}", m_context->APIVersion());
-        WZ_CORE_INFO("API vendor: {0}", m_context->APIVendor());
+        WZ_CORE_INFO("API version: {0}", APIVersion());
+        WZ_CORE_INFO("API vendor: {0}", APIVendor());
     }
 
     void LinuxWindow::Shutdown() {
         glfwDestroyWindow(m_glfwWindow);
+        glfwTerminate();
     }
 
     void LinuxWindow::OnFrameBegin() {
-        
+
     }
 
     void LinuxWindow::OnFrameEnd() {

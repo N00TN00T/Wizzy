@@ -92,7 +92,7 @@ namespace Wizzy {
             GL_CALL(glVertexAttribPointer(
                 _index,
                 _element.GetComponentCount(),
-                GLShaderDataTypeToAPIType(_element.type),
+                GL_ShaderDataTypeToAPIType(_element.type),
                 _element.normalized ? GL_TRUE : GL_FALSE,
                 _layout.GetStride(),
                 reinterpret_cast<const void*>(_element.offset)

@@ -1,9 +1,25 @@
 #pragma once
 
-#include "Wizzy/Resources/Shader.h"
+#include "Wizzy/Renderer/API.h"
+#include "Wizzy/Renderer/Texture.h"
 
 namespace Wizzy {
+
+    class Shader;
+
     struct Material {
-        Shader* shader;
+        struct ShaderField {
+            string id;
+            ShaderDataType type;
+            void* data;
+        };
+    public:
+        Material(Shader *shader);
+        void Bind();
+
+        Shader *shader;
+        Color albedo;
+        Texture *diffuseTexture;
+        Color diffuseColor;
     };
 }

@@ -30,6 +30,16 @@ namespace Wizzy {
         }
 
         inline static
+        void SetCullMode(CullMode mode) {
+            s_rendererAPI->SetCullMode(mode);
+        }
+
+        inline static
+        void ToggleDepthTesting(bool value) {
+            s_rendererAPI->ToggleDepthTesting(value);
+        }
+
+        inline static
         void Clear() { s_rendererAPI->Clear(); }
     private:
         static RendererAPI *s_rendererAPI;

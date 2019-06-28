@@ -14,31 +14,37 @@ namespace Wizzy {
 	ImGuiSystem::ImGuiSystem() {
 		AddComponentType<ImGuiComponent>();
 
-		Subscribe((int32)AppRenderEvent::GetStaticType());
+		Subscribe((int32)AppFrameBeginEvent::GetStaticType());
+		Subscribe((int32)AppFrameEndEvent::GetStaticType());
 
-		InitImgui();
+		Init();
 	}
 	ImGuiSystem::~ImGuiSystem() {
-		DeinitImgui();
+		Shutdown();
 	}
 	void ImGuiSystem::OnEvent(const void* eventHandle,
 							ecs::ComponentGroup& components) const {
 		const Event& _event = *static_cast<const Event*>(eventHandle);
-		ImGuiComponent& _imguiComponent = *components.Get<ImGuiComponent>();
 
-		switch ((EventType)_event.GetEventType()) {
-			case EventType::app_render:
+		switch (_event.GetEventType()) {
+			case EventType::app_frame_begin:
 			{
-				const AppUpdateEvent& _updateEvent
-						= *static_cast<const AppUpdateEvent*>(eventHandle);
-				OnRender(_updateEvent.GetDeltaTime(), _imguiComponent);
+				const AppFrameBeginEvent& _updateEvent
+						= *static_cast<const AppFrameBeginEvent*>(eventHandle);
+				OnFrameBegin(_updateEvent.GetDeltaTime());
 				break;
+			}
+			case EventType::app_frame_end:
+			{
+				const AppFrameEndEvent& _updateEvent
+						= *static_cast<const AppFrameEndEvent*>(eventHandle);
+				OnFrameEnd(_updateEvent.GetDeltaTime());
 			}
 			default: break;
 		}
 	}
 
-	void ImGuiSystem::InitImgui() const {
+	void ImGuiSystem::Init() const {
 		WZ_CORE_TRACE("Initializing imgui...");
 
 		auto _versionResult = IMGUI_CHECKVERSION();
@@ -73,30 +79,18 @@ namespace Wizzy {
 		WZ_CORE_INFO("Successfully initialized ImGui");
 	}
 
-	void ImGuiSystem::DeinitImgui() const {
+	void ImGuiSystem::Shutdown() const {
 		ImGui_ImplOpenGL3_Shutdown();
 		ImGui_ImplGlfw_Shutdown();
 		ImGui::DestroyContext();
 	}
-	void ImGuiSystem::ImguiBeginLayer(float delta) const {
+	void ImGuiSystem::OnFrameBegin(float delta) const {
 		WZ_CORE_TRACE("Beginning imgui layer...");
 		ImGui_ImplOpenGL3_NewFrame();
 		ImGui_ImplGlfw_NewFrame();
 		ImGui::NewFrame();
 	}
-	void ImGuiSystem::OnRender(float delta, ImGuiComponent& imguiComponent) const {
-		WZ_CORE_TRACE("Doing imgui layers...");
-		auto& _imguiLayers = imguiComponent.imguiLayers;
-		while (/*!_imguiLayers.IsEmpty()*/0) {
-			ImguiBeginLayer(delta);
-			auto& _imguiLayerFn = _imguiLayers.Pop();
-			WZ_CORE_TRACE("Invoking imgui layer...");
-			_imguiLayerFn();
-			ImguiEndLayer(delta);
-		}
-		WZ_CORE_TRACE("Imgui layers done");
-	}
-	void ImGuiSystem::ImguiEndLayer(float delta) const {
+	void ImGuiSystem::OnFrameEnd(float delta) const {
 		WZ_CORE_TRACE("Ending imgui layer...");
 		auto& _io = ImGui::GetIO();
 		auto& _app = Application::Get();

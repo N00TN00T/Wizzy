@@ -1,14 +1,8 @@
 #pragma once
 
-namespace Wizzy {
+#include "Wizzy/Renderer/API.h"
 
-    enum class ShaderDataType {
-        NONE = 0,
-        FLOAT1, FLOAT2, FLOAT3, FLOAT4,
-        MAT3, MAT4,
-        INT1, INT2, INT3, INT4,
-        BOOL
-    };
+namespace Wizzy {
 
     inline
     size_t ShaderDataTypeSize(ShaderDataType type) {

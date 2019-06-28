@@ -11,7 +11,7 @@ int main(int argc, char** argv) {
     srand(time(NULL));
 
 	Wizzy::Log::Init();
-    WZ_CORE_INFO("Initialized the logs!");
+    WZ_CORE_INFO("Initialized the logs");
 
     auto _app = CreateApplication();
 	_app->Run();

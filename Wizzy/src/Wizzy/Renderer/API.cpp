@@ -6,12 +6,37 @@
 
 namespace Wizzy {
     int32 ShaderDataTypeToAPIType(ShaderDataType sType) {
-        switch (Renderer::GetAPI()) {
-            case RendererAPI::API_NONE: break;
-            case RendererAPI::API_OPENGL: return GLShaderDataTypeToAPIType(sType);
-        }
 
-        WZ_CORE_ASSERT(false, "Invalid renderer API selected ({0})", std::to_string((int32)sType));
+        CREATE_BY_API(GL_ShaderDataTypeToAPIType(sType));
+
         return 0;
+    }
+
+    int32 CullModeToAPICullMode(CullMode mode) {
+
+        CREATE_BY_API(GL_CullModeToAPICullMode(mode));
+
+        return 0;
+    }
+
+    int32 MaxTextureSlot() {
+        
+        CREATE_BY_API(GL_MaxTextureSlot());
+
+        return 0;
+    }
+
+    string APIVersion() {
+
+        CREATE_BY_API(GL_GetVersion());
+
+        return "";
+    }
+
+    string APIVendor() {
+
+        CREATE_BY_API(GL_GetVendor());
+
+        return "";
     }
 }

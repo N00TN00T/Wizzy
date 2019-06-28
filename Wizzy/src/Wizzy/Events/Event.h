@@ -6,7 +6,7 @@ namespace Wizzy {
 	enum class EventType {
 		event_none = 0,
 		window_close, window_resize, window_focus, window_unfocus, window_move,
-		app_tick, app_update, app_render, app_frame_begin, app_frame_end,
+		app_tick, app_update, app_render, app_frame_begin, app_frame_end, app_init,
 		key_press, key_release, key_repeat,
 		char_sent,
 		mouse_press, mouse_release, mouse_move, mouse_scroll,

@@ -69,6 +69,14 @@ namespace Wizzy {
 	/* ------------------------------
 	 *	APP EVENTS
 	 * ------------------------------*/
+	class AppInitEvent
+ 		: public Event {
+ 	public:
+ 		inline AppInitEvent() {}
+
+ 		EVENT_CLASS_TYPE(app_init)
+ 		EVENT_CLASS_CATEGORY(category_application)
+ 	};
 	class  AppTickEvent
 		: public Event {
 	public:

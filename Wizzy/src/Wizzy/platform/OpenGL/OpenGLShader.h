@@ -1,7 +1,5 @@
 #pragma once
 
-#include "Wizzy/Resources/Shader.h"
-
 namespace Wizzy {
     class GLShader
         : public Shader {
@@ -13,12 +11,16 @@ namespace Wizzy {
         void Bind() const override;
 		void Unbind() const override;
 
-        virtual void SetUniformMat4(const string& name, const mat4& value) override;
-		virtual void SetUniform1i(const string& name, const int32& value) override;
-		virtual void SetUniform1f(const string& name, const float& value) override;
-		virtual void SetUniform2f(const string& name, const vec2& value) override;
-		virtual void SetUniform3f(const string& name, const vec3& value) override;
-		virtual void SetUniform4f(const string& name, const vec4& value) override;
+        virtual void UploadMat4(const string& name, const mat4& value) override;
+        virtual void UploadMat3(const string& name, const mat3& value) override;
+		virtual void Upload1i(const string& name, const int32& value) override;
+        virtual void Upload2i(const string& name, const int32* value) override;
+        virtual void Upload3i(const string& name, const int32* value) override;
+        virtual void Upload4i(const string& name, const int32* value) override;
+		virtual void Upload1f(const string& name, const float& value) override;
+		virtual void Upload2f(const string& name, const vec2& value) override;
+		virtual void Upload3f(const string& name, const vec3& value) override;
+		virtual void Upload4f(const string& name, const vec4& value) override;
 
         inline virtual bool IsGarbage() const override {
 			return m_shaderId == WZ_SHADER_ID_INVALID;

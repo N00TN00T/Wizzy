@@ -13,8 +13,6 @@ namespace Wizzy {
 
         virtual void Init() override;
         virtual void SwapBuffers() override;
-        virtual string APIVersion() override;
-        virtual string APIVendor() override;
     private:
         GLFWwindow *m_windowHandle;
     };
