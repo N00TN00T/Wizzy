@@ -100,11 +100,8 @@ namespace Wizzy {
             case 4: _internalFormat = GL_RGBA; break;
         }
 
-        TextureEnum _imageType = WZ_NONE;
-
         WZ_CORE_TRACE("Creating GL tex2d depending on given image type in flags");
 
-        WZ_CORE_DEBUG("{0}, {1}, {2}, {3}", m_width, m_height, m_channels, m_data != nullptr);
         GL_CALL(glTexImage2D(GL_TEXTURE_2D, 0, _internalFormat, m_width, m_height,
                              0, GL_RGBA, GL_UNSIGNED_BYTE, m_data));
 
@@ -113,6 +110,6 @@ namespace Wizzy {
             GL_CALL(glGenerateMipmap(GL_TEXTURE_2D));
         }
 
-        WZ_CORE_INFO("Successfully Initialized GL Texture and assigned id '{1}'", m_textureId);
+        WZ_CORE_INFO("Successfully Initialized GL Texture and assigned id '{0}'", m_textureId);
     }
 }

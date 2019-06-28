@@ -3,6 +3,9 @@
 #include "Wizzy/Resource/IResource.h"
 
 namespace Wizzy {
+
+    typedef ResourceHandle TextureHandle;
+
     class Texture
         : public IResource {
         public:

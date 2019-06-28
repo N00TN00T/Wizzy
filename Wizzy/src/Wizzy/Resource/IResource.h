@@ -1,6 +1,12 @@
 #pragma once
 
 namespace Wizzy {
+
+    #define WZ_NULL_RESOURCE_HANDLE -1
+    #define WZ_IS_RESOURCE_HANDLE_NULL(h) (h == WZ_NULL_RESOURCE_HANDLE || h <= 0)
+
+    typedef int32 ResourceHandle;
+
     class IResource {
     public:
 
@@ -19,21 +25,22 @@ namespace Wizzy {
         virtual
         bool IsGarbage() const = 0;
 
-        const u32& GetResourceId() const { return m_id; } 
+        inline
+        ResourceHandle GetResourceHandle() const { return m_handle; }
         inline
         const string& GetSourceFile() const { return m_sourceFile; }
         inline
         const string& GetType() const { return m_resourceType; }
 
     protected:
-        bool        m_isGarbage = true;
+        bool            m_isGarbage = true;
 
     private:
-        string      m_sourceFile;
-        string      m_resourceType;
-        u32         m_id = s_idCounter++;
+        string          m_sourceFile;
+        string          m_resourceType;
+        ResourceHandle  m_handle = ++s_handleCounter;
 
     private:
-        static u32  s_idCounter;
+        static ResourceHandle s_handleCounter;
     };
 }

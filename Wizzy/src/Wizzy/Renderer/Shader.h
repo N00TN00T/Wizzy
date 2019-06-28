@@ -5,6 +5,8 @@
 
 namespace Wizzy {
 
+	typedef ResourceHandle ShaderHandle;
+
 	struct ShaderProgramSource {
 		string vertSource;
 		string fragSource;

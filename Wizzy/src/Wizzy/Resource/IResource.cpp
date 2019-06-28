@@ -5,7 +5,7 @@
 
 namespace Wizzy {
 
-    u32 IResource::s_idCounter(0);
+    ResourceHandle IResource::s_handleCounter(0);
 
     IResource::IResource(const string& sourceFile, const string& resourceType)
             : m_sourceFile(ulib::File::to_absolute(sourceFile)),

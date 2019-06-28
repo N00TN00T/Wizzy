@@ -9,15 +9,10 @@ private:
 public:
 	wz::VertexArrayPtr va;
 	wz::Material material;
-    u32 renderId = ++renderIdCounter;
-    string shaderPreview;
-    string texturePreview;
-    string diffuseModePreview;
+    const u32 renderId = ++renderIdCounter;
 
     RenderComponent(const wz::VertexArrayPtr& va, const wz::Material& material)
-        : va(va), material(material), shaderPreview(""), texturePreview(""), diffuseModePreview("Texture") {
-        if (!material.diffuseTexture)
-            diffuseModePreview = "Color";
+        : va(va), material(material) {
     }
 };
 u32 RenderComponent::renderIdCounter = 0;
@@ -239,6 +234,36 @@ public:
 		Subscribe((int32)wz::AppRenderEvent::GetStaticType());
 	}
 
+    void SubmitDiffuseColor(wz::Material& material) const {
+        ImGui::ColorEdit4("Diffuse (Color)", material.diffuseColor.rgba);
+    }
+
+    void SubmitTextureDropdown(wz::Material& material) const {
+
+        string _texturePreview
+            = wz::ResourceManagement::Is<wz::Texture>(material.diffuseTextureHandle)
+            ? wz::ResourceManagement::AliasOf(material.diffuseTextureHandle)
+            : "None";
+
+        if (ImGui::BeginCombo("Diffuse (Texture)", _texturePreview.c_str())) {
+
+            for (auto _handle : wz::ResourceManagement::GetHandles()) {
+                string _alias = wz::ResourceManagement::AliasOf(_handle);
+
+                if (wz::ResourceManagement::Is<wz::Texture>(_handle)
+                    && ImGui::MenuItem(_alias.c_str())) {
+                    material.diffuseTextureHandle = _handle;
+                }
+            }
+
+            if (ImGui::MenuItem("None")) {
+                material.diffuseTextureHandle = WZ_NULL_RESOURCE_HANDLE;
+            }
+
+            ImGui::EndCombo();
+        }
+    }
+
 	void Submit(RenderComponent& renderComponent,
 				TransformComponent& transformComponent) const {
         WZ_CORE_TRACE("Submitting from render system");
@@ -255,66 +280,42 @@ public:
         ImGui::Spacing();
         ImGui::Text("Material");
 
-        auto& _shaderPreview = renderComponent.shaderPreview;
-        auto& _texturePreview = renderComponent.texturePreview;
-        auto& _diffuseModePreview = renderComponent.diffuseModePreview;
-
-        _shaderPreview = wz::ResourceManagement::AliasOf(_material.shader);
-
-        _texturePreview = _material.diffuseTexture ?
-                    wz::ResourceManagement::AliasOf(_material.diffuseTexture)
-                    : "";
+        string _shaderPreview = wz::ResourceManagement::AliasOf(_material.shaderHandle);
 
         if (ImGui::BeginCombo("Shader", _shaderPreview.c_str())) {
 
-            for (const auto& _alias : wz::ResourceManagement::GetAliases()) {
-                if (wz::ResourceManagement::Get<wz::Shader>(_alias) != nullptr &&
-                    ImGui::MenuItem(_alias.c_str())) {
-                    _material.shader = wz::ResourceManagement::Get<wz::Shader>(_alias);
-                    _shaderPreview = _alias;
+            for (auto _handle : wz::ResourceManagement::GetHandles()) {
+                string _alias = wz::ResourceManagement::AliasOf(_handle);
+
+                if (wz::ResourceManagement::Is<wz::Shader>(_handle)
+                    && ImGui::MenuItem(_alias.c_str())) {
+                    _material.shaderHandle = _handle;
                 }
             }
+
             ImGui::EndCombo();
         }
+
+        string _diffuseModePreview = _material.useTexture ? "Texture" : "Color";
 
         if (ImGui::BeginCombo("Diffuse mode", _diffuseModePreview.c_str())) {
-            if (ImGui::MenuItem("Texture##mode")) {
-                if (!_material.diffuseTexture) {
-					_diffuseModePreview = "Color";
-                    for (const auto& _alias : wz::ResourceManagement::GetAliases()) {
-                        if (wz::ResourceManagement::Get<wz::Texture>(_alias) != nullptr) {
-                            _material.diffuseTexture =
-                                wz::ResourceManagement::Get<wz::Texture>(_alias);
-                            _diffuseModePreview = "Texture";
-                            break;
-                        }
-                    }
-                } else {
-                    _diffuseModePreview = "Texture";
-                }
+
+            if (ImGui::MenuItem("Texture")) {
+                _material.useTexture = true;
             }
-            if (ImGui::MenuItem("Color##mode")) {
-                _material.diffuseTexture = nullptr;
-                _diffuseModePreview = "Color";
+            if (ImGui::MenuItem("Color")) {
+                _material.useTexture = false;
             }
+
             ImGui::EndCombo();
         }
 
-        if (_diffuseModePreview == "Texture") {
-            if (ImGui::BeginCombo("Diffuse", _texturePreview.c_str())) {
-                for (auto _alias : wz::ResourceManagement::GetAliases()) {
-
-                    if (wz::ResourceManagement::Get<wz::Texture>(_alias) != nullptr &&
-                        ImGui::MenuItem(_alias.c_str())) {
-                        _material.diffuseTexture = wz::ResourceManagement::Get<wz::Texture>(_alias);
-                        _texturePreview = _alias;
-                    }
-                }
-                ImGui::EndCombo();
-            }
-        } else if (_diffuseModePreview == "Color") {
-            ImGui::ColorEdit4("Diffuse", _material.diffuseColor.rgba);
+        if (_material.useTexture) {
+            SubmitTextureDropdown(_material);
+        } else {
+            SubmitDiffuseColor(_material);
         }
+
 
         ImGui::End();
 	}
@@ -363,9 +364,7 @@ public:
 		if (wz::Input::GetKey(WZ_KEY_D)) {
 			transform.position.x += delta * 100.f;
 		}
-	}
 
-	void OnRender(TransformComponent& transform) const {
         ImGui::Begin("Test triangle");
 
         ImGui::Text("Transform");
@@ -374,6 +373,10 @@ public:
 		ImGui::DragFloat3("Scale", glm::value_ptr(transform.scale), 0.1f);
 
 		ImGui::End();
+	}
+
+	void OnRender(TransformComponent& transform) const {
+
 	}
 
 	virtual void OnEvent(const void* eventHandle,
@@ -461,7 +464,7 @@ public:
 
 	virtual
     void Init() override {
-        //wz::Log::SetCoreLogLevel(LOG_LEVEL_TRACE);
+        wz::Log::SetCoreLogLevel(LOG_LEVEL_DEBUG);
 		wz::ResourceManagement::SetResourcePath(string(BASE_DIR) + "Resources/");
 
         ulib::Bitset _pyramidFlags;
@@ -471,6 +474,10 @@ public:
 											"basic.shader",
 											"basicShader"
 										);
+        wz::ResourceManagement::Import<wz::Shader> (
+                            				"pixelation.shader",
+                            				"pixelShader"
+                            			);
         wz::ResourceManagement::Import<wz::Texture> (
 											"pyramid.jpeg",
 											"pyramidTexture001",
@@ -528,10 +535,10 @@ public:
 
         CreateCamera();
         CreateResourceGUI();
-		CreateTriangle(_vao, { _shader }, vec3(-1.5f, 0.f, 0.f), vec3(0, 0, 0));
-		CreateTriangle(_vao, { _shader }, vec3(1.5f, 0.f, 0.f), vec3(0, 0, 0));
-        wz::Material _playerMaterial(_shader);
-        _playerMaterial.diffuseTexture = _texture;
+		CreateTriangle(_vao, { _shader->GetResourceHandle() }, vec3(-1.5f, 0.f, 0.f), vec3(0, 0, 0));
+		CreateTriangle(_vao, { _shader->GetResourceHandle() }, vec3(1.5f, 0.f, 0.f), vec3(0, 0, 0));
+        wz::Material _playerMaterial(_shader->GetResourceHandle() );
+        _playerMaterial.diffuseTextureHandle = _texture->GetResourceHandle();
 		CreateTriangle(_vao, _playerMaterial, vec3(0.f, 0.f, 0.f), vec3(0, 0, 0), true);
 
         m_clientSystems.AddSystem<CameraSystem>();

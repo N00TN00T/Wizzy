@@ -12,7 +12,7 @@
 namespace Wizzy {
 
     typedef std::shared_ptr<spdlog::logger> LoggerPtr;
-    typedef char LogLevel;
+    typedef int LogLevel;
 
 	class Log {
 	public:
@@ -33,6 +33,19 @@ namespace Wizzy {
 		static LoggerPtr s_coreLogger;
 		static LoggerPtr s_clientLogger;
 	};
+
+    inline std::string LogLevelToString(LogLevel level) {
+        switch (level) {
+            case LOG_LEVEL_TRACE:       return "trace";
+            case LOG_LEVEL_DEBUG:       return "debug";
+            case LOG_LEVEL_INFO:        return "info";
+            case LOG_LEVEL_WARN:        return "warn";
+            case LOG_LEVEL_ERROR:       return "error";
+            case LOG_LEVEL_CRITICAL:    return "critical";
+        }
+
+        return "invalid log level";
+    }
 }
 
 #if defined WZ_CONFIG_DEBUG

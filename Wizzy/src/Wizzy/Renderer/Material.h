@@ -2,10 +2,9 @@
 
 #include "Wizzy/Renderer/API.h"
 #include "Wizzy/Renderer/Texture.h"
+#include "Wizzy/Renderer/Shader.h"
 
 namespace Wizzy {
-
-    class Shader;
 
     struct Material {
         struct ShaderField {
@@ -14,12 +13,13 @@ namespace Wizzy {
             void* data;
         };
     public:
-        Material(Shader *shader);
+        Material(ShaderHandle shaderHandle);
         void Bind();
 
-        Shader *shader;
+        ShaderHandle shaderHandle;
         Color albedo;
-        Texture *diffuseTexture;
+        TextureHandle diffuseTextureHandle;
         Color diffuseColor;
+        bool useTexture = false;
     };
 }

@@ -5,17 +5,23 @@
 namespace Wizzy {
     std::set<string> ResourceManagement::s_resourceAliases;
     std::unordered_map<string, IResource*> ResourceManagement::s_resources;
+    std::set<ResourceHandle> ResourceManagement::s_resourceHandles;
     string ResourceManagement::s_resourcePath("");
+    std::unordered_map<ResourceHandle, string> ResourceManagement::s_aliasesByHandle;
+    ulib::Bitset ResourceManagement::s_emptyFlagSet;
 
     void ResourceManagement::Delete(const string& alias) {
         auto _target = Get<IResource>(alias);
 
 		WZ_CORE_ASSERT(_target, "Tried deleting resource with alias '" + alias + "', but no such resource was found.");
 
+        s_resourceAliases.erase(alias);
+        s_resources.erase(alias);
+        s_aliasesByHandle.erase(_target->GetResourceHandle());
+        s_resourceHandles.erase(_target->GetResourceHandle());
+
         if (!_target->IsGarbage()) _target->Unload();
 
-        s_resourceAliases.erase(alias);
-		s_resources.erase(alias);
     }
 
     void ResourceManagement::Rename(const string& oldAlias,

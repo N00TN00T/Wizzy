@@ -2,6 +2,7 @@
 
 #include "Wizzy/Renderer/Renderer.h"
 #include "Wizzy/Renderer/Shader.h"
+#include "Wizzy/Resource/ResourceManagement.h"
 
 namespace Wizzy {
 
@@ -39,22 +40,29 @@ namespace Wizzy {
                             const Material& material,
                             const mat4& transform) {
         WZ_CORE_ASSERT(s_isReady, "Begin() was not called on Renderer before Submit()");
-        WZ_CORE_ASSERT(material.shader != nullptr, "Material can not have a null shader");
+
+        WZ_CORE_ASSERT(!WZ_IS_RESOURCE_HANDLE_NULL(material.shaderHandle),
+                        "Shader cannot be null in material when submitting");
+        WZ_CORE_ASSERT(WZ_IS_RESOURCE_HANDLE_NULL(material.diffuseTextureHandle)
+             || ResourceManagement::Is<Texture>(material.diffuseTextureHandle),
+             "Texture handle must be either null or valid (not invalid) when submitting material")
         WZ_CORE_TRACE("Pushing submission to renderer...");
-        s_shaderQueue.Push(material.shader);
-        s_submissions[material.shader].push_back({ va, material, transform });
+        auto _shader = ResourceManagement::Get<Shader>(material.shaderHandle);
+        WZ_CORE_ASSERT(_shader != nullptr, "Failed retrieving shader with material handle, cannot submit");
+        s_shaderQueue.Push(_shader);
+        s_submissions[_shader].push_back({ va, material, transform });
     }
 
     void Renderer::RenderSubmissions(std::deque<Submission>& submissions) {
         for (auto& _submission : submissions) {
             auto& _material = _submission.material;
-            auto& _shader = *_submission.material.shader;
-            
+            auto _shader = ResourceManagement::Get<Shader>(_material.shaderHandle);
+
             _material.Bind();
 
             _submission.va->Bind();
 
-            _shader.UploadMat4("worldTransform", _submission.transform);
+            _shader->UploadMat4("worldTransform", _submission.transform);
 
             RenderCommand::DrawIndexed(_submission.va);
         }
