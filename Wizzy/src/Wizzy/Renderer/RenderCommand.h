@@ -16,8 +16,8 @@ namespace Wizzy {
         }
 
         inline static
-        void DrawIndexed(const VertexArrayPtr& va) {
-            s_rendererAPI->DrawIndexed(va);
+        void DrawIndexed(const VertexArrayPtr& va, RenderMode mode) {
+            s_rendererAPI->DrawIndexed(va, mode);
         }
 
         inline static

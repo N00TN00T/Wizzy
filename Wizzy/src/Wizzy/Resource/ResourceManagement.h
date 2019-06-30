@@ -2,8 +2,8 @@
 
 #include "Wizzy/Resource/IResource.h"
 
-/* Ownership of ALL resources imported with ResourceManagement
-    belongs to ResourceManagement. The only correct way to unload
+/* Ownership of ALL resources imported with or created in ResourceManagement
+    belongs to ResourceManagement. The only correct way to unload/free
     these resources is by calling Unload(string alias) or UnloadAll() */
 
 namespace Wizzy {
@@ -12,6 +12,16 @@ namespace Wizzy {
         ResourceManagement() = delete;
 
     public:
+
+        template <typename TResource>
+        static
+        void New(const string& newFile, const string& alias);
+        template <typename TResource>
+        static
+        void New(const string& newFile,
+                 const string& alias,
+                 const ulib::Bitset& flags);
+
         template <typename TResource>
         static
         TResource* Import(const string& file,
@@ -49,14 +59,16 @@ namespace Wizzy {
         template <typename TResource>
         inline static
         bool Is(const string& alias) {
-            return dynamic_cast<TResource*>(s_resources[alias]);
+            return dynamic_cast<TResource*>(s_resources[alias])
+                   && !s_resources[alias]->IsGarbage();
         }
         template <typename TResource>
         inline static
         bool Is(ResourceHandle handle) {
             return dynamic_cast<TResource*>(s_resources[s_aliasesByHandle[handle]])
                    && !WZ_IS_RESOURCE_HANDLE_NULL(handle)
-                   && s_resources[s_aliasesByHandle[handle]] != nullptr;
+                   && s_resources[s_aliasesByHandle[handle]] != nullptr
+                   && !s_resources[s_aliasesByHandle[handle]]->IsGarbage();
         }
 
         inline static
@@ -91,6 +103,9 @@ namespace Wizzy {
         template <typename TResource>
         static
         void ImportInternal(const string& alias, TResource* resource);
+        template <typename TResource>
+        static
+        void ProcessNewResource(const string& alias, TResource *resource);
 
     private:
         static
@@ -175,5 +190,38 @@ namespace Wizzy {
             return _resource;
         else
             return nullptr;
+    }
+
+    template <typename TResource>
+    inline
+    void ResourceManagement::New(const string& newFile, const string& alias) {
+        if (ulib::File::exists(newFile)) {
+            WZ_CORE_WARN("Could not create new resource of type '{0}', file '{1}' already exists",
+                            typestr(TResource), newFile);
+            return;
+        }
+
+        ProcessNewResource(TResource::New(newFile));
+    }
+
+    template <typename TResource>
+    inline
+    void ResourceManagement::New(const string& newFile,
+                                 const string& alias,
+                                 const ulib::Bitset& flags) {
+        if (ulib::File::exists(newFile)) {
+            WZ_CORE_WARN("Could not create new resource of type '{0}', file '{1}' already exists",
+                            typestr(TResource), newFile);
+            return;
+        }
+
+        ProcessNewResource(TResource::New(newFile, flags));
+    }
+
+    template <typename TResource>
+    inline
+    void ResourceManagement::ProcessNewResource(const string& alias,
+                                                TResource *resource) {
+        ResourceManagement::ImportInternal(alias, resource);
     }
 }

@@ -5,6 +5,7 @@
 namespace Wizzy {
     int32 GL_ShaderDataTypeToAPIType(ShaderDataType sType);
     int32 GL_CullModeToAPICullMode(CullMode mode);
+    int32 GL_RenderModeToAPIRenderMode(RenderMode mode);
     int32 GL_MaxTextureSlot();
     string GL_GetVersion();
 

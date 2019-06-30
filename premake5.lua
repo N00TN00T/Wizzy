@@ -28,7 +28,10 @@ workspace "Wizzy"
     lua = "Wizzy/vendor/lua",
     pybind11 = "Wizzy/vendor/pybind11/include",
     pybind11 = "Wizzy/vendor/ulib/include",
-    pdoes = "Wizzy/vendor/pdoes"
+    pdoes = "Wizzy/vendor/pdoes",
+    assimp = "Wizzy/vendor/assimp/build/include",
+    irrXML = "Wizzy/vendor/assimp/contrib/irrXML",  -- assimp dependency
+    zlib = "Wizzy/vendor/assimp/contrib/zlib"       -- assimp dependency
   }
 
   include "Wizzy/vendor/glfw/"
@@ -52,7 +55,7 @@ project "Wizzy"
   pchheader "wzpch.h"
   pchsource "Wizzy/src/wzpch.cpp"
 
-  buildoptions { "-Wall" }
+  buildoptions { "-Wall", "-Wextra" }
 
   files
   {
@@ -78,7 +81,10 @@ project "Wizzy"
     "%{include_dir.lua}",
     "%{include_dir.pybind11}",
     "%{include_dir.ulib}",
-    "%{include_dir.pdoes}"
+    "%{include_dir.pdoes}",
+    "%{include_dir.assimp}",
+    "%{include_dir.irrXML}",
+    "%{include_dir.zlib}"
   }
 
   defines
@@ -222,7 +228,10 @@ project "Sandbox"
     "%{include_dir.lua}",
     "%{include_dir.pybind11}",
     "%{include_dir.ulib}",
-    "%{include_dir.pdoes}"
+    "%{include_dir.pdoes}",
+    "%{include_dir.assimp}",
+    "%{include_dir.irrXML}",
+    "%{include_dir.zlib}"
   }
 
   defines
@@ -264,6 +273,8 @@ project "Sandbox"
         "PDOES_API=__attribute__((visibility(\"default\")))"
     }
 
+    --postbuildcommands { "{COPY} ../Wizzy/vendor/assimp/lib/linux/libassimp.so.4 %{cfg.buildtarget.directory}/libassimp.so.4" }
+
 		links
     {
       "GL",
@@ -274,7 +285,10 @@ project "Sandbox"
       "pthread",
       "Xi",
       "dl",
-      "stdc++fs"
+      "stdc++fs",
+      "Wizzy/vendor/assimp/build/linux/assimp",
+      "Wizzy/vendor/assimp/build/linux/IrrXML",
+      "Wizzy/vendor/assimp/build/linux/zlib"
     }
 
     includedirs { "/usr/include/python3.6" }
@@ -295,7 +309,16 @@ project "Sandbox"
       "PDOES_API=__declspec(dllexport)"
     }
 
-		links { "opengl32.lib", "glu32.lib" }
+    --postbuildcommands { "{COPY} %{cfg.buildtarget.abspath}/../../Wizzy/vendor/assimp/lib/windows/assimp.dll.4 %{cfg.buildtarget.directory}/assimp.dll.4" }
+
+	links
+    {
+        "opengl32.lib",
+        "glu32.lib",
+        "Wizzy/vendor/assimp/build/windows/assimp",
+        "Wizzy/vendor/assimp/build/windows/IrrXML",
+        "Wizzy/vendor/assimp/build/windows/zlib"
+    }
 
     -- Windows-specific files
     files

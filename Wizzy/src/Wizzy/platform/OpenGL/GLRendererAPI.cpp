@@ -14,8 +14,9 @@ namespace Wizzy {
         GL_CALL(glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT));
     }
 
-    void GLRendererAPI::DrawIndexed(const VertexArrayPtr& va) {
-        GL_CALL(glDrawElements(GL_TRIANGLES, va->GetIndexBuffer()->GetCount(),
+    void GLRendererAPI::DrawIndexed(const VertexArrayPtr& va, RenderMode mode) {
+        GL_CALL(glDrawElements(GL_RenderModeToAPIRenderMode(mode), 
+                                va->GetIndexBuffer()->GetCount(),
                                 GL_UNSIGNED_INT, nullptr));
     }
 

@@ -38,8 +38,15 @@ namespace Wizzy {
 
     };
 
+    enum RenderMode : int8 {
+        WZ_RENDER_MODE_NONE = 0,
+        WZ_RENDER_MODE_LINES,
+        WZ_RENDER_MODE_TRIANGLES
+    };
+
     int32 ShaderDataTypeToAPIType(ShaderDataType sType);
     int32 CullModeToAPICullMode(CullMode mode);
+    int32 RenderModeToAPIRenderMode(RenderMode mode);
     int32 MaxTextureSlot();
 
     string APIVersion();

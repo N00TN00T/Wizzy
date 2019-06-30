@@ -66,7 +66,7 @@
 #define WZ_MAKE_VERSION(major, minor, patch) (std::to_string(major) + "." + std::to_string(minor) + "." + std::to_string(patch))
 #define WZ_VERSION_MAJOR 0
 #define WZ_VERSION_MINOR 2
-#define WZ_VERSION_PATCH 1
+#define WZ_VERSION_PATCH 2
 #define WZ_VERSION	WZ_MAKE_VERSION(WZ_VERSION_MAJOR, WZ_VERSION_MINOR, WZ_VERSION_PATCH)
 
 #ifdef __GNUC__

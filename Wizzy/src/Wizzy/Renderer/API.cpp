@@ -19,8 +19,15 @@ namespace Wizzy {
         return 0;
     }
 
+    int32 RenderModeToAPIRenderMode(RenderMode mode) {
+
+        CREATE_BY_API(GL_RenderModeToAPIRenderMode(mode));
+
+        return 0;
+    }
+
     int32 MaxTextureSlot() {
-        
+
         CREATE_BY_API(GL_MaxTextureSlot());
 
         return 0;

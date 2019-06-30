@@ -4,6 +4,7 @@
 
 layout(location = 0) in vec4 vertexPosition;
 layout(location = 1) in vec2 vertexUv;
+layout(location = 2) in vec3 vertexNormal;
 
 uniform mat4 camTransform;
 uniform mat4 worldTransform;
@@ -38,7 +39,7 @@ uniform bool hasTexture;
 void main()
 {
     if (hasTexture) {
-        outColor = /*vec4(uv.x, uv.y, 0.0, 1.0);*/texture(diffuseTexture, uv) * albedo;
+        outColor = texture(diffuseTexture, uv) * albedo;
     } else {
         outColor = diffuseColor * albedo;
     }

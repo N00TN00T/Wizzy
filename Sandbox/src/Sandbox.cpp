@@ -1,5 +1,4 @@
 #include "spch.h"
-
 #include <Wizzy.h>
 
 struct RenderComponent
@@ -7,13 +6,11 @@ struct RenderComponent
 private:
     static u32 renderIdCounter;
 public:
-	wz::VertexArrayPtr va;
-	wz::Material material;
+    wz::VertexArrayPtr va;
+    wz::Material material;
     const u32 renderId = ++renderIdCounter;
-
     RenderComponent(const wz::VertexArrayPtr& va, const wz::Material& material)
-        : va(va), material(material) {
-    }
+        : va(va), material(material) {}
 };
 u32 RenderComponent::renderIdCounter = 0;
 
@@ -46,16 +43,21 @@ struct PlayerTestTriangleComponent
 
 struct ViewComponent
     : public ecs::Component<ViewComponent> {
-    //view
+    // view
     vec3 position;
     vec3 rotation;
 
-    //projection
+    // projection
     float fov;
     float aspectRatio;
     float nearClip;
     float farClip;
     bool dynamicAspectRatio = false;
+
+    // control settings
+    float panSpeed = 10.f;
+    float rotationSpeed = 1.f;
+    float orbitSpeed = 1.f;
 
     mat4 ToMat4() {
         mat4 _view = glm::identity<mat4>();
@@ -123,6 +125,7 @@ public:
 
         Subscribe((int32)wz::EventType::app_init);
         Subscribe((int32)wz::EventType::app_frame_begin);
+        Subscribe((int32)wz::EventType::app_update);
         Subscribe((int32)wz::EventType::app_render);
         Subscribe((int32)wz::EventType::app_frame_end);
         Subscribe((int32)wz::EventType::window_resize);
@@ -139,6 +142,10 @@ public:
         WZ_CORE_TRACE("Beginning renderer from camera system");
         wz::RenderCommand::Clear();
         wz::Renderer::Begin(view.ToMat4());
+    }
+
+    void OnUpdate(ViewComponent& view, float delta) const {
+
     }
 
     void OnRender(ViewComponent& view) const {
@@ -212,6 +219,12 @@ public:
         switch (_e.GetEventType()) {
             case wz::EventType::app_init: Init(); break;
             case wz::EventType::app_frame_begin: BeginRenderer(_view); break;
+            case wz::EventType::app_update:
+            {
+                auto& _uE = *static_cast<const wz::AppUpdateEvent*>(eventHandle);
+                OnUpdate(_view, _uE.GetDeltaTime());
+                break;
+            }
             case wz::EventType::app_render: OnRender(_view); break;
             case wz::EventType::app_frame_end: EndRenderer(_view); break;
             case wz::EventType::window_resize:
@@ -268,7 +281,7 @@ public:
 				TransformComponent& transformComponent) const {
         WZ_CORE_TRACE("Submitting from render system");
 		wz::Renderer::Submit(renderComponent.va, renderComponent.material,
-						 transformComponent.ToMat4());
+						 transformComponent.ToMat4(), wz::WZ_RENDER_MODE_TRIANGLES);
 
         auto& _material = renderComponent.material;
 
@@ -408,7 +421,7 @@ public:
 
     void CreateCamera() {
         ViewComponent _viewComp;
-        _viewComp.position = vec3(0, 0, 10);
+        _viewComp.position = vec3(2.5f, -8, 14);
         _viewComp.rotation = vec3(0, wz::to_radians(180), 0);
         _viewComp.fov = 65;
         _viewComp.aspectRatio = 16.f / 9.f;
@@ -434,12 +447,12 @@ public:
         m_ecs.CreateEntity(_comps, _ids, 1);
     }
 
-	void CreateTriangle(const wz::VertexArrayPtr& va, const wz::Material& mat, vec3 pos, vec3 rot, bool isPlayer = false) {
+	void CreateTriangle(const wz::VertexArrayPtr& va, const wz::Material& mat, vec3 pos, vec3 rot, vec3 scale, bool isPlayer = false) {
 		RenderComponent _renderComp {va, mat};
 		TransformComponent _transformComp;
 		_transformComp.position = pos;
 		_transformComp.rotation = rot;
-		_transformComp.scale = vec3(1, 1, 1);
+		_transformComp.scale = scale;
 		TestTriangleComponent _triComp;
 		PlayerTestTriangleComponent _playerComp;
 
@@ -470,13 +483,17 @@ public:
         ulib::Bitset _pyramidFlags;
         ulib::Bitset _prismFlags;
 
-		wz::ResourceManagement::Import<wz::Shader> (
+        wz::ResourceManagement::Import<wz::Shader> (
 											"basic.shader",
-											"basicShader"
+											"DefaultShader"
+										);
+		wz::ResourceManagement::Import<wz::Shader> (
+											"phong_basic.shader",
+											"BasicPhongShader"
 										);
         wz::ResourceManagement::Import<wz::Shader> (
-                            				"pixelation.shader",
-                            				"pixelShader"
+                            				"phong_pixelated.shader",
+                            				"PixelatedPhongShader"
                             			);
         wz::ResourceManagement::Import<wz::Texture> (
 											"pyramid.jpeg",
@@ -492,9 +509,19 @@ public:
 											"testScript.lua",
 											"testScript"
 										);
+        wz::ResourceManagement::Import<wz::Model> (
+											"guy.fbx",
+											"NanoModel"
+										);
+        wz::ResourceManagement::Import<wz::Model> (
+											"sword.fbx",
+											"Sword"
+										);
         wz::Texture *_texture = wz::ResourceManagement::Get<wz::Texture>("pyramidTexture001");
+        wz::Model *_nanoModel = wz::ResourceManagement::Get<wz::Model>("NanoModel");
+        wz::Model *_swordModel = wz::ResourceManagement::Get<wz::Model>("Sword");
 
-		wz::Shader *_shader = wz::ResourceManagement::Get<wz::Shader>("basicShader");
+		wz::Shader *_shader = wz::ResourceManagement::Get<wz::Shader>("DefaultShader");
 		wz::VertexArrayPtr _vao(wz::VertexArray::Create());
         float _vertices[] = {
             // near bot left
@@ -535,11 +562,10 @@ public:
 
         CreateCamera();
         CreateResourceGUI();
-		CreateTriangle(_vao, { _shader->GetResourceHandle() }, vec3(-1.5f, 0.f, 0.f), vec3(0, 0, 0));
-		CreateTriangle(_vao, { _shader->GetResourceHandle() }, vec3(1.5f, 0.f, 0.f), vec3(0, 0, 0));
-        wz::Material _playerMaterial(_shader->GetResourceHandle() );
-        _playerMaterial.diffuseTextureHandle = _texture->GetResourceHandle();
-		CreateTriangle(_vao, _playerMaterial, vec3(0.f, 0.f, 0.f), vec3(0, 0, 0), true);
+
+        for (const auto& _mesh : _swordModel->GetMeshes()) {
+            CreateTriangle(_mesh.GetVAO(), { _shader->GetResourceHandle() }, vec3(-1.5f, 0.f, 0.f), vec3(0, wz::to_radians(180), 0), vec3(0.01f, 0.01f, 0.01f));
+        }
 
         m_clientSystems.AddSystem<CameraSystem>();
         m_clientSystems.AddSystem<TestTriangleSystem>();

@@ -21,7 +21,7 @@ namespace Wizzy {
         void Clear() = 0;
 
         virtual
-        void DrawIndexed(const VertexArrayPtr& va) = 0;
+        void DrawIndexed(const VertexArrayPtr& va, RenderMode mode) = 0;
 
         virtual
         void SetViewport(u32 x, u32 y, u32 w, u32 h) = 0;

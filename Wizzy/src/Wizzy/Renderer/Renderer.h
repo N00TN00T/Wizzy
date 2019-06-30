@@ -1,5 +1,6 @@
 #pragma once
 
+#include "Wizzy/Renderer/API.h"
 #include "Wizzy/Renderer/RenderCommand.h"
 #include "Wizzy/Renderer/Material.h"
 
@@ -9,9 +10,12 @@ namespace Wizzy {
         VertexArrayPtr va;
         Material material;
         mat4 transform;
+        RenderMode renderMode;
 
-        Submission(VertexArrayPtr va, Material material, mat4 transform)
-            : va(va), material(material), transform(transform) {}
+        Submission(VertexArrayPtr va, Material material, mat4 transform,
+                   RenderMode renderMode)
+            : va(va), material(material), transform(transform),
+              renderMode(renderMode) {}
     };
 
     class Renderer {
@@ -24,7 +28,8 @@ namespace Wizzy {
         static
         void Submit(const VertexArrayPtr& va,
                     const Material& material,
-                    const mat4& transform);
+                    const mat4& transform,
+                    RenderMode mode = WZ_RENDER_MODE_TRIANGLES);
 
         inline static
         void SetAPI(int8 api) { RendererAPI::SetAPI(api); }

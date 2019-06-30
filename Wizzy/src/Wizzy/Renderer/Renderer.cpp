@@ -38,7 +38,8 @@ namespace Wizzy {
 
     void Renderer::Submit(const VertexArrayPtr& va,
                             const Material& material,
-                            const mat4& transform) {
+                            const mat4& transform,
+                            RenderMode mode) {
         WZ_CORE_ASSERT(s_isReady, "Begin() was not called on Renderer before Submit()");
 
         WZ_CORE_ASSERT(!WZ_IS_RESOURCE_HANDLE_NULL(material.shaderHandle),
@@ -50,7 +51,7 @@ namespace Wizzy {
         auto _shader = ResourceManagement::Get<Shader>(material.shaderHandle);
         WZ_CORE_ASSERT(_shader != nullptr, "Failed retrieving shader with material handle, cannot submit");
         s_shaderQueue.Push(_shader);
-        s_submissions[_shader].push_back({ va, material, transform });
+        s_submissions[_shader].push_back({ va, material, transform, mode });
     }
 
     void Renderer::RenderSubmissions(std::deque<Submission>& submissions) {
@@ -64,7 +65,7 @@ namespace Wizzy {
 
             _shader->UploadMat4("worldTransform", _submission.transform);
 
-            RenderCommand::DrawIndexed(_submission.va);
+            RenderCommand::DrawIndexed(_submission.va, _submission.renderMode);
         }
     }
 }

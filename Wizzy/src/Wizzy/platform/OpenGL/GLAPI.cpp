@@ -29,9 +29,18 @@ namespace Wizzy {
         switch (mode) {
             case WZ_CULL_BACK:   return GL_BACK;
             case WZ_CULL_FRONT:  return GL_FRONT;
-            case WZ_CULL_NONE:   return 0;
+            case WZ_CULL_NONE:   break;
         }
         WZ_CORE_ASSERT(false, "GL Unimplemented culling mode");
+        return 0;
+    }
+    int32 GL_RenderModeToAPIRenderMode(RenderMode mode) {
+        switch (mode) {
+            case WZ_RENDER_MODE_LINES:      return GL_LINES;
+            case WZ_RENDER_MODE_TRIANGLES:  return GL_TRIANGLES;
+            case WZ_RENDER_MODE_NONE:       break;
+        }
+        WZ_CORE_ASSERT(false, "GL Unimplemented render mode");
         return 0;
     }
     int32 GL_MaxTextureSlot() {

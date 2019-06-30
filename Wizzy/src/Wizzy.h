@@ -15,6 +15,7 @@
 #include "Wizzy/Renderer/Renderer.h"
 #include "Wizzy/Renderer/Shader.h"
 #include "Wizzy/Renderer/Texture.h"
+#include "Wizzy/Renderer/Model.h"
 #include "Wizzy/Renderer/API.h"
 #include "Wizzy/ImGuiSystem.h"
 #include "Wizzy/Scripting/Script.h"
