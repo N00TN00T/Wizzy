@@ -51,6 +51,9 @@ namespace Wizzy {
         WZ_CORE_TRACE("Creating window '{0}'...",
                         props.title);
 
+        glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 3);
+        glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 3);
+        glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
         m_glfwWindow = glfwCreateWindow(props.width, props.height, props.title.c_str(), nullptr, nullptr);
 
         m_context = new OpenGLContext(m_glfwWindow);

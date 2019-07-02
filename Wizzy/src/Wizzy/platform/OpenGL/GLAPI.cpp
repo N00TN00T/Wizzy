@@ -47,7 +47,10 @@ namespace Wizzy {
         return GL_MAX_COMBINED_TEXTURE_IMAGE_UNITS - 1;
     }
     string GL_GetVersion() {
-        return reinterpret_cast< char const* >(glGetString(GL_VERSION));
+      string _glVersion = reinterpret_cast< char const* >(glGetString(GL_VERSION));
+      string _glslVersion = reinterpret_cast< char const* >(glGetString(GL_SHADING_LANGUAGE_VERSION));
+
+      return "[GL] " + _glVersion + " | [GLSL] " + _glslVersion;
     }
 
     string GL_GetVendor() {

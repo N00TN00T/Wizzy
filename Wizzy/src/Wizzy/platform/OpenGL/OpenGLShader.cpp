@@ -86,8 +86,8 @@ namespace Wizzy {
 					_shaderType = ShaderType::vertex;
 				else if (_line.find("fragment") != std::string::npos)
 					_shaderType = ShaderType::fragment;
-                else
-                    WZ_CORE_ASSERT(false, "Unknown #shader token in shader file '"
+        else
+          WZ_CORE_ASSERT(false, "Unknown #shader token in shader file '"
                                             + GetSourceFile() + "' on line "
                                             + std::to_string(_lineNum));
 			} else {
