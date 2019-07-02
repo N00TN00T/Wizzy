@@ -14,7 +14,7 @@ namespace Wizzy {
     */
     GLVertexBuffer::GLVertexBuffer(void *data, size_t size) {
         WZ_CORE_TRACE("Creating GL vertex buffer");
-        GL_CALL(glCreateBuffers(1, &m_id));
+        GL_CALL(glGenBuffers(1, &m_id));
         this->Bind();
         GL_CALL(glBufferData(GL_ARRAY_BUFFER, size, data, GL_STATIC_DRAW));
         WZ_CORE_INFO("Successfully created GL vertex buffer with id '{0}'", m_id);
@@ -44,7 +44,7 @@ namespace Wizzy {
     GLIndexBuffer::GLIndexBuffer(u32 *data, u32 count)
         : m_count(count) {
         WZ_CORE_TRACE("Creating GL index buffer");
-        GL_CALL(glCreateBuffers(1, &m_id));
+        GL_CALL(glGenBuffers(1, &m_id));
         this->Bind();
         GL_CALL(glBufferData(GL_ELEMENT_ARRAY_BUFFER, count * sizeof(u32), data, GL_STATIC_DRAW));
         WZ_CORE_INFO("Successfully created GL index buffer with id '{0}'", m_id);
@@ -73,7 +73,7 @@ namespace Wizzy {
     */
     GLVertexArray::GLVertexArray() {
         WZ_CORE_TRACE("Creating GL vertex array");
-        GL_CALL(glCreateVertexArrays(1, &m_id));
+        GL_CALL(glGenVertexArrays(1, &m_id));
         this->Unbind();
         WZ_CORE_INFO("Successfully created GL vertex array with id '{0}'", m_id);
     }

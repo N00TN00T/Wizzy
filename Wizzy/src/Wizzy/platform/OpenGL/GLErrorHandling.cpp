@@ -3,6 +3,7 @@
 #include "Wizzy/platform/OpenGL/GLErrorHandling.h"
 #include <glad/glad.h>
 #include <GL/glu.h>
+#include <GL/gl.h>
 
 namespace Wizzy {
 	namespace __GL_Error_Handling {
