@@ -29,9 +29,7 @@ workspace "Wizzy"
     pybind11 = "Wizzy/vendor/pybind11/include",
     pybind11 = "Wizzy/vendor/ulib/include",
     pdoes = "Wizzy/vendor/pdoes",
-    assimp = "Wizzy/vendor/assimp/build/include",
-    irrXML = "Wizzy/vendor/assimp/contrib/irrXML",  -- assimp dependency
-    zlib = "Wizzy/vendor/assimp/contrib/zlib"       -- assimp dependency
+    assimp = "Wizzy/vendor/assimp/include"
   }
 
   include "Wizzy/vendor/glfw/"
@@ -39,6 +37,7 @@ workspace "Wizzy"
   include "Wizzy/vendor/imgui/"
   include "Wizzy/vendor/lua"
   include "Wizzy/vendor/pdoes"
+  include "Wizzy/vendor/assimp"
 
 --[[------------------------------------------------------------------------------------
        CORE PROJECT
@@ -82,9 +81,7 @@ project "Wizzy"
     "%{include_dir.pybind11}",
     "%{include_dir.ulib}",
     "%{include_dir.pdoes}",
-    "%{include_dir.assimp}",
-    "%{include_dir.irrXML}",
-    "%{include_dir.zlib}"
+    "%{include_dir.assimp}"
   }
 
   defines
@@ -229,9 +226,7 @@ project "Sandbox"
     "%{include_dir.pybind11}",
     "%{include_dir.ulib}",
     "%{include_dir.pdoes}",
-    "%{include_dir.assimp}",
-    "%{include_dir.irrXML}",
-    "%{include_dir.zlib}"
+    "%{include_dir.assimp}"
   }
 
   defines
@@ -249,7 +244,8 @@ project "Sandbox"
     "glfw",
     "glad",
     "lua",
-    "pdoes"
+    "pdoes",
+    "assimp"
   }
 
   filter "action:codelite"
@@ -285,10 +281,7 @@ project "Sandbox"
       "pthread",
       "Xi",
       "dl",
-      "stdc++fs",
-      "Wizzy/vendor/assimp/build/linux/assimp",
-      "Wizzy/vendor/assimp/build/linux/IrrXML",
-      "Wizzy/vendor/assimp/build/linux/zlib"
+      "stdc++fs"
     }
 
     includedirs { "/usr/include/python3.6" }
@@ -315,16 +308,14 @@ project "Sandbox"
     {
         "opengl32.lib",
         "glu32.lib",
-        "Wizzy/vendor/assimp/build/windows/assimp",
-        "Wizzy/vendor/assimp/build/windows/IrrXML",
-        "Wizzy/vendor/assimp/build/windows/zlib"
+        "Wizzy/vendor/assimp/build/windows/assimp"
     }
 
     -- Windows-specific files
     files
     {
-      "%{prj.name}/src/Wizzy/Platform/windows/**.h",
-      "%{prj.name}/src/Wizzy/Platform/windows/**.cpp"
+      "%{prj.name}/src/Wizzy/platform/windows/**.h",
+      "%{prj.name}/src/Wizzy/platform/windows/**.cpp"
     }
 
 ----------------------------------------------------------------------
@@ -345,8 +336,8 @@ project "Sandbox"
     -- Macosx-specific files
     files
     {
-      "%{prj.name}/src/Wizzy/Platform/macosx/**.h",
-      "%{prj.name}/src/Wizzy/Platform/macosx/**.cpp"
+      "%{prj.name}/src/Wizzy/platform/macosx/**.h",
+      "%{prj.name}/src/Wizzy/platform/macosx/**.cpp"
     }
 
     links
