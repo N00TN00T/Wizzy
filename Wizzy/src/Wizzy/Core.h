@@ -113,6 +113,18 @@
 } \
 WZ_CORE_ASSERT(false, "Invalid renderer API selected"); \
 
+#define WZ_EXTENSION_MATERIAL   	"wzmat"
+#define WZ_EXTENSION_TEXTURE    	"wztxr"
+#define WZ_EXTENSION_SHADER     	"wzsdr"
+#define WZ_EXTENSION_SCRIPT     	"wzscr"
+#define WZ_EXTENSION_MODEL      	"wzmdl"
+
+#define WZ_NULL_RESOURCE_HANDLE 	"NULL"
+#define WZ_DEFAULT_SHADER_HANDLE    "PhongShader"
+
+#define WZ_UNLOADED_TEXTURE_COLOR   ::Wizzy::Color::gray;
+#define WZ_INVALID_TEXTURE_COLOR    ::Wizzy::Color::magenta;
+
 namespace Wizzy {
     enum BufferUsage {
         WZ_STATIC = 0, WZ_DYNAMIC = 1, WZ_STREAM = 2

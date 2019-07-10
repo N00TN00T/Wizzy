@@ -1,18 +1,10 @@
 #include "spch.h"
 #include <Wizzy.h>
 
-struct RenderComponent
- 	: public ecs::Component<RenderComponent> {
-private:
-    static u32 renderIdCounter;
-public:
-    wz::VertexArrayPtr va;
-    wz::Material material;
-    const u32 renderId = ++renderIdCounter;
-    RenderComponent(const wz::VertexArrayPtr& va, const wz::Material& material)
-        : va(va), material(material) {}
+struct ModelComponent
+ 	: public ecs::Component<ModelComponent> {
+    wz::ModelHandle handle;
 };
-u32 RenderComponent::renderIdCounter = 0;
 
 struct TransformComponent
 	: public ecs::Component<TransformComponent> {
@@ -29,15 +21,6 @@ struct TransformComponent
 
 		return _ret;
 	}
-
-};
-
-struct TestTriangleComponent
-	: public ecs::Component<TestTriangleComponent> {
-
-};
-struct PlayerTestTriangleComponent
-	: public ecs::Component<PlayerTestTriangleComponent> {
 
 };
 
@@ -79,29 +62,32 @@ struct ViewComponent
     }
 };
 
-struct ResourceGUIComponent
-    : public ecs::Component<ResourceGUIComponent> {
-
-};
-
-class ResourceGUISystem
+class RenderSystem
     : public ecs::System {
 public:
-    ResourceGUISystem() {
-        AddComponentType<ResourceGUIComponent>();
+    RenderSystem() {
+        AddComponentType<TransformComponent>();
+        AddComponentType<ModelComponent>(FLAG_OPTIONAL);
 
-        Subscribe((int)wz::EventType::app_render);
+        Subscribe((int32)wz::EventType::app_render);
     }
 
-    void SubmitGUI() const {
-        ImGui::Begin("Resources");
+    void SubmitModel(TransformComponent& transform, ModelComponent& modelComponent) const {
+        WZ_CORE_TRACE("Submitting model from handle '{0}'", modelComponent.handle);
+        auto& _model = *wz::ResourceManagement::Get<wz::Model>(modelComponent.handle);
 
-        for (const auto& _alias : wz::ResourceManagement::GetAliases()) {
-            auto _resource = wz::ResourceManagement::Get<wz::IResource>(_alias);
-            string _headerStr = _alias + " : " + _resource->GetType();
-            ImGui::Text(_headerStr.c_str());
-            ImGui::Spacing();
+        const auto& _meshes = _model.GetMeshes();
+        for (const auto& _mesh : _meshes) {
+            auto& _material = *wz::ResourceManagement::Get<wz::Material>(_mesh.GetMaterialHandle());
+            wz::Renderer::Submit(_mesh.GetVAO(), _material, transform.ToMat4());
         }
+
+        string _wndTitle = "Model##" + modelComponent.handle;
+        ImGui::Begin(_wndTitle.c_str());
+
+        ImGui::DragFloat3("Position", glm::value_ptr(transform.position), .05f);
+        ImGui::DragFloat3("Rotation", glm::value_ptr(transform.rotation), .01f);
+        ImGui::DragFloat3("Scale", glm::value_ptr(transform.scale), .01f);
 
         ImGui::End();
     }
@@ -110,8 +96,17 @@ public:
 						 ecs::ComponentGroup& components) const override {
 		const wz::Event& _e = *static_cast<const wz::Event*>(eventHandle);
 
+        TransformComponent& _transform = *components.Get<TransformComponent>();
+
         switch (_e.GetEventType()) {
-            case wz::EventType::app_render: SubmitGUI(); break;
+            case wz::EventType::app_render:
+            {
+                if (components.Has<ModelComponent>()) {
+                    ModelComponent& _model = *components.Get<ModelComponent>();
+                    SubmitModel(_transform, _model);
+                }
+                break;
+            }
             default: break;
         }
 	}
@@ -237,187 +232,17 @@ public:
 	}
 };
 
-class RenderSystem
-	: public ecs::System {
-public:
-	RenderSystem() {
-		AddComponentType<RenderComponent>();
-		AddComponentType<TransformComponent>();
-
-		Subscribe((int32)wz::AppRenderEvent::GetStaticType());
-	}
-
-    void SubmitDiffuseColor(wz::Material& material) const {
-        ImGui::ColorEdit4("Diffuse (Color)", material.diffuseColor.rgba);
-    }
-
-    void SubmitTextureDropdown(wz::Material& material) const {
-
-        string _texturePreview
-            = wz::ResourceManagement::Is<wz::Texture>(material.diffuseTextureHandle)
-            ? wz::ResourceManagement::AliasOf(material.diffuseTextureHandle)
-            : "None";
-
-        if (ImGui::BeginCombo("Diffuse (Texture)", _texturePreview.c_str())) {
-
-            for (auto _handle : wz::ResourceManagement::GetHandles()) {
-                string _alias = wz::ResourceManagement::AliasOf(_handle);
-
-                if (wz::ResourceManagement::Is<wz::Texture>(_handle)
-                    && ImGui::MenuItem(_alias.c_str())) {
-                    material.diffuseTextureHandle = _handle;
-                }
-            }
-
-            if (ImGui::MenuItem("None")) {
-                material.diffuseTextureHandle = WZ_NULL_RESOURCE_HANDLE;
-            }
-
-            ImGui::EndCombo();
-        }
-    }
-
-	void Submit(RenderComponent& renderComponent,
-				TransformComponent& transformComponent) const {
-        WZ_CORE_TRACE("Submitting from render system");
-		wz::Renderer::Submit(renderComponent.va, renderComponent.material,
-						 transformComponent.ToMat4(), wz::WZ_RENDER_MODE_TRIANGLES);
-
-        auto& _material = renderComponent.material;
-
-        string _wndLbl = "Entity Rendering##" + std::to_string(renderComponent.renderId);
-        ImGui::Begin(_wndLbl.c_str());
-
-        string _idStr = "Render ID: '" + std::to_string(renderComponent.renderId) + "'";
-        ImGui::Text(_idStr.c_str());
-        ImGui::Spacing();
-        ImGui::Text("Material");
-
-        string _shaderPreview = wz::ResourceManagement::AliasOf(_material.shaderHandle);
-
-        if (ImGui::BeginCombo("Shader", _shaderPreview.c_str())) {
-
-            for (auto _handle : wz::ResourceManagement::GetHandles()) {
-                string _alias = wz::ResourceManagement::AliasOf(_handle);
-
-                if (wz::ResourceManagement::Is<wz::Shader>(_handle)
-                    && ImGui::MenuItem(_alias.c_str())) {
-                    _material.shaderHandle = _handle;
-                }
-            }
-
-            ImGui::EndCombo();
-        }
-
-        string _diffuseModePreview = _material.useTexture ? "Texture" : "Color";
-
-        if (ImGui::BeginCombo("Diffuse mode", _diffuseModePreview.c_str())) {
-
-            if (ImGui::MenuItem("Texture")) {
-                _material.useTexture = true;
-            }
-            if (ImGui::MenuItem("Color")) {
-                _material.useTexture = false;
-            }
-
-            ImGui::EndCombo();
-        }
-
-        if (_material.useTexture) {
-            SubmitTextureDropdown(_material);
-        } else {
-            SubmitDiffuseColor(_material);
-        }
-
-
-        ImGui::End();
-	}
-
-	virtual void OnEvent(const void* eventHandle,
-						 ecs::ComponentGroup& components) const override {
-		const wz::Event& _e = *static_cast<const wz::Event*>(eventHandle);
-		RenderComponent& _renderComponent =
-								*components.Get<RenderComponent>();
-		TransformComponent& _transformComponent =
-								*components.Get<TransformComponent>();
-
-		switch (_e.GetEventType()) {
-			case wz::EventType::app_render:
-				Submit(_renderComponent, _transformComponent);
-				break;
-			default: break;
-		}
-	}
-};
-
-class TestTriangleSystem
- 	: public ecs::System{
-public:
-	TestTriangleSystem() {
-
-		AddComponentType<TestTriangleComponent>();
-		AddComponentType<TransformComponent>();
-		AddComponentType<PlayerTestTriangleComponent>(FLAG_OPTIONAL);
-
-		Subscribe((int32)wz::AppUpdateEvent::GetStaticType());
-		Subscribe((int32)wz::AppRenderEvent::GetStaticType());
-	}
-
-	void OnPlayerUpdate(TransformComponent& transform, float delta) const {
-        WZ_CORE_TRACE("Player update");
-        if (wz::Input::GetKey(WZ_KEY_W)) {
-			transform.position.y += delta * 100.f;
-		}
-		if (wz::Input::GetKey(WZ_KEY_A)) {
-			transform.position.x -= delta * 100.f;
-		}
-		if (wz::Input::GetKey(WZ_KEY_S)) {
-			transform.position.y -= delta * 100.f;
-		}
-		if (wz::Input::GetKey(WZ_KEY_D)) {
-			transform.position.x += delta * 100.f;
-		}
-
-        ImGui::Begin("Test triangle");
-
-        ImGui::Text("Transform");
-		ImGui::DragFloat3("Position", glm::value_ptr(transform.position), 0.1f);
-		ImGui::DragFloat3("Rotation", glm::value_ptr(transform.rotation), 0.1f);
-		ImGui::DragFloat3("Scale", glm::value_ptr(transform.scale), 0.1f);
-
-		ImGui::End();
-	}
-
-	void OnRender(TransformComponent& transform) const {
-
-	}
-
-	virtual void OnEvent(const void* eventHandle,
-						 ecs::ComponentGroup& components) const override {
-		const wz::Event& _e = *static_cast<const wz::Event*>(eventHandle);
-		TransformComponent& _transform =
-								*components.Get<TransformComponent>();
-
-		switch (_e.GetEventType()) {
-			case wz::EventType::app_update:
-			{
-				const wz::AppUpdateEvent& _updateEv =
-							*static_cast<const wz::AppUpdateEvent*>(eventHandle);
-				if (components.Has<PlayerTestTriangleComponent>())
-					OnPlayerUpdate(_transform, _updateEv.GetDeltaTime());
-				break;
-			}
-			case wz::EventType::app_render:
-				OnRender(_transform);
-				break;
-			default: break;
-		}
-	}
-};
-
 class Sandbox
 	: public Wizzy::Application {
 public:
+
+	Sandbox() {
+
+	}
+
+    ~Sandbox() {
+
+    }
 
     void CreateCamera() {
         ViewComponent _viewComp;
@@ -433,145 +258,77 @@ public:
         ecs::StaticCId _ids[] = {
             _viewComp.staticId
         };
-        m_ecs.CreateEntity(_comps, _ids, 1);
+        m_clientEcs.CreateEntity(_comps, _ids, 1);
     }
 
-    void CreateResourceGUI() {
-        ResourceGUIComponent _guiComp;
+    void CreateModel(wz::ModelHandle handle) {
+        WZ_CORE_DEBUG("Creating model from handle '{0}'", handle);
+        TransformComponent _transform;
+        _transform.position = vec3(0.0, 0.0, 0.0);
+        _transform.scale = vec3(1.0, 1.0, 1.0);
+        _transform.rotation = vec3(0.0, 0.0, 0.0);
+
+        ModelComponent _model;
+        _model.handle = handle;
+
         ecs::IComponent* _comps[] = {
-            &_guiComp
+            &_transform, &_model
         };
         ecs::StaticCId _ids[] = {
-            ResourceGUIComponent::staticId
+            _transform.staticId, _model.staticId
         };
-        m_ecs.CreateEntity(_comps, _ids, 1);
-    }
 
-	void CreateTriangle(const wz::VertexArrayPtr& va, const wz::Material& mat, vec3 pos, vec3 rot, vec3 scale, bool isPlayer = false) {
-		RenderComponent _renderComp {va, mat};
-		TransformComponent _transformComp;
-		_transformComp.position = pos;
-		_transformComp.rotation = rot;
-		_transformComp.scale = scale;
-		TestTriangleComponent _triComp;
-		PlayerTestTriangleComponent _playerComp;
-
-		ecs::IComponent* _comps[] = {
-			&_renderComp, &_transformComp, &_triComp, &_playerComp
-		};
-		ecs::StaticCId _ids[] = {
-			_renderComp.staticId, _transformComp.staticId, _triComp.staticId,
-			_playerComp.staticId
-		};
-
-		m_ecs.CreateEntity(_comps, _ids, isPlayer ? 4 : 3);
-	}
-
-	Sandbox() {
-
-	}
-
-    ~Sandbox() {
-
+        m_clientEcs.CreateEntity(_comps, _ids, 2);
     }
 
 	virtual
     void Init() override {
-        wz::Log::SetCoreLogLevel(LOG_LEVEL_DEBUG);
-		wz::ResourceManagement::SetResourcePath(string(BASE_DIR) + "Resources/");
+        wz::Log::SetCoreLogLevel(LOG_LEVEL_TRACE);
 
-        ulib::Bitset _pyramidFlags;
-        ulib::Bitset _prismFlags;
+        wz::Flagset _scriptFlags;
+        _scriptFlags.SetBit(wz::SCRIPT_LUA);
 
-        wz::ResourceManagement::Import<wz::Shader> (
-											"basic.shader",
-											"DefaultShader"
-										);
-		wz::ResourceManagement::Import<wz::Shader> (
-											"phong_basic.shader",
-											"BasicPhongShader"
-										);
-        wz::ResourceManagement::Import<wz::Shader> (
-                            				"phong_pixelated.shader",
-                            				"PixelatedPhongShader"
-                            			);
-        wz::ResourceManagement::Import<wz::Texture> (
-											"pyramid.jpeg",
-											"pyramidTexture001",
-                                            _pyramidFlags
-										);
-        wz::ResourceManagement::Import<wz::Texture> (
-											"prism.jpeg",
-											"prismTexture001",
-                                            _prismFlags
-										);
-        wz::ResourceManagement::Import<wz::Script> (
-											"testScript.lua",
-											"testScript"
-										);
-        wz::ResourceManagement::Import<wz::Model> (
-											"guy.fbx",
-											"NanoModel"
-										);
-        wz::ResourceManagement::Import<wz::Model> (
-											"sword.fbx",
-											"Sword"
-										);
-        wz::Texture *_texture = wz::ResourceManagement::Get<wz::Texture>("pyramidTexture001");
-        wz::Model *_nanoModel = wz::ResourceManagement::Get<wz::Model>("NanoModel");
-        wz::Model *_swordModel = wz::ResourceManagement::Get<wz::Model>("Sword");
-
-		wz::Shader *_shader = wz::ResourceManagement::Get<wz::Shader>("DefaultShader");
-		wz::VertexArrayPtr _vao(wz::VertexArray::Create());
-        float _vertices[] = {
-            // near bot left
-			-0.5f, -0.5f, -0.5f, 		0.0f, 1.0f,
-            // near bot right
-			 0.5f, -0.5f, -0.5f, 		1.0f, 1.0f,
-            // top
-			 0.0f,  0.5f, 0.0f, 		0.5f, 0.5f,
-             // far bot left
- 			-0.5f, -0.5f, 0.5f, 		0.0f, 0.0f,
-             // far bot right
- 			 0.5f, -0.5f, 0.5f, 		1.0f, 0.0f,
-            };
-		wz::VertexBufferPtr _vbo(wz::VertexBuffer::Create(_vertices, sizeof(_vertices)));
-
-		wz::BufferLayout _layout = {
-			{ wz::ShaderDataType::FLOAT3, "vertexPosition" },
-			{ wz::ShaderDataType::FLOAT2, "vertexUv" }
-		};
-		_vbo->SetLayout(_layout);
-        u32 _indices[] = {
-            // near
-            2, 1, 0,
-            // right
-            1, 2, 4,
-            // far
-            4, 2, 3,
-            // left
-            3, 2, 0,
-            // bot - near left tri
-            0, 1, 3,
-            // bot - far right tri
-            3, 1, 4,
-        };
-		wz::IndexBufferPtr _ibo(wz::IndexBuffer::Create(_indices, sizeof(_indices) / sizeof(u32)));
-		_vao->PushVertexBuffer(_vbo);
-		_vao->SetIndexBuffer(_ibo);
+        string _projectDir = BASE_DIR;
+        wz::ResourceManagement::Load<wz::Shader>(
+            _projectDir + "TestResources/basic.shader",
+            "DefaultShader"
+        );
+        wz::ResourceManagement::Load<wz::Shader>(
+            _projectDir + "TestResources/phong_basic.shader",
+            WZ_DEFAULT_SHADER_HANDLE
+        );
+        wz::ResourceManagement::Load<wz::Model>(
+            _projectDir + "TestResources/nanosuit/nano.fbx",
+            "Nanosuit"
+        );
+        wz::ResourceManagement::Load<wz::Model>(
+            _projectDir + "TestResources/chair.fbx",
+            "Chair"
+        );
+        wz::ResourceManagement::Load<wz::Model>(
+            _projectDir + "TestResources/sword.fbx",
+            "Sword"
+        );
+        wz::ResourceManagement::Load<wz::Script>(
+            _projectDir + "TestResources/testScript.lua",
+            "TestScript",
+            _scriptFlags
+        );
+        wz::ResourceManagement::Load<wz::Texture>(
+            _projectDir + "TestResources/prism.jpeg",
+            "PrismTexture001"
+        );
+        wz::ResourceManagement::Load<wz::Material>(
+            _projectDir + "TestResources/testMaterial.mat",
+            "TestMaterial"
+        );
 
         CreateCamera();
-        CreateResourceGUI();
-
-        for (const auto& _mesh : _swordModel->GetMeshes()) {
-            CreateTriangle(_mesh.GetVAO(), { _shader->GetResourceHandle() }, vec3(-1.5f, 0.f, 0.f), vec3(0, wz::to_radians(180), 0), vec3(0.01f, 0.01f, 0.01f));
-        }
+        CreateModel("Chair");
+        CreateModel("Nanosuit");
 
         m_clientSystems.AddSystem<CameraSystem>();
-        m_clientSystems.AddSystem<TestTriangleSystem>();
         m_clientSystems.AddSystem<RenderSystem>();
-
-        m_engineSystems.AddSystem<ResourceGUISystem>();
 	}
 
     virtual

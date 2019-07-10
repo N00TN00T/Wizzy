@@ -7,7 +7,7 @@
 #include "Wizzy/Events/MouseEvent.h"
 #include "Wizzy/Events/CharEvent.h"
 #include "Wizzy/Events/KeyEvent.h"
-#include "Wizzy/platform/OpenGL/OpenGLContext.h"
+#include "Wizzy/platform/OpenGL/GLContext.h"
 #include "Wizzy/Renderer/RendererAPI.h"
 #include "Wizzy/Renderer/API.h"
 
@@ -56,7 +56,7 @@ namespace Wizzy {
         glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
         m_glfwWindow = glfwCreateWindow(props.width, props.height, props.title.c_str(), nullptr, nullptr);
 
-        m_context = new OpenGLContext(m_glfwWindow);
+        m_context = new GLContext(m_glfwWindow);
 
         m_context->Init();
 

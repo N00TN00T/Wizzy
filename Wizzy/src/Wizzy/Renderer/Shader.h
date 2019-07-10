@@ -1,11 +1,9 @@
 #pragma once
 
 #include "Wizzy/Renderer/API.h"
-#include "Wizzy/Resource/IResource.h"
+#include "Wizzy/Resource/Resource.h"
 
 namespace Wizzy {
-
-	typedef ResourceHandle ShaderHandle;
 
 	struct ShaderProgramSource {
 		string vertSource;
@@ -13,24 +11,12 @@ namespace Wizzy {
 	};
 
     class Shader
-        : public IResource {
+        : public Resource {
     public:
-        Shader(const string& file)
-			: IResource(file, "Shader") {}
+        Shader(const Flagset& flags)
+			: Resource(flags, "Shader", WZ_EXTENSION_SHADER) {}
 		virtual
 		~Shader();
-
-		virtual
-		void Load() override;
-
-		virtual
-		void Unload() override;
-
-		virtual
-		void Reload() override;
-
-		virtual
-		void Save() override;
 
         virtual
 		void Bind() const = 0;
@@ -70,22 +56,8 @@ namespace Wizzy {
 
 		void UploadData(const string& name, ShaderDataType type, void* data);
 
-    protected:
-		virtual
-		void ParseShader(const string& file) = 0;
-
-        virtual
-		bool Compile() = 0;
-
-		virtual
-		void Delete() = 0;
-
 	public:
 		static
-		Shader* Create(const string& file);
-
-    private:
-        static
-		u32 s_currentShader;
+		Shader* Create(const string& sourceFile, const string& data, const Flagset& flags);
     };
 }

@@ -3,7 +3,7 @@
 #include "Wizzy/Renderer/Buffers.h"
 #include "Wizzy/Renderer/Renderer.h"
 
-#include "Wizzy/platform/OpenGL/OpenGLBuffers.h"
+#include "Wizzy/platform/OpenGL/GLBuffers.h"
 
 namespace Wizzy {
     VertexBuffer* VertexBuffer::Create(void *data, size_t size) {

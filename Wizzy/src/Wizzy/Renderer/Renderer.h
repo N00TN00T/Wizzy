@@ -46,8 +46,8 @@ namespace Wizzy {
         static
         bool s_isReady;
         static
-        std::unordered_map<Shader*, std::deque<Submission>> s_submissions;
+        std::unordered_map<ShaderHandle, std::deque<Submission>> s_submissions;
         static
-        ulib::Queue<Shader*> s_shaderQueue;
+        ulib::Queue<ShaderHandle> s_shaderQueue;
     };
 }

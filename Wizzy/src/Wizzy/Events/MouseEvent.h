@@ -34,7 +34,7 @@ namespace Wizzy {
 	public:
 
 		EVENT_CLASS_TYPE(mouse_press)
-		EVENT_CLASS_CATEGORY(category_input | category_mouse)
+		EVENT_CLASS_CATEGORY(category_input | category_mouse_button)
 
 		inline MousePressedEvent(int buttonCode) {
 			m_buttonCode = buttonCode;
@@ -54,7 +54,7 @@ namespace Wizzy {
 	public:
 
 		EVENT_CLASS_TYPE(mouse_release)
-		EVENT_CLASS_CATEGORY(category_input | category_mouse)
+		EVENT_CLASS_CATEGORY(category_input | category_mouse_button)
 
 		inline MouseReleasedEvent(int buttonCode){
 			m_buttonCode = buttonCode;
@@ -74,7 +74,7 @@ namespace Wizzy {
 	public:
 
 		EVENT_CLASS_TYPE(mouse_scroll)
-		EVENT_CLASS_CATEGORY(category_input | category_mouse)
+		EVENT_CLASS_CATEGORY(category_input | category_mouse_button)
 
 		inline MouseScrolledEvent(double xOffset, double yOffset) {
 			m_xOffset = xOffset;

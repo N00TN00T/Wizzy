@@ -1,3 +1,5 @@
+#lightmode phong
+
 #shader vertex
 
 #version 330  core
@@ -33,19 +35,14 @@ in vec2 uv;
 
 uniform vec4 albedo = vec4(1.0, 1.0, 1.0, 1.0);
 uniform vec4 diffuseColor = vec4(1.0, 1.0, 1.0, 1.0);
-uniform sampler2D diffuseTexture;
-uniform bool hasTexture;
+uniform sampler2D diffuseMap;
 uniform float pixels = 2048.0;
 
 void main()
 {
-    if (hasTexture) {
-        float dx = (16.0 * (1.0 / pixels));
-        float dy = (10.0 * (1.0 / pixels));
-        vec2 coord = vec2(dx * floor(uv.x / dx) + dx / 2.0,
-                          dy * floor(uv.y / dy) + dy / 2.0);
-        outColor = texture(diffuseTexture, coord);
-    } else {
-        outColor = diffuseColor * albedo;
-    }
+    float dx = (16.0 * (1.0 / pixels));
+    float dy = (10.0 * (1.0 / pixels));
+    vec2 coord = vec2(dx * floor(uv.x / dx) + dx / 2.0,
+                      dy * floor(uv.y / dy) + dy / 2.0);
+    outColor = texture(diffuseMap, coord);
 }

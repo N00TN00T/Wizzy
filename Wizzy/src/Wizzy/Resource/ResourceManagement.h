@@ -1,227 +1,172 @@
  #pragma once
 
-#include "Wizzy/Resource/IResource.h"
+#include "Wizzy/Resource/Resource.h"
+#include "Wizzy/Events/Event.h"
 
-/* Ownership of ALL resources imported with or created in ResourceManagement
-    belongs to ResourceManagement. The only correct way to unload/free
-    these resources is by calling Unload(string alias) or UnloadAll() */
+/*
+
+Ownership of ALL resources imported with or created in ResourceManagement
+belongs to ResourceManagement. The only correct way to unload/free
+these resources is by calling Unload(string alias) or UnloadAll()
+
+*/
 
 namespace Wizzy {
+
+    typedef std::set<string>::iterator FileIdx;
+    typedef std::function<bool(Event&)> ResourceEventCallbackFn;
+
     class ResourceManagement {
     public:
         ResourceManagement() = delete;
 
-    public:
-
-        template <typename TResource>
-        static
-        void New(const string& newFile, const string& alias);
-        template <typename TResource>
-        static
-        void New(const string& newFile,
-                 const string& alias,
-                 const ulib::Bitset& flags);
-
-        template <typename TResource>
-        static
-        TResource* Import(const string& file,
-                          const string& alias);
-        template <typename TResource>
-        static
-        TResource* Import(const string& file,
-                          const string& alias,
-                          const ulib::Bitset& flags);
-
         inline static
-        size_t ResourceCount() {
-            return s_resourceAliases.size();
+        void SetEventCallbackFn(ResourceEventCallbackFn fn) {
+            s_callbackFn = fn;
         }
 
-        static
-        void Delete(const string& alias);
-
-        static
-        void Rename(const string& oldAlias, string newAlias);
-
-        static
-        void Flush(const bool& save = false);
-
-		static
-        void ClearGarbage();
-
+/*
+        Create and add a resource of given type from given file and assign the
+        handle that will be used to retrieve the resource. Ownership of
+        allocated memory will belong to resource management. Also send in a
+        bitset of flags allowing broader customization of the resource settings.
+*/
         template <typename TResource>
         static
-        TResource* Get(const string& alias);
+        void Load(string file, const ResourceHandle& handle,
+                  Flagset flags = Flagset());
+
+/*
+        Add an already created resource and associate it, and given file, with
+        given handle. Calling this will give ownership of the resource memory
+        to resource management, meaning it will and should only be freed
+        through resource management.
+*/
+        static
+        bool Add(Resource *resource, const ResourceHandle& handle);
+
+/*
+        Unload the resource associated with given handle from memory and remove
+        it.
+*/
+        static
+        void Unload(const ResourceHandle& handle);
+
+/*
+        Unload and load the resource associated with given handle.
+*/
         template <typename TResource>
         static
-        TResource* Get(ResourceHandle handle);
+        void Reload(const ResourceHandle& handle);
 
+/*
+        Serialize the resource associated with given handle (by calling
+        per-resource defined 'Serialize()') and write the data to the file
+        associated with the given handle.
+*/
+        static
+        void Save(const ResourceHandle& handle);
+
+/*
+        Unload and remove all resource and, optionally, save them beforehand.
+*/
+        static
+        void Flush(bool save = false);
+
+/*
+        Retrieve and return the file associated with given handle.
+*/
+        static
+        const string& FileOf(const ResourceHandle& handle);
+
+/*
+        Check whether or not given handle is valid. If no resource is associated
+        with given handle, or it's a null handle, it's invalid.
+*/
+        static
+        bool IsValid(const ResourceHandle& handle);
+
+/*
+        Check whether or not given handle is of given type. Returns false if
+        given handle is invalid.
+*/
         template <typename TResource>
-        inline static
-        bool Is(const string& alias) {
-            return dynamic_cast<TResource*>(s_resources[alias])
-                   && !s_resources[alias]->IsGarbage();
-        }
+        static
+        bool Is(const ResourceHandle& handle);
+
+/*
+        Return the resource associated with given handle, if that resource is
+        of given type.
+*/
         template <typename TResource>
-        inline static
-        bool Is(ResourceHandle handle) {
-            return dynamic_cast<TResource*>(s_resources[s_aliasesByHandle[handle]])
-                   && !WZ_IS_RESOURCE_HANDLE_NULL(handle)
-                   && s_resources[s_aliasesByHandle[handle]] != nullptr
-                   && !s_resources[s_aliasesByHandle[handle]]->IsGarbage();
-        }
+        static
+        TResource* Get(const ResourceHandle& handle);
+
+        static
+        void Rename(const ResourceHandle& oldHandle, const ResourceHandle& newHandle);
 
         inline static
-        void SetResourcePath(const string& path) {
-            s_resourcePath = path;
-        }
-
-        template <typename TResource>
-        inline static
-        string AliasOf(TResource* resource) {
-            for (const auto& _alias : s_resourceAliases) {
-                if (s_resources[_alias] == resource) return _alias;
-            }
-            return "";
-        }
+        void SetResourceDirectory(const string& dir) { s_resourceDir = dir; }
 
         inline static
-        string AliasOf(ResourceHandle handle) {
-            return s_aliasesByHandle[handle];
-        }
-
-        inline static
-        const std::set<string>& GetAliases() { return s_resourceAliases; }
-        inline static
-        const std::set<ResourceHandle> GetHandles() { return s_resourceHandles; }
+        const std::set<ResourceHandle>& GetHandles() { return s_handles; }
 
     private:
         static
-        string FindNextAvailableAlias(const string& takenAlias);
-		static
-        void UnloadAll();
-        template <typename TResource>
+        std::set<ResourceHandle> s_handles;
         static
-        void ImportInternal(const string& alias, TResource* resource);
-        template <typename TResource>
+        std::set<string> s_files;
         static
-        void ProcessNewResource(const string& alias, TResource *resource);
-
-    private:
+        std::unordered_map<ResourceHandle, FileIdx> s_fileIndices;
         static
-        std::set<string> s_resourceAliases;
+        std::unordered_map<ResourceHandle, Resource*> s_resources;
         static
-        std::set<ResourceHandle> s_resourceHandles;
+        string s_resourceDir;
         static
-        std::unordered_map<ResourceHandle, string> s_aliasesByHandle;
-        static
-        std::unordered_map<string, IResource*> s_resources;
-        static
-        string s_resourcePath;
-        static
-        ulib::Bitset s_emptyFlagSet;
+        ResourceEventCallbackFn s_callbackFn;
     };
 
     template <typename TResource>
-    inline TResource* ResourceManagement::Import(const string& file,
-                                                 const string& alias) {
-        WZ_CORE_TRACE("Importing resource from file '{0}' as '{1}'",
-                                                file, typestr(TResource));
+    inline
+    void ResourceManagement::Load(string file, const ResourceHandle& handle, Flagset flags) {
+        WZ_CORE_TRACE("Loading resource of type '{0}' from file '{1}' with handle '{2}' and passing a set of flags", typestr(TResource), file, handle);
+        WZ_CORE_ASSERT(ulib::File::exists(file), "File '" + file + "' does not exist");
 
-        string _fullPath = s_resourcePath + file;
+        string _data = "";
+        bool _readSuccess = ulib::File::read(file, &_data);
+        WZ_CORE_ASSERT(_readSuccess, "Failed reading file");
 
-        bool _aliasFree = s_resourceAliases.emplace(alias).second;
+        TResource *_resource = TResource::Create(file, _data, flags);
 
-        if (_aliasFree) {
-            auto _resource = TResource::Create(_fullPath);
-            _resource->Load();
-            ResourceManagement::ImportInternal(alias, _resource);
-        } else {
-            WZ_CORE_ERROR("Failed importing '{0}', alias '{1}' is already taken",
-                                        typestr(TResource), alias);
+        if (!ResourceManagement::Add(_resource, handle)) {
+            WZ_CORE_ERROR("Failed adding loaded file, file unloaded and nothing changed");
+            delete _resource;
         }
-
-        return static_cast<TResource*>(s_resources[alias]);
     }
 
     template <typename TResource>
-    inline TResource* ResourceManagement::Import(const string& file,
-                                                 const string& alias,
-                                                 const ulib::Bitset& flags) {
-        WZ_CORE_TRACE("Importing resource from file '{0}' as '{1}'",
-                                                    file, typestr(TResource));
+    void ResourceManagement::Reload(const ResourceHandle& handle) {
+        WZ_CORE_TRACE("Reloading resource associated with handle '{0}'...", handle);
+        WZ_CORE_ASSERT(ResourceManagement::IsValid(handle), "Tried unloading invalid handle");
 
-        string _fullPath = s_resourcePath + file;
+        string _file = ResourceManagement::FileOf(handle);
+        Flagset flags = s_resources[handle]->GetFlags();
 
-        bool _aliasFree = s_resourceAliases.emplace(alias).second;
-
-        if (_aliasFree) {
-            auto _resource = TResource::Create(_fullPath, flags);
-            _resource->Load();
-            ResourceManagement::ImportInternal(alias, _resource);
-        } else {
-            WZ_CORE_ERROR("Failed importing '{0}', alias '{1}' is already taken",
-                                        typestr(TResource), alias);
-        }
-
-        return static_cast<TResource*>(s_resources[alias]);
+        Unload(handle);
+        Load<TResource>(_file, handle, flags);
     }
 
     template <typename TResource>
     inline
-    void ResourceManagement::ImportInternal(const string& alias, TResource* resource) {
-        s_resources[alias] = resource;
-        s_resourceHandles.emplace(resource->GetResourceHandle());
-        s_aliasesByHandle[resource->GetResourceHandle()] = alias;
-    }
-
-    template <typename TResource>
-    inline TResource* ResourceManagement::Get(const string& alias) {
-        if (auto _resource = dynamic_cast<TResource*>(s_resources[alias]))
-            return _resource;
-        else
-            return nullptr;
+    bool ResourceManagement::Is(const ResourceHandle& handle) {
+        return ResourceManagement::IsValid(handle) &&
+               dynamic_cast<TResource*>(s_resources[handle]) != nullptr;
     }
 
     template <typename TResource>
     inline
-    TResource* ResourceManagement::Get(ResourceHandle handle) {
-        if (auto _resource = dynamic_cast<TResource*>(s_resources[s_aliasesByHandle[handle]]))
-            return _resource;
-        else
-            return nullptr;
-    }
-
-    template <typename TResource>
-    inline
-    void ResourceManagement::New(const string& newFile, const string& alias) {
-        if (ulib::File::exists(newFile)) {
-            WZ_CORE_WARN("Could not create new resource of type '{0}', file '{1}' already exists",
-                            typestr(TResource), newFile);
-            return;
-        }
-
-        ProcessNewResource(TResource::New(newFile));
-    }
-
-    template <typename TResource>
-    inline
-    void ResourceManagement::New(const string& newFile,
-                                 const string& alias,
-                                 const ulib::Bitset& flags) {
-        if (ulib::File::exists(newFile)) {
-            WZ_CORE_WARN("Could not create new resource of type '{0}', file '{1}' already exists",
-                            typestr(TResource), newFile);
-            return;
-        }
-
-        ProcessNewResource(TResource::New(newFile, flags));
-    }
-
-    template <typename TResource>
-    inline
-    void ResourceManagement::ProcessNewResource(const string& alias,
-                                                TResource *resource) {
-        ResourceManagement::ImportInternal(alias, resource);
+    TResource* ResourceManagement::Get(const ResourceHandle& handle) {
+        WZ_CORE_ASSERT(ResourceManagement::Is<TResource>(handle), "Tried getting resource by invalid handle or wrong type (handle: '" + handle + "', type: '" + string(typestr(TResource)) + "')");
+        return dynamic_cast<TResource*>(s_resources[handle]);
     }
 }

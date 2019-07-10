@@ -5,6 +5,10 @@
 #include <assimp/postprocess.h>
 
 #include "Wizzy/Renderer/Model.h"
+#include "Wizzy/Resource/ResourceManagement.h"
+#include "Wizzy/Renderer/Shader.h"
+#include "Wizzy/Renderer/Material.h"
+#include "Wizzy/Renderer/Texture.h"
 
 namespace Wizzy {
 
@@ -14,8 +18,10 @@ namespace Wizzy {
 
     Mesh::Mesh(const std::vector<Vertex>& vertices,
                const std::vector<u32>& indices,
+               const MaterialHandle& materialHandle,
                const string& name)
-        : m_vertices(vertices), m_indices(indices), m_name(name) {
+        : m_vertices(vertices), m_indices(indices), m_name(name),
+          m_materialHandle(materialHandle) {
         Init();
     }
 
@@ -58,77 +64,57 @@ namespace Wizzy {
     ****************MODEL*********************************
     *****************************************************/
 
-    Model::Model(const string& file, const ulib::Bitset& flags)
-        : IResource(file, "Model"), m_flags(flags) {
-
-    }
-
-    void Model::Load() {
-        WZ_CORE_ASSERT(m_isGarbage, "Item already loaded");
-        WZ_CORE_TRACE("Reading model with assimp from '{0}'", this->GetSourceFile());
+    Model::Model(const string& sourceFile, const string& data, const ulib::Bitset& flags)
+        : Resource(flags, "Model", WZ_EXTENSION_MODEL) {
+        WZ_CORE_TRACE("Reading model with assimp from data");
         Assimp::Importer _importer;
+        std::vector<Material*> _materials;
+        std::vector<string> _meshNames;
 
         const aiScene *_scene
-                = _importer.ReadFile(this->GetSourceFile().c_str(),
-                                     aiProcess_Triangulate | aiProcess_FlipUVs);
+                = _importer.ReadFileFromMemory(&data[0], data.size(),
+                                     aiProcess_Triangulate |
+                                     aiProcess_FlipUVs |
+                                     aiProcess_JoinIdenticalVertices  |
+                                     aiProcess_SortByPType |
+                                     aiProcess_GenSmoothNormals  |
+                                     aiProcess_CalcTangentSpace |
+                                     aiProcess_RemoveRedundantMaterials |
+                                     aiProcess_OptimizeMeshes |
+                                     aiProcess_OptimizeGraph 
+                                 );
 
         string _sceneError = "";
-
+        WZ_CORE_DEBUG(_scene->HasTextures());
+        WZ_CORE_DEBUG(_scene->mNumTextures);
         if (!_scene) {
 
-            WZ_CORE_ERROR("Failed loading model from file '{0}'...",
-                                                        this->GetSourceFile());
-            WZ_CORE_ERROR("...Assimp error: {0}", _importer.GetErrorString());
+            WZ_CORE_ERROR("Failed loading model, Assimp error: {0}", _importer.GetErrorString());
 
-            m_isGarbage = true;
+            m_isValid = false;
             return;
         }
-        WZ_CORE_INFO("Successfully read model from '{0}'", this->GetSourceFile());
+        WZ_CORE_INFO("Successfully read model from data");
 
         WZ_CORE_TRACE("Verifying scene...");
         if (!VerifyAssimpScene(_scene, &_sceneError)) {
 
-            WZ_CORE_ERROR("Failed loading model from file '{0}'...",
-                                                        this->GetSourceFile());
-            WZ_CORE_ERROR("...Reason: {0}", _sceneError);
+            WZ_CORE_ERROR("Failed loading model from data: '{0}'...", _sceneError);
 
-            m_isGarbage = true;
+            m_isValid = false;
             return;
         }
         WZ_CORE_INFO("Scene was verified successfully");
 
-        m_meshes.reserve(_scene->mNumMeshes);
-        WZ_CORE_TRACE("Processing {0} meshes...", _scene->mNumMeshes);
-        for (u32 i = 0; i < _scene->mNumMeshes; i++) {
-            aiMesh *_mesh = _scene->mMeshes[i];
+        ProcessNode(_scene->mRootNode, _scene, sourceFile);
 
-            bool _meshSuccess = false;
-            WZ_CORE_TRACE("Processing mesh {0}/{1}...", i + 1, _scene->mNumMeshes);
-            m_meshes.push_back(ProcessMesh(_mesh, &_meshSuccess));
-
-            if (!_meshSuccess) {
-                WZ_CORE_ERROR("Failed processing mesh");
-                m_meshes.clear();
-                m_isGarbage = true;
-                return;
-            }
-            WZ_CORE_INFO("Successfully processed mesh {0}/{1}...", i + 1, _scene->mNumMeshes);
-        }
-
-        WZ_CORE_INFO("Model successfully loaded");
-
-        m_isGarbage = false;
+        m_isValid = true;
+        WZ_CORE_INFO("Model successfully initialized");
     }
-    void Model::Unload() {
-        m_isGarbage = true;
-        m_meshes.clear();
-    }
-    void Model::Reload() {
-        Unload();
-        Load();
-    }
-    void Model::Save() {
-        WZ_CORE_WARN("Saving of models is not yet implemented");
+
+    string Model::Serialize() const {
+        WZ_CORE_ERROR("Model serializing not yet implemented");
+        return "";
     }
 
     bool Model::VerifyAssimpScene(const aiScene *scene, string *error) {
@@ -174,44 +160,77 @@ namespace Wizzy {
         return true;
     }
 
-    Mesh Model::ProcessMesh(aiMesh *assimpMesh, bool *success) {
+    bool Model::ProcessNode(aiNode *node, const aiScene *scene, const string& sourceFile) {
+        WZ_CORE_TRACE("Processing ai node '{0}'...", node->mName.C_Str());
+
+        WZ_CORE_TRACE("Processing {0} meshes...", node->mNumMeshes);
+        m_meshes.reserve(node->mNumMeshes);
+        for (u32 i = 0; i < node->mNumMeshes; i++) {
+            WZ_CORE_TRACE("Processing mesh {0}/{1}", i + 1, node->mNumMeshes);
+            aiMesh *_mesh = scene->mMeshes[node->mMeshes[i]];
+            bool _meshSuccess = false;
+            auto _processedMesh = ProcessMesh(_mesh, scene, &_meshSuccess, sourceFile, i);
+            if (_meshSuccess) {
+                m_meshes.push_back(_processedMesh);
+            } else {
+                WZ_CORE_ERROR("Failed processing node, error when processing mesh.");
+                return false;
+            }
+            WZ_CORE_INFO("Successfully processed mesh {0}/{1}", i + 1, node->mNumMeshes);
+        }
+
+        WZ_CORE_TRACE("Processing {0} node children...", node->mNumChildren);
+        bool _anyFailure = false;
+        for (u32 i = 0; i < node->mNumChildren; i++) {
+            WZ_CORE_TRACE("Processing child {0}/{1}", i + 1, node->mNumChildren);
+            if (!ProcessNode(node->mChildren[i], scene, sourceFile)) {
+                _anyFailure = true;
+                break;
+            }
+        }
+
+        if (_anyFailure) {
+            return false;
+        }
+        WZ_CORE_INFO("Successfully processed ai node '{0}'", node->mName.C_Str());
+        return true;
+    }
+
+    Mesh Model::ProcessMesh(aiMesh *mesh, const aiScene *scene, bool *success, const string& sourceFile, int32 meshIndex) {
         *success = true;
-        string assimpMeshError = "";
+        string meshError = "";
+        std::vector<Vertex> _vertices;
+        std::vector<u32> _indices;
+
         WZ_CORE_TRACE("Verifying mesh");
-        if (!VerifyAssimpMesh(assimpMesh, &assimpMeshError)) {
-            WZ_CORE_ERROR("Failed loading mesh: {0}", assimpMeshError);
-            m_isGarbage = true;
+        if (!VerifyAssimpMesh(mesh, &meshError)) {
+            WZ_CORE_ERROR("Failed processing mesh: {0}", meshError);
             *success = false;
             return Mesh();
         }
         WZ_CORE_TRACE("Mesh OK");
 
         WZ_CORE_TRACE("Reserving memory for {0} vertices and {1} faces ({2} indices) [{2} Bytes]",
-                        assimpMesh->mNumVertices, assimpMesh->mNumFaces,
-                        assimpMesh->mNumFaces * 3,
-                        (sizeof(Vertex) * assimpMesh->mNumVertices + sizeof(u32) * assimpMesh->mNumFaces * 3));
+                        mesh->mNumVertices, mesh->mNumFaces,
+                        mesh->mNumFaces * 3,
+                        (sizeof(Vertex) * mesh->mNumVertices + sizeof(u32) * mesh->mNumFaces * 3));
 
-        std::vector<Vertex> _vertices;
-        _vertices.reserve(assimpMesh->mNumVertices);
-        std::vector<u32> _indices;
-        _vertices.reserve(assimpMesh->mNumFaces * 3);
-        string _name;
+        _vertices.reserve(mesh->mNumVertices);
+        _indices.reserve(mesh->mNumFaces * 3);
 
-        WZ_CORE_TRACE("Iterating {0} vertices...", assimpMesh->mNumVertices);
-        for (u32 i = 0; i < assimpMesh->mNumVertices; i++) {
+        WZ_CORE_TRACE("Iterating {0} vertices...", mesh->mNumVertices);
+        for (u32 i = 0; i < mesh->mNumVertices; i++) {
             if (rand() % 500 == 3) {
-                WZ_CORE_TRACE("Vertices progress: {0}%", (int)(((float)i / (float)assimpMesh->mNumVertices) * 100));
+                WZ_CORE_TRACE("Vertices progress: {0}%", (int)(((float)i / (float)mesh->mNumVertices) * 100));
             }
-            aiVector3D& _pos = assimpMesh->mVertices[i];
+            aiVector3D& _pos = mesh->mVertices[i];
             aiVector3D _uv;
-            aiVector3D& _normal = assimpMesh->mNormals[i];
-            if (assimpMesh->HasTextureCoords(0)) {
-                _uv = assimpMesh->mTextureCoords[0][i];
+            aiVector3D& _normal = mesh->mNormals[i];
+            if (mesh->HasTextureCoords(0)) {
+                _uv = mesh->mTextureCoords[0][i];
             } else {
                 _uv = aiVector3D(0, 0, 0);
             }
-
-            _name = assimpMesh->mName.C_Str();
 
             _vertices.push_back({
                 vec3(_pos.x, _pos.y, _pos.z),
@@ -220,8 +239,8 @@ namespace Wizzy {
             });
         }
 
-        for (u32 i = 0; i < assimpMesh->mNumFaces; i++) {
-            aiFace& _face = assimpMesh->mFaces[i];
+        for (u32 i = 0; i < mesh->mNumFaces; i++) {
+            aiFace& _face = mesh->mFaces[i];
             WZ_CORE_ASSERT(_face.mNumIndices == 3, "Model must be triangulated (Should be done automatically at import?)");
 
             for (u32 j = 0; j < _face.mNumIndices; j++) {
@@ -229,10 +248,88 @@ namespace Wizzy {
             }
         }
 
-        return { _vertices, _indices, _name };
+        aiMaterial *_aiMat = scene->mMaterials[mesh->mMaterialIndex];
+        string _meshName = ulib::File::name_of(sourceFile) + "_mesh_" + std::to_string(meshIndex) + string("_") + mesh->mName.C_Str();
+
+        auto _material = ProcessMaterial(_aiMat, _meshName, scene, sourceFile);
+        if (_material == WZ_NULL_RESOURCE_HANDLE) {
+            WZ_CORE_ERROR("Failed processing mesh, couldn't create material");
+            *success = false;
+            return Mesh();
+        }
+
+        return { _vertices, _indices, _material, _meshName };
     }
 
-    Model* Model::Create(const string& file, ulib::Bitset flags) {
-        return new Model(file, flags);
+    MaterialHandle Model::ProcessMaterial(aiMaterial *mat, const string& meshName, const aiScene *scene, const string& sourceFile) {
+        string _materialHandle = meshName + "_material";
+        Material *_material = new Material(WZ_DEFAULT_SHADER_HANDLE);
+
+        auto _diffuseTextures = LoadMaterialTextures(mat, (int32)aiTextureType_DIFFUSE, scene, sourceFile);
+        if (_diffuseTextures.size() == 0) {
+            return WZ_NULL_RESOURCE_HANDLE;
+        }
+        auto _mainDiffuseTexture = _diffuseTextures[0];
+
+        _material->diffuseMapHandle = _mainDiffuseTexture;
+
+        ResourceManagement::Add(_material, _materialHandle);
+
+        return _materialHandle;
+    }
+
+    std::vector<TextureHandle> Model::LoadMaterialTextures(aiMaterial *mat, int32 textureType, const aiScene *scene, const string& sourceFile) {
+        WZ_CORE_TRACE("Handling textures of texture type {0} for material...", textureType);
+        std::vector<TextureHandle> _textures;
+        u32 _count = mat->GetTextureCount((aiTextureType)textureType);
+
+        if (_count == 0) {
+            WZ_CORE_TRACE("No texture found, trying to get color properties...");
+            aiColor3D _aiColor(0.0f, 0.0f, 0.0f);
+
+            switch ((aiTextureType)textureType) {
+                case aiTextureType_DIFFUSE:
+                    mat->Get(AI_MATKEY_COLOR_DIFFUSE, _aiColor);
+                    break;
+                default: WZ_CORE_ASSERT(false, "Unimplemented aiTextureType"); break;
+            }
+
+            if (_aiColor.IsBlack()) {
+                WZ_CORE_TRACE("No color property found, using unloaded texture...");
+                _textures.push_back(Texture::UnloadedTexture());
+            } else {
+                WZ_CORE_TRACE("Color property found, creating 1x1 texture...");
+                auto _color = Color(_aiColor.r, _aiColor.g, _aiColor.b, 1.f);
+                Texture *_texture = Texture::Create((byte*)&_color, 1, 1);
+                auto _handle = ulib::File::name_of(sourceFile) + "_" + std::to_string(textureType) + "_1x1_texture";
+                ResourceManagement::Add(_texture, _handle);
+                _textures.push_back(_handle);
+            }
+
+        } else {
+            WZ_CORE_TRACE("{0} Textures found...", _count);
+            _textures.reserve(_count);
+            for (u32 i = 0; i < _count; i++) {
+                aiString _path;
+                mat->GetTexture((aiTextureType)textureType, i ,&_path);
+                string _file = ulib::File::directory_of(sourceFile) + "/" +
+                        ulib::File::name_of(ulib::File::to_portable_path(_path.C_Str()));
+                string _handle = ulib::File::name_of(sourceFile) + "_" + std::to_string(textureType) + "_" + ulib::File::name_of(_file);
+                WZ_CORE_ASSERT(ulib::File::exists(_file), "Embedded textures not yet implemnted");
+                ResourceManagement::Load<Texture>(_file, _handle);
+                _textures.push_back(_handle);
+            }
+        }
+
+        if (_textures.size() == 0) {
+            WZ_CORE_ERROR("Something went wrong when processing textures, applying invalid texture");
+            _textures.push_back(Texture::InvalidTexture());
+        }
+
+        return _textures;
+    }
+
+    Model* Model::Create(const string& sourceFile, const string& data, ulib::Bitset flags) {
+        return new Model(sourceFile, data, flags);
     }
 }

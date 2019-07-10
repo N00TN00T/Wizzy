@@ -12,13 +12,19 @@
 #define DEFAULT_MAG_FILTER_MODE (GL_LINEAR)
 
 namespace Wizzy {
-    GLTexture::GLTexture(const string& file, const ulib::Bitset& flags)
-        : Texture(file), m_flags(flags) {
+    GLTexture::GLTexture(const string& data, const ulib::Bitset& flags)
+        : Texture(data, flags) {
+        Init();
+    }
 
+    GLTexture::GLTexture(byte *rawData, int32 width, int32 height, const Flagset& flags)
+        : Texture(rawData, width, height, flags) {
+        Init();
     }
 
     GLTexture::~GLTexture() {
-        if (!this->IsGarbage()) this->Unload();
+        WZ_CORE_TRACE("Deleting GL Texture with id '{0}'", m_textureId);
+        GL_CALL(glDeleteTextures(1, &m_textureId));
     }
 
     void GLTexture::Bind(int32 location) const {
@@ -28,12 +34,6 @@ namespace Wizzy {
 
     void GLTexture::Unbind() const {
         GL_CALL(glBindTexture(GL_TEXTURE_2D, 0));
-    }
-
-    void GLTexture::Delete() {
-        WZ_CORE_TRACE("Deleting GL Texture with id '{0}'", m_textureId);
-        GL_CALL(glDeleteTextures(1, &m_textureId));
-        m_textureId = WZ_TEXTURE_ID_INVALID;
     }
 
     void GLTexture::Init() {
@@ -110,6 +110,8 @@ namespace Wizzy {
             GL_CALL(glGenerateMipmap(GL_TEXTURE_2D));
         }
 
+
+        m_isValid = true;
         WZ_CORE_INFO("Successfully Initialized GL Texture and assigned id '{0}'", m_textureId);
     }
 }

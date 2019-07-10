@@ -2,7 +2,7 @@
 
 #include <glad/glad.h>
 
-#include "Wizzy/platform/OpenGL/OpenGLBuffers.h"
+#include "Wizzy/platform/OpenGL/GLBuffers.h"
 #include "Wizzy/platform/OpenGL/GLErrorHandling.h"
 #include "Wizzy/platform/OpenGL/GLAPI.h"
 

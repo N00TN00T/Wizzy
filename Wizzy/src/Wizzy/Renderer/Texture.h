@@ -1,26 +1,19 @@
 #pragma once
 
-#include "Wizzy/Resource/IResource.h"
+#include "Wizzy/Resource/Resource.h"
 
 namespace Wizzy {
 
-    typedef ResourceHandle TextureHandle;
-
     class Texture
-        : public IResource {
+        : public Resource {
         public:
-            Texture(const string& file)
-                : IResource(file, "Texture") {}
+            Texture(const string& data, const Flagset& flags);
+            Texture(byte *rawData, int32 width, int32 height,
+                    const Flagset& flags = Flagset());
             virtual ~Texture();
 
             virtual
-            void        Load() override;
-            virtual
-            void        Unload() override;
-            virtual
-            void        Reload() override;
-            virtual
-            void        Save() override;
+            string Serialize() const override;
 
             virtual
             void Bind(int32 location) const = 0;
@@ -37,16 +30,19 @@ namespace Wizzy {
             virtual
             u32 GetId() const = 0;
 
-            virtual
-            void Delete() = 0;
+            static
+            Texture* Create(const string& sourceFile,
+                            const string& data,
+                            const Flagset& flags);
+            static
+            Texture* Create(byte *rawData, int32 width, int32 height,
+                            const Flagset& flags = Flagset());
 
             static
-            Texture* Create(const string& file,
-                            const ulib::Bitset& flags = ulib::Bitset());
+            TextureHandle UnloadedTexture();
+            static
+            TextureHandle InvalidTexture();
 
-        private:
-            virtual
-            void Init() = 0;
 
         protected:
             byte*               m_data;

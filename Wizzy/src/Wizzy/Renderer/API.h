@@ -35,7 +35,12 @@ namespace Wizzy {
         WZ_WRAP_MODE_REPEAT,
 
         WZ_DONT_GENERATE_MIPMAP,
+    };
 
+    enum ShaderEnum : int8 {
+        WZ_SHADER_LIGHTING_MODE_NONE = 0,
+        WZ_SHADER_LIGHTING_MODE_PHONG,
+        WZ_SHADER_LIGHTING_MODE_PBR
     };
 
     enum RenderMode : int8 {

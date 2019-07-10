@@ -3,7 +3,7 @@
 #include <glad/glad.h>
 
 #include "Wizzy/Renderer/Shader.h"
-#include "Wizzy/platform/OpenGL/OpenGLShader.h"
+#include "Wizzy/platform/OpenGL/GLShader.h"
 #include "Wizzy/platform/OpenGL/GLErrorHandling.h"
 #include "Wizzy/platform/OpenGL/GLAPI.h"
 
@@ -11,8 +11,13 @@
 
 namespace Wizzy {
 
+    GLShader::GLShader(const string& data, const Flagset& flags)
+        : m_rawSource(data), Shader(flags), m_shaderId(WZ_SHADER_ID_INVALID) {
+        m_isValid = this->ParseShader(data) && this->Compile();
+    }
+
     GLShader::~GLShader() {
-        if (!this->IsGarbage()) this->Delete();
+
     }
 
     void GLShader::Bind() const {
@@ -64,52 +69,80 @@ namespace Wizzy {
 		GL_CALL(glUniform4f(U_LOCATION(m_shaderId, name.c_str()), value.x, value.y, value.z, value.w));
 	}
 
-    void GLShader::ParseShader(const string& file) {
+    bool GLShader::ParseShader(const string& data) {
         enum class ShaderType { invalid = -1, vertex = 0, fragment = 1 };
+        enum ShaderLightMode  {
+            none = WZ_SHADER_LIGHTING_MODE_NONE,
+            phong = WZ_SHADER_LIGHTING_MODE_PHONG,
+            pbr = WZ_SHADER_LIGHTING_MODE_PBR
+        };
 
-		WZ_CORE_TRACE("Parsing a GL shader program source from '{0}'", file);
+		WZ_CORE_TRACE("Parsing a shader program source from resource data");
 
-		string _allSource;
-		WZ_CORE_ASSERT(ulib::File::read(file, &_allSource), "Failed reading shader file '" + file + "'");
-
-		std::stringstream _sourceStream(_allSource.c_str());
+		std::stringstream _sourceStream(data.c_str());
 
 		string _vertSource = "";
 		string _fragSource = "";
 		ShaderType _shaderType = ShaderType::invalid;
+        ShaderLightMode _lightMode = ShaderLightMode::none;
 
         u32 _lineNum = 1;
 		string _line;
-		while (std::getline(_sourceStream, _line, '\n')) {
-			if (_line.find("#shader") != std::string::npos) {
-				if (_line.find("vertex") != std::string::npos)
-					_shaderType = ShaderType::vertex;
-				else if (_line.find("fragment") != std::string::npos)
-					_shaderType = ShaderType::fragment;
-        else
-          WZ_CORE_ASSERT(false, "Unknown #shader token in shader file '"
-                                            + GetSourceFile() + "' on line "
-                                            + std::to_string(_lineNum));
-			} else {
-				switch (_shaderType) {
-				case ShaderType::vertex:
-					_vertSource += _line + "\n";
-					break;
-				case ShaderType::fragment:
-					_fragSource += _line + "\n";
-					break;
-                case ShaderType::invalid:
-                    WZ_CORE_WARN("Shader source line '{0}' ignored as no shader source type was declared",
-                                                    _lineNum);
-                    break;
-				}
-			}
+        while (std::getline(_sourceStream, _line, '\n')) {
+            if (_line.find("#") != string::npos && _line.find("#shader") == string::npos && _line.find("#version") == string::npos && _shaderType != ShaderType::invalid) {
+                WZ_CORE_ERROR("Failed parsing shader, settings must be set before specifying a shader with #shader token");
+                WZ_CORE_TRACE(_line);
+                return false;
+            } else if (_line.find("#shader") != string::npos) {
+
+                if (_line.find(" vertex") != string::npos) {
+                    _shaderType = ShaderType::vertex;
+                } else if (_line.find(" fragment") != string::npos) {
+                    _shaderType = ShaderType::fragment;
+                } else {
+                    WZ_CORE_ERROR("Failed parsing shader, unknown #shader token");
+                    return false;
+                }
+
+            } else if (_line.find("#lightmode") != string::npos) {
+
+                if (_line.find(" none")) {
+                    _lightMode = ShaderLightMode::none;
+                } else if (_line.find(" phong")) {
+                    _lightMode = ShaderLightMode::phong;
+                } else if (_line.find(" pbr")) {
+                    _lightMode = ShaderLightMode::pbr;
+                } else {
+                    WZ_CORE_ERROR("Failed parsing shader, unknown #lightmode token");
+                    return false;
+    			}
+
+            } else {
+                switch (_shaderType) {
+                    case ShaderType::vertex:
+                        _vertSource += _line + "\n";
+                        break;
+                    case ShaderType::fragment:
+                        _fragSource += _line + "\n";
+                        break;
+                    case ShaderType::invalid:
+                        if (_line != "\n") {
+                            WZ_CORE_WARN("Shader source line '{0}' ignored as no shader type was specified (vertex/fragment)",
+                                                            _lineNum);
+                        }
+                        break;
+                }
+
+            }
             _lineNum++;
-		}
+        }
+
+        m_flags.SetBit(_lightMode);
 
 		m_source = { _vertSource, _fragSource };
-        WZ_CORE_INFO("Successfully parsed GL shader");
+        WZ_CORE_INFO("Successfully parsed shader");
     }
+
     bool GLShader::Compile() {
         WZ_CORE_TRACE("Compiling GL Shader...");
         GL_CALL(u32 _program = glCreateProgram());
@@ -187,11 +220,5 @@ namespace Wizzy {
                                                                 m_shaderId);
 
         return true;
-    }
-
-    void GLShader::Delete() {
-        this->Unbind();
-        GL_CALL(glDeleteShader(m_shaderId));
-        m_shaderId = WZ_SHADER_ID_INVALID;
     }
 }

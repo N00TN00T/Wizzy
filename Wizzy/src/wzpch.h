@@ -16,6 +16,7 @@
 #include <cmath>
 #include <stdarg.h>
 #include <experimental/filesystem>
+#include <chrono>
 
 /* std data structures */
 #include <string>
@@ -66,18 +67,18 @@ namespace WinAPI {
 /* typedefs */
 
 typedef std::string string;
-typedef unsigned char byte;
-typedef char int8;
-typedef unsigned char uint8;
+typedef uint8_t byte;
+typedef int8_t int8;
+typedef uint8_t uint8;
 typedef uint8 u8;
-typedef short int int16;
-typedef unsigned short int uint16;
+typedef int16_t int16;
+typedef uint16_t uint16;
 typedef uint16 u16;
-typedef int int32;
-typedef unsigned int uint32;
+typedef int32_t int32;
+typedef uint32_t uint32;
 typedef uint32 u32;
-typedef long long int64;
-typedef unsigned long long uint64;
+typedef int64_t int64;
+typedef uint64_t uint64;
 typedef uint64 u64;
 
 typedef glm::vec2 vec2;

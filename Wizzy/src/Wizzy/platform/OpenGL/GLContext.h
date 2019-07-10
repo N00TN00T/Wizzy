@@ -6,10 +6,10 @@ struct GLFWwindow;
 
 namespace Wizzy {
 
-    class OpenGLContext
+    class GLContext
         : public GraphicsContext {
     public:
-        OpenGLContext(GLFWwindow *windowHandle);
+        GLContext(GLFWwindow *windowHandle);
 
         virtual void Init() override;
         virtual void SwapBuffers() override;

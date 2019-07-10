@@ -3,13 +3,14 @@
 #include "Wizzy/Renderer/Renderer.h"
 #include "Wizzy/Renderer/Shader.h"
 #include "Wizzy/Resource/ResourceManagement.h"
+#include "Wizzy/Stopwatch.h"
 
 namespace Wizzy {
 
     mat4 Renderer::s_camTransform;
     bool Renderer::s_isReady(false);
-    std::unordered_map<Shader*, std::deque<Submission>> Renderer::s_submissions;
-    ulib::Queue<Shader*> Renderer::s_shaderQueue;
+    std::unordered_map<ShaderHandle, std::deque<Submission>> Renderer::s_submissions;
+    ulib::Queue<ShaderHandle> Renderer::s_shaderQueue;
 
     void Renderer::Begin(const mat4& camTransform) {
         WZ_CORE_TRACE("Beginning renderer...");
@@ -21,13 +22,14 @@ namespace Wizzy {
         WZ_CORE_TRACE("Flushing renderer...");
 
         while (!s_shaderQueue.IsEmpty()) {
-            Shader* _shader = s_shaderQueue.Pop();
-            auto& _submissions = s_submissions[_shader];
+
+            auto _shaderHandle = s_shaderQueue.Pop();
+            Shader *_shader = ResourceManagement::Get<Shader>(_shaderHandle);
+            auto& _submissions = s_submissions[_shaderHandle];
 
             _shader->Bind();
             _shader->UploadMat4("camTransform", s_camTransform);
 
-            WZ_CORE_TRACE("Rendering submissions for shader");
             RenderSubmissions(_submissions);
 
             _submissions.clear();
@@ -42,16 +44,10 @@ namespace Wizzy {
                             RenderMode mode) {
         WZ_CORE_ASSERT(s_isReady, "Begin() was not called on Renderer before Submit()");
 
-        WZ_CORE_ASSERT(!WZ_IS_RESOURCE_HANDLE_NULL(material.shaderHandle),
-                        "Shader cannot be null in material when submitting");
-        WZ_CORE_ASSERT(WZ_IS_RESOURCE_HANDLE_NULL(material.diffuseTextureHandle)
-             || ResourceManagement::Is<Texture>(material.diffuseTextureHandle),
-             "Texture handle must be either null or valid (not invalid) when submitting material")
-        WZ_CORE_TRACE("Pushing submission to renderer...");
-        auto _shader = ResourceManagement::Get<Shader>(material.shaderHandle);
-        WZ_CORE_ASSERT(_shader != nullptr, "Failed retrieving shader with material handle, cannot submit");
-        s_shaderQueue.Push(_shader);
-        s_submissions[_shader].push_back({ va, material, transform, mode });
+        WZ_CORE_ASSERT(ResourceManagement::Is<Shader>(material.shaderHandle), "Shader was either null handle or wrong type in renderer submit");
+        WZ_CORE_TRACE("Pushing submission  to renderer...");
+        s_shaderQueue.Push(material.shaderHandle);
+        s_submissions[material.shaderHandle].push_back({ va, material, transform, mode });
     }
 
     void Renderer::RenderSubmissions(std::deque<Submission>& submissions) {

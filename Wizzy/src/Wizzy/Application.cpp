@@ -10,6 +10,7 @@
 #include "Wizzy/ImGuiSystem.h"
 #include "Wizzy/Renderer/API.h"
 #include "Wizzy/Utils.h"
+#include "Wizzy/Stopwatch.h"
 
 #define DISPATCH_EVENT_LOCAL(eType, ...) { auto _e = eType(__VA_ARGS__); this->OnEvent(_e); } [](){return 0;}()
 
@@ -35,9 +36,9 @@ namespace Wizzy {
 
 		void *_eHandle = static_cast<void*>(&e);
 		WZ_CORE_TRACE("Notifying client systems '{0}'", e);
-		m_ecs.NotifySystems(m_clientSystems, _eHandle, (int32)e.GetEventType());
+		m_clientEcs.NotifySystems(m_clientSystems, _eHandle, (int32)e.GetEventType());
 		WZ_CORE_TRACE("Notifying engine systems '{0}'", e);
-		m_ecs.NotifySystems(m_engineSystems, _eHandle, (int32)e.GetEventType());
+		m_engineEcs.NotifySystems(m_engineSystems, _eHandle, (int32)e.GetEventType());
 	}
 
 	void Application::Run() {
@@ -77,7 +78,7 @@ namespace Wizzy {
 			ImGuiComponent::staticId
 		};
 
-		m_ecs.CreateEntity(_comps, _ids, 1);
+		m_engineEcs.CreateEntity(_comps, _ids, 1);
 
 		m_engineSystems.AddSystem<ImGuiSystem>();
 
@@ -90,9 +91,14 @@ namespace Wizzy {
 
 			DISPATCH_EVENT_LOCAL(AppUpdateEvent, m_window->GetDeltaTime());
 
+			/*if (rand() % 10 == 3) {
+				WZ_CORE_DEBUG(m_window->GetDeltaTime());
+			}*/
+
 			DISPATCH_EVENT_LOCAL(AppRenderEvent);
 
 			DISPATCH_EVENT_LOCAL(AppFrameEndEvent, m_window->GetDeltaTime());
+
 			m_window->OnFrameEnd();
 		}
 

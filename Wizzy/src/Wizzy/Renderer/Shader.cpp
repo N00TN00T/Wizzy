@@ -2,30 +2,12 @@
 
 #include "Wizzy/Renderer/Shader.h"
 #include "Wizzy/Utils.h"
-#include "Wizzy/platform/OpenGL/OpenGLShader.h"
+#include "Wizzy/platform/OpenGL/GLShader.h"
 #include "Wizzy/Renderer/Renderer.h"
 
 namespace Wizzy {
 
     Shader::~Shader() {
-
-    }
-
-    void Shader::Load() {
-        ParseShader(this->GetSourceFile());
-        WZ_CORE_ASSERT(this->Compile(), "Failed compiling shader source");
-    }
-    void Shader::Unload() {
-        WZ_CORE_TRACE("Unloading shader...");
-        WZ_CORE_ASSERT(!this->IsGarbage(), "Tried unloading a garbage-flagged Shader");
-        this->Delete();
-    }
-    void Shader::Reload() {
-        WZ_CORE_TRACE("Reloading shader...");
-        Unload();
-        Load();
-    }
-    void Shader::Save() {
 
     }
 
@@ -58,9 +40,9 @@ namespace Wizzy {
         }
     }
 
-    Shader* Shader::Create(const string& file) {
+    Shader* Shader::Create(const string& sourceFile, const string& data, const Flagset& flags) {
 
-        CREATE_BY_API(new GLShader(file));
+        CREATE_BY_API(new GLShader(data, flags));
 
         return nullptr;
     }

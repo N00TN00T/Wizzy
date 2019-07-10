@@ -1,3 +1,5 @@
+#lightmode phong
+
 #shader vertex
 
 #version 330 core
@@ -33,14 +35,14 @@ in vec2 uv;
 
 uniform vec4 albedo = vec4(1.0, 1.0, 1.0, 1.0);
 uniform vec4 diffuseColor = vec4(1.0, 1.0, 1.0, 1.0);
-uniform sampler2D diffuseTexture;
-uniform bool hasTexture;
+uniform bool useDiffuseMap = false;
+uniform sampler2D diffuseMap;
 
 void main()
 {
-    if (hasTexture) {
-        outColor = texture(diffuseTexture, uv) * albedo;
-    } else {
-        outColor = diffuseColor * albedo;
+    vec4 textureColor = vec4(1.0, 1.0, 1.0, 1.0);
+    if (useDiffuseMap) {
+        textureColor = texture(diffuseMap, uv);
     }
+    outColor = textureColor * diffuseColor * albedo;
 }

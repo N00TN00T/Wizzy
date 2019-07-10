@@ -36,9 +36,10 @@ namespace Wizzy {
 
 	protected:
 		std::unique_ptr<IWindow> m_window;
-		ecs::ECSManager m_ecs;
-		ecs::SystemLayer m_engineSystems;
+		ecs::ECSManager m_clientEcs;
 		ecs::SystemLayer m_clientSystems;
+		ecs::ECSManager m_engineEcs;
+		ecs::SystemLayer m_engineSystems;
 
 	private:
 		bool m_running;

@@ -4,7 +4,7 @@
 
 namespace Wizzy {
 	Color::Color()
-		: r(0), g(0), b(0), a(0) {
+		: r(1), g(1), b(1), a(1) {
 
 	}
 	Color::Color(float r, float g, float b, float a)
@@ -17,7 +17,7 @@ namespace Wizzy {
         this->g += other.g;
         this->b += other.b;
         this->a += other.a;
-        
+
         return *this;
     }
     Color& Color::Subtract(const Color& other) {
@@ -25,7 +25,7 @@ namespace Wizzy {
         this->g -= other.g;
         this->b -= other.b;
         this->a -= other.a;
-        
+
         return *this;
     }
     Color& Color::Multiply(const Color& other) {
@@ -33,7 +33,7 @@ namespace Wizzy {
         this->g *= other.g;
         this->b *= other.b;
         this->a *= other.a;
-        
+
         return *this;
     }
     Color& Color::Divide(const Color& other) {
@@ -41,10 +41,10 @@ namespace Wizzy {
         this->g /= other.g;
         this->b /= other.b;
         this->a /= other.a;
-        
+
         return *this;
     }
-    
+
     Color operator+(Color left, const Color& right) {
         return left.Add(right);
     }

@@ -21,5 +21,6 @@
 #include "Wizzy/Scripting/Script.h"
 #include "Wizzy/Scripting/LuaContext.h"
 #include "Wizzy/Resource/ResourceManagement.h"
+#include "Wizzy/Stopwatch.h"
 
 namespace wz = ::Wizzy;

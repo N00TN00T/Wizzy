@@ -2,32 +2,51 @@
 
 #include "Wizzy/Renderer/Material.h"
 #include "Wizzy/Resource/ResourceManagement.h"
+#include "Wizzy/Renderer/Shader.h"
+#include "Wizzy/Renderer/Texture.h"
 
 namespace Wizzy {
+    Material::Material(const string& data, const Flagset& flags)
+        : Resource(flags, "Material", WZ_EXTENSION_MATERIAL),
+          shaderHandle(WZ_NULL_RESOURCE_HANDLE) {
+        m_isValid = Init(data);
+    }
     Material::Material(ShaderHandle shaderHandle)
-        : shaderHandle(shaderHandle),
-          albedo(Color::white),
-          diffuseTextureHandle(WZ_NULL_RESOURCE_HANDLE),
-          diffuseColor(Color::white) {
-
+        : Resource(Flagset(), "Material", WZ_EXTENSION_MATERIAL),
+          shaderHandle(shaderHandle) {
+        m_isValid = true;
     }
 
     void Material::Bind() {
 
         auto _shader = ResourceManagement::Get<Shader>(shaderHandle);
 
-        _shader->Upload4f("albedo", albedo.ToVec4());
-
-        if (!WZ_IS_RESOURCE_HANDLE_NULL(diffuseTextureHandle) && useTexture) {
-            auto _diffuseTexture
-                    = ResourceManagement::Get<Texture>(diffuseTextureHandle);
-            _diffuseTexture->Bind(_diffuseTexture->GetId());
-            WZ_CORE_ASSERT(_diffuseTexture->GetId() <= MaxTextureSlot(), "The wizzy renderer currently only supports {0} textures (graphics-drivers defined max)", MaxTextureSlot());
-            _shader->Upload1i("hasTexture", 1);
-            _shader->Upload1i("diffuseTexture", _diffuseTexture->GetId()); // TODO: texture slots
+        int32 _textureLocation = -1;
+        if (ResourceManagement::Is<Texture>(diffuseMapHandle)) {
+            auto _diffuseTexture = ResourceManagement::Get<Texture>(diffuseMapHandle);
+            _textureLocation = _diffuseTexture->GetId();
+            _diffuseTexture->Bind(_textureLocation);
+            _shader->Upload1i("useDiffuseMap", true);
         } else {
-            _shader->Upload1i("hasTexture", 0);
-            _shader->Upload4f("diffuseColor", diffuseColor.ToVec4());
+            _shader->Upload1i("useDiffuseMap", false);
         }
+
+        _shader->Upload4f("albedo", albedo.asVec4);
+        _shader->Upload4f("diffuseColor", diffuseColor.asVec4);
+        _shader->Upload1i("diffuseMap", _textureLocation);
+
+
+        for (const auto& _prop : m_properties) {
+            _shader->UploadData(_prop.first, _prop.second.type, _prop.second.data);
+        }
+    }
+
+    string Material::Serialize() const {
+        WZ_CORE_ERROR("Material serialization not yet implemented");
+        return "";
+    }
+
+    bool Material::Init(const string& data) {
+        return true;
     }
 }

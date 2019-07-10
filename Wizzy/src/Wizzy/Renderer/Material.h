@@ -1,25 +1,47 @@
 #pragma once
 
 #include "Wizzy/Renderer/API.h"
-#include "Wizzy/Renderer/Texture.h"
-#include "Wizzy/Renderer/Shader.h"
+#include "Wizzy/Resource/Resource.h"
 
 namespace Wizzy {
 
-    struct Material {
-        struct ShaderField {
-            string id;
-            ShaderDataType type;
-            void* data;
-        };
+    struct MaterialProperty {
+        ShaderDataType type;
+        void *data;
+    };
+
+    struct Material
+        : public Resource {
     public:
-        Material(ShaderHandle shaderHandle);
+        Material(const string& data, const Flagset& flags);
+        Material(ShaderHandle handle);
         void Bind();
 
+        virtual
+        string Serialize() const override;
+
+        inline
+        void SetProperty(const string& key, ShaderDataType type, void* data) {
+            m_properties[key] = MaterialProperty { type, data };
+        }
+
+        inline static
+        Material* Create(const string& sourceFile,
+                         const string& data,
+                         const Flagset& flags) {
+            return new Material(data, flags);
+        }
+
+    public:
         ShaderHandle shaderHandle;
         Color albedo;
-        TextureHandle diffuseTextureHandle;
         Color diffuseColor;
-        bool useTexture = false;
+        TextureHandle diffuseMapHandle;
+
+    private:
+        bool Init(const string& data);
+
+    private:
+        std::map<string, MaterialProperty> m_properties;
     };
 }
