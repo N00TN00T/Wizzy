@@ -19,25 +19,34 @@ namespace Wizzy {
 
     void Material::Bind() {
 
-        auto _shader = ResourceManagement::Get<Shader>(shaderHandle);
+        auto& _shader = ResourceManagement::Get<Shader>(shaderHandle);
 
-        int32 _textureLocation = -1;
+        int32 _textureLocation = 0;
         if (ResourceManagement::Is<Texture>(diffuseMapHandle)) {
-            auto _diffuseTexture = ResourceManagement::Get<Texture>(diffuseMapHandle);
-            _textureLocation = _diffuseTexture->GetId();
-            _diffuseTexture->Bind(_textureLocation);
-            _shader->Upload1i("useDiffuseMap", true);
+            auto& _diffuseTexture = ResourceManagement::Get<Texture>(diffuseMapHandle);
+            _textureLocation = _diffuseTexture.GetId();
+            _diffuseTexture.Bind(_textureLocation);
+            _shader.Upload1i("u_useDiffuseMap", 1);
         } else {
-            _shader->Upload1i("useDiffuseMap", false);
+            _shader.Upload1i("u_useDiffuseMap", 0);
         }
 
-        _shader->Upload4f("albedo", albedo.asVec4);
-        _shader->Upload4f("diffuseColor", diffuseColor.asVec4);
-        _shader->Upload1i("diffuseMap", _textureLocation);
+        _shader.Upload4f("u_albedo", albedo.asVec4);
 
+        if (!_shader.GetFlags().GetBit(WZ_SHADER_LIGHTING_MODE_NONE)) {
+            if (_shader.GetFlags().GetBit(WZ_SHADER_LIGHTING_MODE_PHONG)) {
+                _shader.Upload4f("u_diffuseColor", diffuseColor.asVec4);
+                _shader.Upload1i("u_diffuseMap", _textureLocation);
+            } else if (_shader.GetFlags().GetBit(WZ_SHADER_LIGHTING_MODE_PBR)) {
+                WZ_CORE_ASSERT(false, "PBR lighting not implemented");
+            } else {
+                WZ_CORE_ASSERT(false, "No lighting mode has been set in shader, something must have gone wrong at resource initialization");
+            }
+
+        }
 
         for (const auto& _prop : m_properties) {
-            _shader->UploadData(_prop.first, _prop.second.type, _prop.second.data);
+            _shader.UploadData(_prop.first, _prop.second.type, _prop.second.data);
         }
     }
 

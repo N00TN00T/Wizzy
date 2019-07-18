@@ -27,7 +27,7 @@ namespace Wizzy {
         inline
         const string& GetExtension() const { return m_extension; }
         inline
-        const Flagset& GetFlags() const { return m_flags; }
+        Flagset& GetFlags() { return m_flags; }
         inline
         bool IsValid() const { return m_isValid; }
 

@@ -122,8 +122,10 @@ WZ_CORE_ASSERT(false, "Invalid renderer API selected"); \
 #define WZ_NULL_RESOURCE_HANDLE 	"NULL"
 #define WZ_DEFAULT_SHADER_HANDLE    "PhongShader"
 
-#define WZ_UNLOADED_TEXTURE_COLOR   ::Wizzy::Color::gray;
-#define WZ_INVALID_TEXTURE_COLOR    ::Wizzy::Color::magenta;
+#define WZ_UNLOADED_TEXTURE_COLOR   ::Wizzy::Color::red
+#define WZ_INVALID_TEXTURE_COLOR    ::Wizzy::Color::magenta
+
+#define DEFAULT(t) t()
 
 namespace Wizzy {
     enum BufferUsage {

@@ -64,9 +64,9 @@ namespace Wizzy {
 	const Color Color::blue =		Color(.1f, .1f, 1.f, 1.f);
 	const Color Color::cyan =		Color(.1f, 1.f, 1.f, 1.f);
 	const Color Color::black =		Color(.0f, .0f, .0f, 1.f);
-	const Color Color::darkGray =	Color(.25f, .25f, .25f, 1.f);
+	const Color Color::darkGrey =	Color(.2f, .2f, .2f, 1.f);
 	const Color Color::gray =		Color(.5f, .5f, .5f, 1.f);
-	const Color Color::lightGray =	Color(.75f, .75f, .75f, 1.f);
+	const Color Color::lightGrey =	Color(.75f, .75f, .75f, 1.f);
 	const Color Color::pink =		Color(1.f, .25f, .35f, 1.f);
 	const Color Color::magenta =	Color(1.f, .1f, .8f, 1.f);
 }

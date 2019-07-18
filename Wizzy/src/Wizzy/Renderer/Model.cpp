@@ -73,20 +73,22 @@ namespace Wizzy {
 
         const aiScene *_scene
                 = _importer.ReadFileFromMemory(&data[0], data.size(),
-                                     aiProcess_Triangulate |
-                                     aiProcess_FlipUVs |
-                                     aiProcess_JoinIdenticalVertices  |
-                                     aiProcess_SortByPType |
-                                     aiProcess_GenSmoothNormals  |
+                                     aiProcess_Triangulate  /*|
+                                     aiProcess_JoinIdenticalVertices |
+                                     aiProcess_PreTransformVertices |
+                                     aiProcess_GenNormals |
                                      aiProcess_CalcTangentSpace |
-                                     aiProcess_RemoveRedundantMaterials |
-                                     aiProcess_OptimizeMeshes |
-                                     aiProcess_OptimizeGraph 
+                                     aiProcess_SortByPType *///|
+                                     /*aiProcess_FlipUVs |*/
+                                     //aiProcess_SortByPType |
+                                     //aiProcess_GenSmoothNormals  |
+                                     //aiProcess_RemoveRedundantMaterials |
+                                     //aiProcess_OptimizeMeshes |
+                                     //aiProcess_OptimizeGraph
                                  );
 
         string _sceneError = "";
-        WZ_CORE_DEBUG(_scene->HasTextures());
-        WZ_CORE_DEBUG(_scene->mNumTextures);
+
         if (!_scene) {
 
             WZ_CORE_ERROR("Failed loading model, Assimp error: {0}", _importer.GetErrorString());
@@ -162,7 +164,6 @@ namespace Wizzy {
 
     bool Model::ProcessNode(aiNode *node, const aiScene *scene, const string& sourceFile) {
         WZ_CORE_TRACE("Processing ai node '{0}'...", node->mName.C_Str());
-
         WZ_CORE_TRACE("Processing {0} meshes...", node->mNumMeshes);
         m_meshes.reserve(node->mNumMeshes);
         for (u32 i = 0; i < node->mNumMeshes; i++) {
@@ -215,7 +216,7 @@ namespace Wizzy {
                         mesh->mNumFaces * 3,
                         (sizeof(Vertex) * mesh->mNumVertices + sizeof(u32) * mesh->mNumFaces * 3));
 
-        _vertices.reserve(mesh->mNumVertices);
+        //_vertices.reserve(mesh->mNumVertices);
         _indices.reserve(mesh->mNumFaces * 3);
 
         WZ_CORE_TRACE("Iterating {0} vertices...", mesh->mNumVertices);
@@ -223,29 +224,31 @@ namespace Wizzy {
             if (rand() % 500 == 3) {
                 WZ_CORE_TRACE("Vertices progress: {0}%", (int)(((float)i / (float)mesh->mNumVertices) * 100));
             }
-            aiVector3D& _pos = mesh->mVertices[i];
-            aiVector3D _uv;
-            aiVector3D& _normal = mesh->mNormals[i];
-            if (mesh->HasTextureCoords(0)) {
-                _uv = mesh->mTextureCoords[0][i];
+            Vertex _vertex;
+
+            _vertex.position.x = mesh->mVertices[i].x;
+            _vertex.position.y = mesh->mVertices[i].y;
+            _vertex.position.z = mesh->mVertices[i].z;
+
+            if (mesh->mTextureCoords[0]) {
+                WZ_CORE_TRACE("Mesh has uv's");
+                _vertex.uv.x = (float)mesh->mTextureCoords[0][i].x;
+                _vertex.uv.y = (float)mesh->mTextureCoords[0][i].y;
             } else {
-                _uv = aiVector3D(0, 0, 0);
+                WZ_CORE_TRACE("Mesh doesn't have uv's");
             }
 
-            _vertices.push_back({
-                vec3(_pos.x, _pos.y, _pos.z),
-                vec2(_uv.x, _uv.y),
-                vec3(_normal.x, _normal.y, _normal.z)
-            });
+            _vertices.push_back(_vertex);
         }
 
+        WZ_CORE_TRACE("Iterating {0} triangles", mesh->mNumFaces);
         for (u32 i = 0; i < mesh->mNumFaces; i++) {
             aiFace& _face = mesh->mFaces[i];
             WZ_CORE_ASSERT(_face.mNumIndices == 3, "Model must be triangulated (Should be done automatically at import?)");
 
-            for (u32 j = 0; j < _face.mNumIndices; j++) {
-                _indices.push_back(_face.mIndices[j]);
-            }
+            _indices.push_back(_face.mIndices[0]);
+            _indices.push_back(_face.mIndices[1]);
+            _indices.push_back(_face.mIndices[2]);
         }
 
         aiMaterial *_aiMat = scene->mMaterials[mesh->mMaterialIndex];
@@ -282,28 +285,54 @@ namespace Wizzy {
         WZ_CORE_TRACE("Handling textures of texture type {0} for material...", textureType);
         std::vector<TextureHandle> _textures;
         u32 _count = mat->GetTextureCount((aiTextureType)textureType);
-
+        string _fileDirectory = ulib::File::directory_of(sourceFile);
+        string _fileName = ulib::File::without_extension(ulib::File::name_of(sourceFile));
         if (_count == 0) {
-            WZ_CORE_TRACE("No texture found, trying to get color properties...");
-            aiColor3D _aiColor(0.0f, 0.0f, 0.0f);
+            WZ_CORE_TRACE("No texture found in model file...");
 
-            switch ((aiTextureType)textureType) {
-                case aiTextureType_DIFFUSE:
-                    mat->Get(AI_MATKEY_COLOR_DIFFUSE, _aiColor);
+            WZ_CORE_TRACE("Searching for common disk textures in model directory...");
+            static string _fmts[] = {
+                ".jpg", ".jpeg", ".png", ".tga", ".bmp", ".psd", ".gid", ".hdr", ".pic"
+            }; // TODO
+
+            string _diffuseFile = _fileDirectory + "/diffuse";
+            bool _foundDiffuse = false;
+            for (const auto& _fmt : _fmts) {
+                if (ulib::File::exists(_diffuseFile + _fmt)) {
+                    WZ_CORE_TRACE("Found '{0}'", _diffuseFile + _fmt);
+                    _diffuseFile += _fmt;
+                    _foundDiffuse = true;
                     break;
-                default: WZ_CORE_ASSERT(false, "Unimplemented aiTextureType"); break;
+                }
             }
 
-            if (_aiColor.IsBlack()) {
-                WZ_CORE_TRACE("No color property found, using unloaded texture...");
-                _textures.push_back(Texture::UnloadedTexture());
-            } else {
-                WZ_CORE_TRACE("Color property found, creating 1x1 texture...");
-                auto _color = Color(_aiColor.r, _aiColor.g, _aiColor.b, 1.f);
-                Texture *_texture = Texture::Create((byte*)&_color, 1, 1);
-                auto _handle = ulib::File::name_of(sourceFile) + "_" + std::to_string(textureType) + "_1x1_texture";
-                ResourceManagement::Add(_texture, _handle);
+            if (_foundDiffuse) {
+                string _handle = _fileName + "_" + std::to_string(textureType) + "_" + ulib::File::without_extension(ulib::File::name_of(_diffuseFile));
+                ResourceManagement::Load<Texture>(_diffuseFile, _handle);
                 _textures.push_back(_handle);
+            } else {
+
+                aiColor3D _aiColor(0.0f, 0.0f, 0.0f);
+
+                switch ((aiTextureType)textureType) {
+                    case aiTextureType_DIFFUSE:
+                        mat->Get(AI_MATKEY_COLOR_DIFFUSE, _aiColor);
+                        break;
+                    default: WZ_CORE_ASSERT(false, "Unimplemented aiTextureType"); break;
+                }
+
+                if (_aiColor.IsBlack()) {
+                    WZ_CORE_TRACE("No color property found, using unloaded texture...");
+                    _textures.push_back(Texture::UnloadedTexture());
+                } else {
+                    WZ_CORE_TRACE("Color property found, creating 1x1 texture...");
+                    auto _color = Color(_aiColor.r, _aiColor.g, _aiColor.b, 1.f);
+                    Texture *_texture = Texture::Create((byte*)&_color, 1, 1);
+                    auto _handle = ulib::File::name_of(sourceFile) + "_" + std::to_string(textureType) + "_1x1_texture";
+                    ResourceManagement::Add(_texture, _handle);
+                    _textures.push_back(_handle);
+                }
+
             }
 
         } else {
@@ -315,6 +344,7 @@ namespace Wizzy {
                 string _file = ulib::File::directory_of(sourceFile) + "/" +
                         ulib::File::name_of(ulib::File::to_portable_path(_path.C_Str()));
                 string _handle = ulib::File::name_of(sourceFile) + "_" + std::to_string(textureType) + "_" + ulib::File::name_of(_file);
+
                 WZ_CORE_ASSERT(ulib::File::exists(_file), "Embedded textures not yet implemnted");
                 ResourceManagement::Load<Texture>(_file, _handle);
                 _textures.push_back(_handle);

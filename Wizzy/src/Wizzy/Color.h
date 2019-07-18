@@ -33,9 +33,9 @@ namespace Wizzy {
 		static const Color blue;
 		static const Color cyan;
 		static const Color black;
-		static const Color darkGray;
+		static const Color darkGrey;
 		static const Color gray;
-		static const Color lightGray;
+		static const Color lightGrey;
 		static const Color pink;
 		static const Color magenta;
 

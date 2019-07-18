@@ -42,6 +42,9 @@ namespace Wizzy {
         inline
         const MaterialHandle& GetMaterialHandle() const { return m_materialHandle; }
 
+        inline
+        const string& GetName() const { return m_name; }
+
     private:
         void Init();
     private:

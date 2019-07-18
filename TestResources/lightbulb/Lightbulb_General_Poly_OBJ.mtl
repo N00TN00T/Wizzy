@@ -1,0 +1,82 @@
+# 3ds Max Wavefront OBJ Exporter v0.97b - (c)2007 guruware
+# File Created: 28.01.2015 22:46:56
+
+newmtl Lightbulb_Screw
+	Ns 48.0000
+	Ni 1.5000
+	d 1.0000
+	Tr 0.0000
+	Tf 1.0000 1.0000 1.0000 
+	illum 2
+	Ka 0.0392 0.0392 0.0392
+	Kd 0.0392 0.0392 0.0392
+	Ks 0.6750 0.6750 0.6750
+	Ke 0.0000 0.0000 0.0000
+	map_refl Refl_Screw_Falloff.tga
+
+newmtl Glass_Clear
+	Ns 40.0000
+	Ni 1.5000
+	d 0.0000
+	Tr 1.0000
+	Tf 0.0000 0.0000 0.0000 
+	illum 2
+	Ka 0.0000 0.0000 0.0000
+	Kd 0.0000 0.0000 0.0000
+	Ks 0.3305 0.3305 0.3305
+	Ke 0.0000 0.0000 0.0000
+	map_d Alpha_Glass_Gradient_Ramp.tga
+	map_refl Ray_Glass_Raytrace.tga
+
+newmtl StemBody
+	Ns 28.0000
+	Ni 1.5000
+	d 0.0471
+	Tr 0.9529
+	Tf 0.0471 0.0471 0.0471 
+	illum 2
+	Ka 0.0000 0.0000 0.0000
+	Kd 0.0000 0.0000 0.0000
+	Ks 0.1020 0.1020 0.1020
+	Ke 0.0000 0.0000 0.0000
+	map_d Alpha_Glass_Gradient_Ramp.tga
+	map_refl Ray_Glass_Raytrace.tga
+
+newmtl Wires
+	Ns 10.0000
+	Ni 1.5000
+	d 1.0000
+	Tr 0.0000
+	Tf 1.0000 1.0000 1.0000 
+	illum 2
+	Ka 0.0471 0.0471 0.0471
+	Kd 0.0471 0.0471 0.0471
+	Ks 0.4230 0.4230 0.4230
+	Ke 0.0000 0.0000 0.0000
+	map_bump -bm 0.2000 Bump_Wires_Dent.tga
+
+newmtl TungstenWire
+	Ns 10.0000
+	Ni 1.5000
+	d 1.0000
+	Tr 0.0000
+	Tf 1.0000 1.0000 1.0000 
+	illum 2
+	Ka 0.1725 0.1647 0.1647
+	Kd 0.1725 0.1647 0.1647
+	Ks 0.1620 0.1620 0.1620
+	Ke 0.0000 0.0000 0.0000
+
+newmtl SupportWires
+	Ns 6.0000
+	Ni 1.5000
+	d 1.0000
+	Tr 0.0000
+	Tf 1.0000 1.0000 1.0000 
+	illum 2
+	Ka 0.1333 0.1373 0.1490
+	Kd 0.1333 0.1373 0.1490
+	Ks 0.3780 0.3780 0.3780
+	Ke 0.0000 0.0000 0.0000
+	map_bump -bm 0.3000 Bump_SupportWire_Noise.tga
+	map_refl falloff_Falloff.tga

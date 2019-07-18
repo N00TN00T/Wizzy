@@ -14,7 +14,7 @@ workspace "Wizzy"
   }
 
   files { "**premake5.lua" }
-
+  buildoptions { "-rdynamic" }
   output_dir = "%{cfg.buildcfg}-%{cfg.system}-%{cfg.architecture}"
 
   -- Include directories relative to root directory
@@ -48,13 +48,13 @@ project "Wizzy"
   kind "StaticLib"
   language "C++"
 
+   buildoptions { "-Wall", "-Werror" }
+
   targetdir ("bin/" .. output_dir .. "/%{prj.name}")
   objdir ("bin-int/" .. output_dir .. "/%{prj.name}")
 
   pchheader "wzpch.h"
   pchsource "Wizzy/src/wzpch.cpp"
-
-  buildoptions { "-Wall", "-Wextra" }
 
   files
   {
@@ -196,6 +196,8 @@ project "Sandbox"
   kind "ConsoleApp"
   language "C++"
   architecture "x64"
+
+  buildoptions { "-Wall", "-Werror" }
 
   targetdir ("bin/" .. output_dir .. "/%{prj.name}")
   objdir ("bin-int/" .. output_dir .. "/%{prj.name}")

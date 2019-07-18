@@ -12,7 +12,7 @@
 namespace Wizzy {
 
     GLShader::GLShader(const string& data, const Flagset& flags)
-        : m_rawSource(data), Shader(flags), m_shaderId(WZ_SHADER_ID_INVALID) {
+        : Shader(flags), m_rawSource(data), m_shaderId(WZ_SHADER_ID_INVALID) {
         m_isValid = this->ParseShader(data) && this->Compile();
     }
 
@@ -89,7 +89,7 @@ namespace Wizzy {
         u32 _lineNum = 1;
 		string _line;
         while (std::getline(_sourceStream, _line, '\n')) {
-            if (_line.find("#") != string::npos && _line.find("#shader") == string::npos && _line.find("#version") == string::npos && _shaderType != ShaderType::invalid) {
+            if (_line.find("#") != string::npos && _line.find("#shader") == string::npos && _line.find("#version") == string::npos && _line.find("#define") == string::npos && _shaderType != ShaderType::invalid) {
                 WZ_CORE_ERROR("Failed parsing shader, settings must be set before specifying a shader with #shader token");
                 WZ_CORE_TRACE(_line);
                 return false;
@@ -105,12 +105,11 @@ namespace Wizzy {
                 }
 
             } else if (_line.find("#lightmode") != string::npos) {
-
-                if (_line.find(" none")) {
+                if (_line.find(" none") != string::npos) {
                     _lightMode = ShaderLightMode::none;
-                } else if (_line.find(" phong")) {
+                } else if (_line.find(" phong") != string::npos) {
                     _lightMode = ShaderLightMode::phong;
-                } else if (_line.find(" pbr")) {
+                } else if (_line.find(" pbr") != string::npos) {
                     _lightMode = ShaderLightMode::pbr;
                 } else {
                     WZ_CORE_ERROR("Failed parsing shader, unknown #lightmode token");
@@ -141,13 +140,17 @@ namespace Wizzy {
 
 		m_source = { _vertSource, _fragSource };
         WZ_CORE_INFO("Successfully parsed shader");
+        return true;
     }
 
     bool GLShader::Compile() {
         WZ_CORE_TRACE("Compiling GL Shader...");
-        GL_CALL(u32 _program = glCreateProgram());
-		GL_CALL(u32 _vShader = glCreateShader(GL_VERTEX_SHADER));
-		GL_CALL(u32 _fShader = glCreateShader(GL_FRAGMENT_SHADER));
+        u32 _program;
+        u32 _vShader;
+        u32 _fShader;
+        GL_CALL(_program = glCreateProgram());
+		GL_CALL(_vShader = glCreateShader(GL_VERTEX_SHADER));
+		GL_CALL(_fShader = glCreateShader(GL_FRAGMENT_SHADER));
 
 		const char *_vSource = m_source.vertSource.c_str();
 		const char *_fSource = m_source.fragSource.c_str();
@@ -181,13 +184,14 @@ namespace Wizzy {
             }
 
             if (!_vCompileSuccess){
-                _errMsg += "Failed compiling vertex shader: ' "
-                                                    + string(_vLog) + "'. ";
+                _errMsg += "Failed compiling vertex shader:\n    "
+                                                    + string(_vLog);
                 delete _vLog;
             }
             if (!_fCompileSuccess) {
-                _errMsg += "Failed compiling fragment shader: ' "
-                                                    + string(_fLog) + "'";
+                if (!_vCompileSuccess) _errMsg += "\n";
+                _errMsg += "Failed compiling fragment shader:\n    "
+                                                    + string(_fLog);
                 delete _fLog;
             }
         }

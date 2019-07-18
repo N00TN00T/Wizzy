@@ -40,8 +40,8 @@ namespace Wizzy {
         bool ParseShader(const string& data);
         bool Compile();
     private:
+        string              m_rawSource;
 		ShaderProgramSource m_source;
         u32					m_shaderId;
-        string              m_rawSource;
     };
 }

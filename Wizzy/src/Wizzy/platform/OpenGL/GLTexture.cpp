@@ -7,7 +7,8 @@
 #include "Wizzy/platform/OpenGL/GLErrorHandling.h"
 #include "Wizzy/platform/OpenGL/GLAPI.h"
 
-#define DEFAULT_WRAP_MODE       (GL_CLAMP_TO_EDGE)
+#define DEFAULT_WRAP_MODE       WZ_WRAP_MODE_MIRRORED_REPEAT
+//(WZ_WRAP_MODE_REPEAT)
 #define DEFAULT_MIN_FILTER_MODE (GL_LINEAR_MIPMAP_LINEAR)
 #define DEFAULT_MAG_FILTER_MODE (GL_LINEAR)
 
@@ -101,7 +102,6 @@ namespace Wizzy {
         }
 
         WZ_CORE_TRACE("Creating GL tex2d depending on given image type in flags");
-
         GL_CALL(glTexImage2D(GL_TEXTURE_2D, 0, _internalFormat, m_width, m_height,
                              0, GL_RGBA, GL_UNSIGNED_BYTE, m_data));
 

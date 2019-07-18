@@ -100,7 +100,7 @@ namespace Wizzy {
 */
         template <typename TResource>
         static
-        TResource* Get(const ResourceHandle& handle);
+        TResource& Get(const ResourceHandle& handle);
 
         static
         void Rename(const ResourceHandle& oldHandle, const ResourceHandle& newHandle);
@@ -165,8 +165,8 @@ namespace Wizzy {
 
     template <typename TResource>
     inline
-    TResource* ResourceManagement::Get(const ResourceHandle& handle) {
+    TResource& ResourceManagement::Get(const ResourceHandle& handle) {
         WZ_CORE_ASSERT(ResourceManagement::Is<TResource>(handle), "Tried getting resource by invalid handle or wrong type (handle: '" + handle + "', type: '" + string(typestr(TResource)) + "')");
-        return dynamic_cast<TResource*>(s_resources[handle]);
+        return *dynamic_cast<TResource*>(s_resources[handle]);
     }
 }

@@ -42,6 +42,8 @@ namespace Wizzy {
             TextureHandle UnloadedTexture();
             static
             TextureHandle InvalidTexture();
+            static
+            TextureHandle WhiteTexture();
 
 
         protected:

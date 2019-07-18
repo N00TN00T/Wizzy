@@ -22,6 +22,10 @@ Makefile
 Makefile
 imgui.ini
 
+# apitrace-generated files
+*.trace
+*dna.txt
+
 # Exceptions
 !vendor/bin/
 !vendor/bin/premake/premake5.exe

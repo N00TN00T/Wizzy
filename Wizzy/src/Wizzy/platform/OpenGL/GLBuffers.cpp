@@ -18,6 +18,7 @@ namespace Wizzy {
         this->Bind();
         GL_CALL(glBufferData(GL_ARRAY_BUFFER, size, data, GL_STATIC_DRAW));
         WZ_CORE_INFO("Successfully created GL vertex buffer with id '{0}'", m_id);
+        this->Unbind();
     }
     GLVertexBuffer::~GLVertexBuffer() {
         WZ_CORE_TRACE("Destructing GL vertex buffer with id '{0}'", m_id);
@@ -27,6 +28,7 @@ namespace Wizzy {
     void GLVertexBuffer::SetData(void *data, size_t size) {
         this->Bind();
         GL_CALL(glBufferData(GL_ARRAY_BUFFER, size, data, GL_STATIC_DRAW));
+        this->Unbind();
     }
 
     void GLVertexBuffer::Bind() const {
@@ -47,6 +49,7 @@ namespace Wizzy {
         GL_CALL(glGenBuffers(1, &m_id));
         this->Bind();
         GL_CALL(glBufferData(GL_ELEMENT_ARRAY_BUFFER, count * sizeof(u32), data, GL_STATIC_DRAW));
+        this->Unbind();
         WZ_CORE_INFO("Successfully created GL index buffer with id '{0}'", m_id);
     }
     GLIndexBuffer::~GLIndexBuffer() {
@@ -57,6 +60,7 @@ namespace Wizzy {
     void GLIndexBuffer::SetData(u32 *data, u32 count) {
         this->Bind();
         GL_CALL(glBufferData(GL_ELEMENT_ARRAY_BUFFER, count, data, GL_STATIC_DRAW));
+        this->Unbind();
     }
 
     void GLIndexBuffer::Bind() const {
@@ -109,8 +113,8 @@ namespace Wizzy {
             _index++;
         }
 
-        //this->Unbind();
-        //buffer->Unbind();
+        this->Unbind();
+        buffer->Unbind();
 
         m_vertexBuffers.push_back(buffer);
     }
@@ -118,8 +122,8 @@ namespace Wizzy {
         this->Bind();
         buffer->Bind();
 
-        //this->Unbind();
-        //buffer->Unbind();
+        this->Unbind();
+        buffer->Unbind();
 
         m_indexBuffer = buffer;
     }

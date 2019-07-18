@@ -67,8 +67,8 @@ namespace Wizzy {
     class ResourceRenameEvent
 		: public Event {
 	private:
-		ResourceHandle m_oldHandle;
         ResourceHandle m_newHandle;
+		ResourceHandle m_oldHandle;
         string m_file;
 	public:
 		inline ResourceRenameEvent(const ResourceHandle& oldHandle,

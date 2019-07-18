@@ -15,9 +15,13 @@ namespace Wizzy {
     }
 
     void GLRendererAPI::DrawIndexed(const VertexArrayPtr& va, RenderMode mode) {
-        GL_CALL(glDrawElements(GL_RenderModeToAPIRenderMode(mode), 
+        GL_CALL(glDrawElements(GL_RenderModeToAPIRenderMode(mode),
                                 va->GetIndexBuffer()->GetCount(),
                                 GL_UNSIGNED_INT, nullptr));
+        /*glDrawElements(GL_RenderModeToAPIRenderMode(mode),
+                                va->GetIndexBuffer()->GetCount(),
+                                GL_UNSIGNED_INT, nullptr);*/
+
     }
 
     void GLRendererAPI::SetViewport(u32 x, u32 y, u32 w, u32 h) {
@@ -41,6 +45,7 @@ namespace Wizzy {
 
         if (value) {
             GL_CALL(glEnable(GL_DEPTH_TEST));
+            GL_CALL(glDepthFunc(GL_LESS));
         } else {
             GL_CALL(glDisable(GL_DEPTH_TEST));
         }

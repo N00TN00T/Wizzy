@@ -18,13 +18,48 @@ namespace Wizzy {
               renderMode(renderMode) {}
     };
 
+    enum class LightType : int8 {
+        NONE = 0,
+        DIRECTIONAL, POINT, SPOT
+    };
+
+    struct Light {
+        LightType type;
+        vec3 position;
+        vec3 rotation;
+        Color color;
+        float range;
+        float intensity;
+
+        Light(LightType type, const vec3& position = vec3(0), const vec3& rotation = vec3(0),
+              const Color& color = Color::white, float range = 1, float intensity = 1)
+            : type(type), position(position), rotation(rotation),
+              color(color), range(range), intensity(intensity) {}
+    };
+
+    struct RenderEnvironment {
+        bool useLighting;
+        Color ambient;
+
+        RenderEnvironment(bool useLighting = true,
+                          Color ambient = Color::darkGrey)
+            : useLighting(useLighting),  ambient(ambient) {}
+    };
+
     class Renderer {
     public:
         static
-        void Begin(const mat4& camTransform); // env, lights, camera
+        void Begin(const mat4& camTransform, const RenderEnvironment& environment = DEFAULT(RenderEnvironment));
         static
         void End();
 
+        static
+        void SubmitLight(LightType type,
+                         const vec3& position,
+                         const vec3& rotation,
+                         const Color& color = Color(.80f, .85f, .85f, 1.f),
+                         float range = 50.f,
+                         float intensity = 1.f);
         static
         void Submit(const VertexArrayPtr& va,
                     const Material& material,
@@ -43,6 +78,10 @@ namespace Wizzy {
     private:
         static
         mat4 s_camTransform;
+        static
+        RenderEnvironment s_environment;
+        static
+        std::vector<Light> s_lights;
         static
         bool s_isReady;
         static

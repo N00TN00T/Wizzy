@@ -8,13 +8,15 @@
 #include "Wizzy/Renderer/Renderer.h"
 #include "Wizzy/Resource/ResourceManagement.h"
 
+#define TO_4_BYTE_COLOR(c16) new byte[4] { (byte)(c16.r * 255.f), (byte)(c16.g * 255.f), (byte)(c16.b * 255.f), (byte)(c16.a * 255.f) }
+
 namespace Wizzy {
 
     Texture::Texture(const string& data, const Flagset& flags)
         : Resource(flags, "Texture", WZ_EXTENSION_TEXTURE) {
         WZ_CORE_TRACE("Loading Texture from resource data...");
 
-        stbi_set_flip_vertically_on_load(false);
+        stbi_set_flip_vertically_on_load(true);
 
         m_data = stbi_load_from_memory((byte*)((void*)&data[0]), data.size(), &m_width, &m_height,
                                         &m_channels, 4);
@@ -59,9 +61,9 @@ namespace Wizzy {
 
     TextureHandle Texture::UnloadedTexture() {
         if (!ResourceManagement::IsValid("UnloadedTexture")) {
-            Color _color = WZ_UNLOADED_TEXTURE_COLOR;
+            byte *_color = TO_4_BYTE_COLOR(WZ_UNLOADED_TEXTURE_COLOR);
             Texture *_texture = Texture::Create(
-                                                (byte*)&_color,
+                                                _color,
                                                 1, 1
                                             );
             ResourceManagement::Add(_texture, "UnloadedTexture");
@@ -70,14 +72,27 @@ namespace Wizzy {
     }
     TextureHandle Texture::InvalidTexture() {
         if (!ResourceManagement::IsValid("InvalidTexture")) {
-            Color _color = WZ_INVALID_TEXTURE_COLOR;
+            byte *_color = TO_4_BYTE_COLOR(WZ_INVALID_TEXTURE_COLOR);
+
             Texture *_texture = Texture::Create(
-                                                (byte*)&_color,
+                                                _color,
                                                 1, 1
                                             );
             ResourceManagement::Add(_texture, "InvalidTexture");
         }
         return "InvalidTexture";
+    }
+
+    TextureHandle Texture::WhiteTexture() {
+        if (!ResourceManagement::IsValid("WhiteTexture")) {
+            byte *_color = TO_4_BYTE_COLOR(Color::white);
+            Texture *_texture = Texture::Create(
+                                                _color,
+                                                1, 1
+                                            );
+            ResourceManagement::Add(_texture, "WhiteTexture");
+        }
+        return "WhiteTexture";
     }
 
 }
