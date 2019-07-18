@@ -8,15 +8,18 @@
 namespace Wizzy {
 
     mat4 Renderer::s_camTransform;
+    vec3 Renderer::s_viewPos;
     RenderEnvironment Renderer::s_environment;
     std::vector<Light> Renderer::s_lights;
     bool Renderer::s_isReady(false);
     std::unordered_map<ShaderHandle, std::deque<Submission>> Renderer::s_submissions;
     ulib::Queue<ShaderHandle> Renderer::s_shaderQueue;
 
-    void Renderer::Begin(const mat4& camTransform, const RenderEnvironment& environment) {
+    void Renderer::Begin(const mat4& camTransform, const vec3& viewPos, const RenderEnvironment& environment) {
         WZ_CORE_TRACE("Beginning renderer...");
         s_camTransform = camTransform;
+        s_viewPos = viewPos;
+        WZ_CORE_DEBUG("{0}, {1}, {2}", s_viewPos.x, s_viewPos.y, s_viewPos.z);
         s_environment = environment;
         s_isReady = true;
     }
@@ -32,6 +35,7 @@ namespace Wizzy {
 
             _shader.Bind();
             _shader.UploadMat4("u_camTransform", s_camTransform);
+            _shader.Upload3f("u_viewPos", s_viewPos);
 
             if (s_environment.useLighting) {
                 _shader.Upload4f("u_ambient", s_environment.ambient.asVec4);
@@ -41,7 +45,7 @@ namespace Wizzy {
                 for (u32 i = 0; i < s_lights.size(); i++) {
                     _shader.Upload1i("u_lights[" + std::to_string(i) + "].type", (int32)s_lights[i].type);
                     _shader.Upload3f("u_lights[" + std::to_string(i) + "].position", s_lights[i].position);
-                    _shader.Upload3f("u_lights[" + std::to_string(i) + "].rotation", s_lights[i].rotation);
+                    _shader.Upload3f("u_lights[" + std::to_string(i) + "].direction", s_lights[i].rotation);
                     _shader.Upload4f("u_lights[" + std::to_string(i) + "].color", s_lights[i].color.asVec4);
                     _shader.Upload1f("u_lights[" + std::to_string(i) + "].range", s_lights[i].range);
                     _shader.Upload1f("u_lights[" + std::to_string(i) + "].intensity", s_lights[i].intensity);

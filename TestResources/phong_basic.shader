@@ -47,7 +47,7 @@ in vec3 normal;
 struct Light {
     int type;
     vec3 position;
-    vec3 rotation;
+    vec3 direction;
     vec4 color;
     float intensity;
     float range;
@@ -57,30 +57,89 @@ uniform vec4 u_albedo = vec4(1.0, 1.0, 1.0, 1.0);
 uniform vec4 u_diffuseColor = vec4(1.0, 1.0, 1.0, 1.0);
 uniform bool u_useDiffuseMap = false;
 uniform sampler2D u_diffuseMap;
+uniform vec4 u_specularColor = vec4(1.0, 1.0, 1.0, 0.5);
+uniform bool u_useSpecularMap = false;
+uniform sampler2D u_specularMap;
 
+uniform vec3 u_viewPos = vec3(-10.0, 0.0, 0.0);
 uniform vec4 u_ambient = vec4(0.2, 0.2, 0.2, 1.0);
 uniform int u_nLights = 0;
-uniform Light u_lights[1024];
+uniform Light u_lights[128];
+
+void CalculateDirectionalLight(vec3 direction, vec4 color, float intensity, float metallic, inout vec3 diffuse, inout vec3 specular) {
+
+    vec3 norm = normalize(normal);
+    vec3 lightDir = normalize(-direction);
+
+    float diff = max(dot(norm, lightDir), 0.0);
+    diffuse += diff * color.xyz  * intensity;
+
+    // specular
+    vec3 viewDir = normalize(u_viewPos - fragPos);
+    vec3 reflectDir = reflect(lightDir, norm);
+
+    float spec = pow(max(dot(viewDir, reflectDir), 0.0), metallic);
+    specular += spec * color.xyz * intensity;
+}
+
+void CalculatePointLight(vec3 position, vec4 color, float intensity, float metallic, float range, inout vec3 diffuse, inout vec3 specular) {
+    vec3 lightPos = position;
+    vec3 lightDiff = lightPos - fragPos;
+    float lightDist = length(lightDiff);
+
+    float distanceIntensity = (range - lightDist) / range;
+    if (distanceIntensity > 1.0) distanceIntensity = 1.0;
+
+    // diffuse
+    vec3 norm = normalize(normal);
+    vec3 lightDir = normalize(lightDiff);
+
+    float diff = max(dot(norm, lightDir), 0.0);
+    diffuse += diff * color.xyz  * intensity * distanceIntensity;
+
+    // specular
+    vec3 viewDir = normalize(u_viewPos - fragPos);
+    vec3 reflectDir = reflect(lightDir, norm);
+
+    float spec = pow(max(dot(viewDir, reflectDir), 0.0), metallic);
+    specular += spec * color.xyz * intensity * distanceIntensity;
+}
+
+void CalculateSpotLight(vec3 position, vec3 direction, vec4 color, float intensity, float metallic, float range, inout vec3 diffuse, inout vec3 specular) {
+
+}
 
 void main()
 {
+    float metallic = u_specularColor.w * 256;
+    if (metallic < 0.137) metallic = 0.137;
     vec4 diffuseColor = u_diffuseColor;
-    vec3 diffuse = vec3(1.0, 1.0, 1.0);
+    vec3 diffuse = vec3(0.0, 0.0, 0.0);
+    vec4 specularColor = u_specularColor;
+    vec3 specular = vec3(0.0, 0.0, 0.0);
 
     if (u_useDiffuseMap) {
         diffuseColor = texture(u_diffuseMap, uv);
     }
-
-    for (int i = 0; i < u_nLights; i++) {
-        vec3 lightPos = u_lights[i].position;//(camTransform * vec4(u_lights[i].position, 1.0)).xyz;
-        vec3 lightDiff = lightPos - fragPos;
-        float lightDist = length(lightDiff);
-        vec3 norm = normalize(normal);
-        vec3 lightDir = normalize(lightDiff);
-
-        float diff = max(dot(norm, lightDir), 0.0);
-        diffuse = diff * u_lights[i].color.xyz * diffuseColor.xyz;
+    if (u_useSpecularMap) {
+        specularColor = texture(u_specularMap, uv);
     }
 
-    outColor = u_albedo * ((u_ambient) + vec4(diffuse, 1.0));
+    for (int i = 0; i < u_nLights; i++) {
+
+        switch (u_lights[i].type) {
+            case LIGHT_TYPE_DIRECTIONAL:
+                CalculateDirectionalLight(u_lights[i].direction, u_lights[i].color, u_lights[i].intensity, metallic, diffuse, specular);
+                break;
+            case LIGHT_TYPE_POINT:
+                CalculatePointLight(u_lights[i].position, u_lights[i].color, u_lights[i].intensity, metallic, u_lights[i].range, diffuse, specular);
+                break;
+            case LIGHT_TYPE_SPOT:
+                CalculateSpotLight(u_lights[i].position, u_lights[i].direction, u_lights[i].color, u_lights[i].intensity, metallic, u_lights[i].range, diffuse, specular);
+                break;
+        }
+
+    }
+
+    outColor = u_albedo * (u_ambient + vec4(diffuse + specular * specularColor.xyz, 1.0)) * diffuseColor;
 }

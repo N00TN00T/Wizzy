@@ -7,7 +7,7 @@
 #include "Wizzy/platform/OpenGL/GLErrorHandling.h"
 #include "Wizzy/platform/OpenGL/GLAPI.h"
 
-#define DEFAULT_WRAP_MODE       WZ_WRAP_MODE_MIRRORED_REPEAT
+#define DEFAULT_WRAP_MODE       GL_REPEAT
 //(WZ_WRAP_MODE_REPEAT)
 #define DEFAULT_MIN_FILTER_MODE (GL_LINEAR_MIPMAP_LINEAR)
 #define DEFAULT_MAG_FILTER_MODE (GL_LINEAR)

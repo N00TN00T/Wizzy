@@ -130,11 +130,6 @@ public:
 
         auto& _meshes = _model.GetMeshes();
 
-
-
-        ImGui::DragFloat3("Position", glm::value_ptr(transform.position), .05f);
-        ImGui::DragFloat3("Rotation", glm::value_ptr(transform.rotation), .01f);
-        ImGui::DragFloat3("Scale", glm::value_ptr(transform.scale), .01f);
         if (ImGui::TreeNode("Meshes")) {
             WZ_CORE_TRACE("Iterating meshes in model to submit to gui");
             for (u32 i = 0; i < _meshes.size(); i++) {
@@ -142,7 +137,7 @@ public:
                 if (ImGui::TreeNode(_mesh.GetName().c_str())) {
                     auto& _mat = wz::ResourceManagement::Get<wz::Material>(_mesh.GetMaterialHandle());
 
-                    ImGui::Text(_mesh.GetMaterialHandle().c_str());
+                    ImGui::TextUnformatted(_mesh.GetMaterialHandle().c_str());
 
                     ImGui::Spacing();
 
@@ -161,7 +156,7 @@ public:
                                 wz::Texture& _texture = wz::ResourceManagement::Get<wz::Texture>(_handle);
                                 double _aspect = (double)_texture.GetWidth() / (double)_texture.GetHeight();
                                 int32 _height = 32.0 / _aspect;
-                                ImGui::Text(_handle.c_str());
+                                ImGui::TextUnformatted(_handle.c_str());
                                 if (ImGui::ImageButton(reinterpret_cast<void*>(_texture.GetId()), ImVec2(32, _height))) {
                                     _mat.diffuseMapHandle = _handle;
                                 }
@@ -177,6 +172,39 @@ public:
                     } else {
                         ImGui::ColorEdit4("Diffuse color", _mat.diffuseColor.rgba);
                     }
+
+
+                    bool _validSpecular = wz::ResourceManagement::Is<wz::Texture>(_mat.specularMapHandle);
+                    if (ImGui::BeginCombo("Specular map", _validSpecular ? _mat.specularMapHandle.c_str() :
+                                                                         "None")) {
+                        if (ImGui::Selectable("None")) {
+                            _mat.specularMapHandle = WZ_NULL_RESOURCE_HANDLE;
+                            _validSpecular = false;
+                        }
+                        ImGui::Separator();
+                        for (const auto& _handle : wz::ResourceManagement::GetHandles()) {
+                            if (wz::ResourceManagement::Is<wz::Texture>(_handle)) {
+                                wz::Texture& _texture = wz::ResourceManagement::Get<wz::Texture>(_handle);
+                                double _aspect = (double)_texture.GetWidth() / (double)_texture.GetHeight();
+                                int32 _height = 32.0 / _aspect;
+                                ImGui::TextUnformatted(_handle.c_str());
+                                if (ImGui::ImageButton(reinterpret_cast<void*>(_texture.GetId()), ImVec2(32, _height))) {
+                                    _mat.specularMapHandle = _handle;
+                                }
+                            }
+                        }
+                        ImGui::EndCombo();
+                    }
+                    WZ_CORE_TRACE("Deciding if specular color option should show");
+
+                    if (_validSpecular) {
+                        wz::Texture& _specular = wz::ResourceManagement::Get<wz::Texture>(_mat.specularMapHandle);
+                        ImGui::Image(reinterpret_cast<void*>(_specular.GetId()), ImVec2(100, 100));
+                        ImGui::SliderFloat("Metallic", &_mat.specularColor.a, .01f, 1.f);
+                    } else {
+                        ImGui::ColorEdit4("Specular color", _mat.specularColor.rgba);
+                    }
+
                     ImGui::TreePop();
                 }
             }
@@ -200,6 +228,9 @@ public:
             {
                 string _wndTitle = "Entity inspector##" + std::to_string(reinterpret_cast<uintptr_t>(_transform.entity));
                 ImGui::Begin(_wndTitle.c_str());
+                ImGui::DragFloat3("Position", glm::value_ptr(_transform.position), .05f);
+                ImGui::DragFloat3("Rotation", glm::value_ptr(_transform.rotation), .01f);
+                ImGui::DragFloat3("Scale", glm::value_ptr(_transform.scale), .01f);
                 if (components.Has<ModelComponent>()) {
                     ModelComponent& _model = *components.Get<ModelComponent>();
                     SubmitModel(_transform, _model);
@@ -241,7 +272,7 @@ public:
     void BeginRenderer(ViewComponent& view, EnvironmentComponent& environment) const {
         WZ_CORE_TRACE("Beginning renderer from camera system");
         wz::RenderCommand::Clear();
-        wz::Renderer::Begin(view.ToMat4(), environment.value);
+        wz::Renderer::Begin(view.ToMat4(), view.position, environment.value);
     }
 
     void OnUpdate(ViewComponent& view, float delta) const {
@@ -410,8 +441,8 @@ public:
         LightComponent _light;
         _light.type = type;
         _light.color = wz::Color(.8f, .85f, .85f, 1.f);
-        _light.intensity = 1.f;
-        _light.range = 10.f;
+        _light.intensity = 1.5f;
+        _light.range = 25.f;
 
         ecs::IComponent* _comps[] = {
             &_transform, &_model, &_light
@@ -421,6 +452,25 @@ public:
         };
 
         m_clientEcs.CreateEntity(_comps, _ids, 3);
+    }
+
+    void CreateSun() {
+        TransformComponent _transform;
+        _transform.rotation = vec3(0, 0, -1);
+
+        LightComponent _light;
+        _light.type = wz::LightType::DIRECTIONAL;
+        _light.color = wz::Color(.8f, .85f, .85f, 1.f);
+        _light.intensity = 2.f;
+
+        ecs::IComponent* _comps[] = {
+            &_transform, &_light
+        };
+        ecs::StaticCId _ids[] = {
+            _transform.staticId, _light.staticId
+        };
+
+        m_clientEcs.CreateEntity(_comps, _ids, 2);
     }
 
 	virtual
@@ -471,7 +521,10 @@ public:
         CreateCamera();
         CreateModel("Nanosuit", vec3(-10, 0, 0), vec3(0, wz::to_radians(180), 0));
         CreateModel("Nanosuit", vec3(10, 0, 0), vec3(0, wz::to_radians(180), 0));
-        CreateLamp("Lightbulb", wz::LightType::POINT, vec3(0), vec3(0), vec3(.125f, .125f, .125f));
+        //CreateLamp("Lightbulb", wz::LightType::POINT, vec3(-5, 0, 0), vec3(0), vec3(.125f, .125f, .125f));
+        CreateLamp("Lightbulb", wz::LightType::POINT, vec3(5, 0, 0), vec3(0), vec3(.125f, .125f, .125f));
+        CreateSun();
+
 
         m_clientSystems.AddSystem<CameraSystem>();
         m_clientSystems.AddSystem<RenderSystem>();

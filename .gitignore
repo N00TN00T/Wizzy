@@ -4,6 +4,7 @@ bin/
 bin-int/
 .vscode/
 .codelite/
+ProjectResources/
 
 # Files
 *.user
@@ -29,3 +30,5 @@ imgui.ini
 # Exceptions
 !vendor/bin/
 !vendor/bin/premake/premake5.exe
+
+

@@ -73,18 +73,14 @@ namespace Wizzy {
 
         const aiScene *_scene
                 = _importer.ReadFileFromMemory(&data[0], data.size(),
-                                     aiProcess_Triangulate  /*|
+                                     aiProcess_Triangulate |
                                      aiProcess_JoinIdenticalVertices |
-                                     aiProcess_PreTransformVertices |
                                      aiProcess_GenNormals |
                                      aiProcess_CalcTangentSpace |
-                                     aiProcess_SortByPType *///|
-                                     /*aiProcess_FlipUVs |*/
-                                     //aiProcess_SortByPType |
-                                     //aiProcess_GenSmoothNormals  |
-                                     //aiProcess_RemoveRedundantMaterials |
-                                     //aiProcess_OptimizeMeshes |
-                                     //aiProcess_OptimizeGraph
+                                     aiProcess_SortByPType |
+                                     aiProcess_RemoveRedundantMaterials |
+                                     aiProcess_OptimizeMeshes |
+                                     aiProcess_OptimizeGraph
                                  );
 
         string _sceneError = "";
@@ -219,6 +215,18 @@ namespace Wizzy {
         //_vertices.reserve(mesh->mNumVertices);
         _indices.reserve(mesh->mNumFaces * 3);
 
+        if (mesh->HasTextureCoords(0)) {
+            WZ_CORE_TRACE("Mesh has uv's");
+        } else {
+            WZ_CORE_TRACE("Mesh doesn't have uv's");
+        }
+
+        if (mesh->HasNormals()) {
+            WZ_CORE_TRACE("Mesh has normals");
+        } else {
+            WZ_CORE_TRACE("Mesh doesn't have normals");
+        }
+
         WZ_CORE_TRACE("Iterating {0} vertices...", mesh->mNumVertices);
         for (u32 i = 0; i < mesh->mNumVertices; i++) {
             if (rand() % 500 == 3) {
@@ -231,11 +239,15 @@ namespace Wizzy {
             _vertex.position.z = mesh->mVertices[i].z;
 
             if (mesh->mTextureCoords[0]) {
-                WZ_CORE_TRACE("Mesh has uv's");
                 _vertex.uv.x = (float)mesh->mTextureCoords[0][i].x;
                 _vertex.uv.y = (float)mesh->mTextureCoords[0][i].y;
-            } else {
-                WZ_CORE_TRACE("Mesh doesn't have uv's");
+            }
+
+            if (mesh->HasNormals()) {
+
+                _vertex.normal.x = mesh->mNormals[i].x;
+                _vertex.normal.y = mesh->mNormals[i].y;
+                _vertex.normal.z = mesh->mNormals[i].z;
             }
 
             _vertices.push_back(_vertex);
@@ -285,6 +297,7 @@ namespace Wizzy {
         WZ_CORE_TRACE("Handling textures of texture type {0} for material...", textureType);
         std::vector<TextureHandle> _textures;
         u32 _count = mat->GetTextureCount((aiTextureType)textureType);
+        WZ_CORE_DEBUG(mat->GetTextureCount(aiTextureType_SPECULAR));
         string _fileDirectory = ulib::File::directory_of(sourceFile);
         string _fileName = ulib::File::without_extension(ulib::File::name_of(sourceFile));
         if (_count == 0) {

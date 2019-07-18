@@ -34,9 +34,11 @@ namespace Wizzy {
 
     public:
         ShaderHandle shaderHandle;
-        Color albedo;
-        Color diffuseColor;
-        TextureHandle diffuseMapHandle;
+        Color albedo = Color::white;
+        Color diffuseColor = Color::white;
+        TextureHandle diffuseMapHandle = WZ_NULL_RESOURCE_HANDLE;
+        Color specularColor = Color(1.f, 1.f, 1.f, .1f);
+        TextureHandle specularMapHandle  = WZ_NULL_RESOURCE_HANDLE;
 
     private:
         bool Init(const string& data);

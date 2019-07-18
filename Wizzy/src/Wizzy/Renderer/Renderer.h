@@ -19,7 +19,7 @@ namespace Wizzy {
     };
 
     enum class LightType : int8 {
-        NONE = 0,
+        NONE = -1,
         DIRECTIONAL, POINT, SPOT
     };
 
@@ -49,7 +49,7 @@ namespace Wizzy {
     class Renderer {
     public:
         static
-        void Begin(const mat4& camTransform, const RenderEnvironment& environment = DEFAULT(RenderEnvironment));
+        void Begin(const mat4& camTransform, const vec3& viewPos, const RenderEnvironment& environment = DEFAULT(RenderEnvironment));
         static
         void End();
 
@@ -78,6 +78,8 @@ namespace Wizzy {
     private:
         static
         mat4 s_camTransform;
+        static
+        vec3 s_viewPos;
         static
         RenderEnvironment s_environment;
         static
