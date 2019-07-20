@@ -66,7 +66,7 @@ uniform sampler2D u_specularMap;
 uniform vec3 u_viewPos = vec3(-10.0, 0.0, 0.0);
 uniform vec4 u_ambient = vec4(0.2, 0.2, 0.2, 1.0);
 uniform int u_nLights = 0;
-uniform Light u_lights[128];
+uniform Light u_lights[64];
 
 void CalculateDirectionalLight(vec3 direction, vec4 color, float intensity, float metallic, inout vec3 diffuse, inout vec3 specular) {
 
@@ -78,7 +78,7 @@ void CalculateDirectionalLight(vec3 direction, vec4 color, float intensity, floa
 
     // specular
     vec3 viewDir = normalize(u_viewPos - fragPos);
-    vec3 reflectDir = reflect(lightDir, norm);
+    vec3 reflectDir = reflect(-lightDir, norm);
 
     float spec = pow(max(dot(viewDir, reflectDir), 0.0), metallic);
     specular += spec * color.xyz * intensity;
@@ -101,7 +101,7 @@ void CalculatePointLight(vec3 position, vec4 color, float intensity, float metal
 
     // specular
     vec3 viewDir = normalize(u_viewPos - fragPos);
-    vec3 reflectDir = reflect(lightDir, norm);
+    vec3 reflectDir = reflect(-lightDir, norm);
 
     float spec = pow(max(dot(viewDir, reflectDir), 0.0), metallic);
     specular += spec * color.xyz * intensity * distanceIntensity;

@@ -1,22 +1,12 @@
 #include "wzpch.h"
-#include "Application.h"
-#include "Log.h"
-#include "Events/AppEvent.h"
-#include "Wizzy/Input.h"
 
 #include <imgui.h>
 
-#include "Wizzy/platform/OpenGL/GLErrorHandling.h"
+#include "Wizzy/Application.h"
+#include "Wizzy/Log.h"
+#include "Wizzy/Events/AppEvent.h"
 #include "Wizzy/ImGuiSystem.h"
-#include "Wizzy/Renderer/API.h"
-#include "Wizzy/Utils.h"
-#include "Wizzy/Stopwatch.h"
 
-#include "Wizzy/Resource/ResourceManagement.h"
-#include "Wizzy/Renderer/Texture.h"
-#include "Wizzy/Renderer/Model.h"
-#include "Wizzy/Renderer/Material.h"
-#include "Wizzy/Scripting/Script.h"
 
 #define DISPATCH_EVENT_LOCAL(eType, ...) { auto _e = eType(__VA_ARGS__); this->OnEvent(_e); } [](){return 0;}()
 
@@ -40,11 +30,10 @@ namespace Wizzy {
 			return false;
 		});
 
-		void *_eHandle = static_cast<void*>(&e);
 		WZ_CORE_TRACE("Notifying client systems '{0}'", e);
-		m_clientEcs.NotifySystems(m_clientSystems, _eHandle, (int32)e.GetEventType());
+		m_clientEcs.NotifySystems(m_clientSystems, e);
 		WZ_CORE_TRACE("Notifying engine systems '{0}'", e);
-		m_engineEcs.NotifySystems(m_engineSystems, _eHandle, (int32)e.GetEventType());
+		m_engineEcs.NotifySystems(m_engineSystems, e);
 	}
 
 	void Application::Run() {
@@ -96,93 +85,6 @@ namespace Wizzy {
 			DISPATCH_EVENT_LOCAL(AppFrameBeginEvent, m_window->GetDeltaTime());
 
 			DISPATCH_EVENT_LOCAL(AppUpdateEvent, m_window->GetDeltaTime());
-
-			ImGui::Begin("Resource management");
-
-			static char _path[1024] = "/home/";
-			static char _handle[1024] = "ResourceHandle";
-			static string _type = "Model";
-			ImGui::InputText("Importpath", _path, 1024);
-			ImGui::InputText("Handle", _handle, 1024);
-
-			if (ImGui::BeginCombo("Import type", _type.c_str())) {
-
-				if (ImGui::Selectable("Model")) {
-					_type = "Model";
-				}
-				if (ImGui::Selectable("Texture")) {
-					_type = "Texture";
-				}
-				if (ImGui::Selectable("Script")) {
-					_type = "Script";
-				}
-				if (ImGui::Selectable("Material")) {
-					_type = "Material";
-				}
-
-				ImGui::EndCombo();
-			}
-
-			if (ImGui::Button("Import")) {
-
-				if (ulib::File::exists(_path)) {
-
-					if (_type == "Model") {
-						ResourceManagement::Load<Model>(_path, _handle);
-					} else if (_type == "Texture") {
-						ResourceManagement::Load<Texture>(_path, _handle);
-					} else if (_type == "Script") {
-						ResourceManagement::Load<Script>(_path, _handle);
-					} else if (_type == "Material") {
-						ResourceManagement::Load<Material>(_path, _handle);
-					}
-
-				}
-
-			}
-
-			ImGui::Spacing();
-
-			if (ImGui::TreeNode("Resources")) {
-
-				if (ImGui::TreeNode("Textures")) {
-
-					for (auto& _handle : ResourceManagement::GetHandles()) {
-						if (ResourceManagement::Is<Texture>(_handle)) {
-							ImGui::TextUnformatted(_handle.c_str());
-						}
-					}
-
-					ImGui::TreePop();
-				}
-
-				if (ImGui::TreeNode("Models")) {
-
-					for (auto& _handle : ResourceManagement::GetHandles()) {
-						if (ResourceManagement::Is<Model>(_handle)) {
-							ImGui::TextUnformatted(_handle.c_str());
-						}
-					}
-
-					ImGui::TreePop();
-				}
-
-				if (ImGui::TreeNode("Other")) {
-
-					for (auto& _handle : ResourceManagement::GetHandles()) {
-						if (!ResourceManagement::Is<Texture>(_handle) &&
-							!ResourceManagement::Is<Model>(_handle)) {
-							ImGui::TextUnformatted(_handle.c_str());
-						}
-					}
-
-					ImGui::TreePop();
-				}
-
-				ImGui::TreePop();
-			}
-
-			ImGui::End();
 
 			DISPATCH_EVENT_LOCAL(AppRenderEvent);
 

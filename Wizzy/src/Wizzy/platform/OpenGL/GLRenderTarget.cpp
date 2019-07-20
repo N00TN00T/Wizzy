@@ -29,7 +29,6 @@ namespace Wizzy {
         WZ_CORE_INFO("Successfully intitialized GL RenderTarget. Width: {0}, Height: {1}, FBO: {2}, RBO: {3}, textureId: {4}", width, height, m_frameBufferId, m_renderBufferId, m_textureId);
     }
     GLRenderTarget::~GLRenderTarget() {
-        WZ_CORE_DEBUG("RENDERTARGET DESTRUCTUY");
         WZ_CORE_TRACE("Destructing GL RenderTarget");
         GL_CALL(glDeleteFramebuffers(1, &m_frameBufferId));
         WZ_CORE_TRACE("Destructed framebuffer, destructing renderbuffer");

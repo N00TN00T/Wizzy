@@ -1,5 +1,7 @@
 #pragma once
 
+#include "Wizzy/Ecs/ECSManager.h"
+
 namespace Wizzy {
 
 	struct ImGuiComponent
@@ -12,7 +14,7 @@ namespace Wizzy {
 	public:
 		ImGuiSystem();
 		~ImGuiSystem();
-		virtual void OnEvent(const void* eventHandle,
+		virtual void OnEvent(const Event& event,
 							 ecs::ComponentGroup& components) const override;
 	private:
 		void Init() const;

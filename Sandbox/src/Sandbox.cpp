@@ -1,87 +1,6 @@
 #include "spch.h"
-#include <Wizzy.h>
 
-#include <glad/glad.h>
-
-struct ModelComponent
- 	: public ecs::Component<ModelComponent> {
-    char *handle;
-};
-
-struct TransformComponent
-	: public ecs::Component<TransformComponent> {
-	vec3 position;
-	vec3 rotation;
-	vec3 scale;
-
-	inline mat4 ToMat4() const {
-		mat4 _ret = glm::translate(glm::identity<mat4>(), position);
-		_ret = glm::rotate(_ret, rotation.x, vec3(1, 0, 0));
-		_ret = glm::rotate(_ret, rotation.y, vec3(0, 1, 0));
-		_ret = glm::rotate(_ret, rotation.z, vec3(0, 0, 1));
-        _ret = glm::scale(_ret, scale);
-
-		return _ret;
-	}
-
-};
-
-struct EnvironmentComponent
-    : public ecs::Component<EnvironmentComponent> {
-    wz::RenderEnvironment value;
-};
-
-struct ViewComponent
-    : public ecs::Component<ViewComponent> {
-    // view
-    vec3 position;
-    vec3 rotation;
-
-    // projection
-    float fov;
-    float nearClip;
-    float farClip;
-    vec2 resolution;
-    bool dynamicResolution = false;
-
-
-    // control settings
-    float panSpeed = 10.f;
-    float rotationSpeed = 1.f;
-    float orbitSpeed = 1.f;
-
-    wz::RenderTargetPtr renderTarget;
-    vec2 previousResolution;
-
-    mat4 ToMat4() {
-        mat4 _view = glm::identity<mat4>();
-
-        _view = glm::rotate(_view, rotation.x, vec3(1, 0, 0));
-        _view = glm::rotate(_view, rotation.y, vec3(0, 1, 0));
-        _view = glm::rotate(_view, rotation.z, vec3(0, 0, 1));
-        _view = glm::translate(_view, position);
-
-        mat4 _projection = glm::identity<mat4>();
-        double _aspect = resolution.x / resolution.y;
-        _projection = glm::perspectiveFov<double>(wz::to_radians(fov),
-                                                 1.0 * _aspect,
-                                                 1.0,
-                                                 nearClip,
-                                                 farClip);
-
-        return _projection * _view;
-    }
-};
-
-struct LightComponent
-    : public ecs::Component<LightComponent> {
-    wz::LightType type;
-    wz::Color color;
-    float range;
-    float intensity;
-    float cutOff = 12.5f;
-    float smoothness = .2f;
-};
+#include "GUI.h"
 
 class RenderSystem
     : public ecs::System {
@@ -91,50 +10,10 @@ public:
         AddComponentType<ModelComponent>(FLAG_OPTIONAL);
         AddComponentType<LightComponent>(FLAG_OPTIONAL);
 
-        Subscribe((int32)wz::EventType::app_render);
-    }
-
-    string LightTypeToString(wz::LightType type) const {
-        switch (type) {
-            case wz::LightType::DIRECTIONAL: return "Directional light";
-            case wz::LightType::SPOT: return "Spot light";
-            case wz::LightType::POINT: return "Point light";
-            case wz::LightType::NONE: return "NONE";
-        }
-        return "";
+        Subscribe(wz::EventType::app_render);
     }
 
     void SubmitLight(TransformComponent& transform, LightComponent& light) const {
-
-        #define LIGHT_TYPE_OPTION(l)\
-        if (ImGui::Selectable(LightTypeToString(l).c_str())) { \
-            light.type = l;\
-        }
-
-        string _typeStr = LightTypeToString(light.type);
-        if (ImGui::BeginCombo("Light type", _typeStr.c_str())) {
-
-            LIGHT_TYPE_OPTION(wz::LightType::DIRECTIONAL);
-
-            LIGHT_TYPE_OPTION(wz::LightType::POINT);
-
-            LIGHT_TYPE_OPTION(wz::LightType::SPOT);
-
-            ImGui::EndCombo();
-        }
-
-        ImGui::ColorEdit4("Color", light.color.rgba);
-
-        ImGui::DragFloat("Intensity", &light.intensity, .01f);
-
-        if (light.type != wz::LightType::DIRECTIONAL) {
-            ImGui::DragFloat("Range", &light.range, .1f);
-        }
-
-        if (light.type == wz::LightType::SPOT) {
-            ImGui::DragFloat("Cutoff", &light.cutOff);
-            ImGui::SliderFloat("Smoothness", &light.smoothness, .01f, 1.f);
-        }
 
         wz::Renderer::SubmitLight(light.type, transform.position, transform.rotation, light.color, light.range, light.intensity, glm::radians(light.cutOff), light.smoothness);
     }
@@ -142,89 +21,7 @@ public:
     void SubmitModel(TransformComponent& transform, ModelComponent& modelComponent) const {
         WZ_CORE_TRACE("Submitting model from handle '{0}'", modelComponent.handle);
         auto& _model = wz::ResourceManagement::Get<wz::Model>(modelComponent.handle);
-
         auto& _meshes = _model.GetMeshes();
-
-        if (ImGui::TreeNode("Meshes")) {
-            WZ_CORE_TRACE("Iterating meshes in model to submit to gui");
-            for (u32 i = 0; i < _meshes.size(); i++) {
-                auto& _mesh = _meshes.at(i);
-                if (ImGui::TreeNode(_mesh.GetName().c_str())) {
-                    auto& _mat = wz::ResourceManagement::Get<wz::Material>(_mesh.GetMaterialHandle());
-
-                    ImGui::TextUnformatted(_mesh.GetMaterialHandle().c_str());
-
-                    ImGui::Spacing();
-
-                    ImGui::ColorEdit4("Albedo", _mat.albedo.rgba);
-
-                    bool _validDiffuse = wz::ResourceManagement::Is<wz::Texture>(_mat.diffuseMapHandle);
-                    if (ImGui::BeginCombo("Diffuse map", _validDiffuse ? _mat.diffuseMapHandle.c_str() :
-                                                                         "None")) {
-                        if (ImGui::Selectable("None")) {
-                            _mat.diffuseMapHandle = WZ_NULL_RESOURCE_HANDLE;
-                            _validDiffuse = false;
-                        }
-                        ImGui::Separator();
-                        for (const auto& _handle : wz::ResourceManagement::GetHandles()) {
-                            if (wz::ResourceManagement::Is<wz::Texture>(_handle)) {
-                                wz::Texture& _texture = wz::ResourceManagement::Get<wz::Texture>(_handle);
-                                double _aspect = (double)_texture.GetWidth() / (double)_texture.GetHeight();
-                                int32 _height = 32.0 / _aspect;
-                                ImGui::TextUnformatted(_handle.c_str());
-                                if (ImGui::ImageButton(reinterpret_cast<void*>(_texture.GetId()), ImVec2(32, _height))) {
-                                    _mat.diffuseMapHandle = _handle;
-                                }
-                            }
-                        }
-                        ImGui::EndCombo();
-                    }
-                    WZ_CORE_TRACE("Deciding if diffuse color option should show");
-
-                    if (_validDiffuse) {
-                        wz::Texture& _diffuse = wz::ResourceManagement::Get<wz::Texture>(_mat.diffuseMapHandle);
-                        ImGui::Image(reinterpret_cast<void*>(_diffuse.GetId()), ImVec2(100, 100));
-                    } else {
-                        ImGui::ColorEdit4("Diffuse color", _mat.diffuseColor.rgba);
-                    }
-
-
-                    bool _validSpecular = wz::ResourceManagement::Is<wz::Texture>(_mat.specularMapHandle);
-                    if (ImGui::BeginCombo("Specular map", _validSpecular ? _mat.specularMapHandle.c_str() :
-                                                                         "None")) {
-                        if (ImGui::Selectable("None")) {
-                            _mat.specularMapHandle = WZ_NULL_RESOURCE_HANDLE;
-                            _validSpecular = false;
-                        }
-                        ImGui::Separator();
-                        for (const auto& _handle : wz::ResourceManagement::GetHandles()) {
-                            if (wz::ResourceManagement::Is<wz::Texture>(_handle)) {
-                                wz::Texture& _texture = wz::ResourceManagement::Get<wz::Texture>(_handle);
-                                double _aspect = (double)_texture.GetWidth() / (double)_texture.GetHeight();
-                                int32 _height = 32.0 / _aspect;
-                                ImGui::TextUnformatted(_handle.c_str());
-                                if (ImGui::ImageButton(reinterpret_cast<void*>(_texture.GetId()), ImVec2(32, _height))) {
-                                    _mat.specularMapHandle = _handle;
-                                }
-                            }
-                        }
-                        ImGui::EndCombo();
-                    }
-                    WZ_CORE_TRACE("Deciding if specular color option should show");
-
-                    if (_validSpecular) {
-                        wz::Texture& _specular = wz::ResourceManagement::Get<wz::Texture>(_mat.specularMapHandle);
-                        ImGui::Image(reinterpret_cast<void*>(_specular.GetId()), ImVec2(100, 100));
-                        ImGui::SliderFloat("Metallic", &_mat.specularColor.a, .01f, 1.f);
-                    } else {
-                        ImGui::ColorEdit4("Specular color", _mat.specularColor.rgba);
-                    }
-
-                    ImGui::TreePop();
-                }
-            }
-            ImGui::TreePop();
-        }
 
         for (wz::Mesh& _mesh : _meshes) {
             auto& _material = wz::ResourceManagement::Get<wz::Material>(_mesh.GetMaterialHandle());
@@ -232,20 +29,13 @@ public:
         }
     }
 
-    virtual void OnEvent(const void* eventHandle,
+    virtual void OnEvent(const wz::Event& e,
 						 ecs::ComponentGroup& components) const override {
-		const wz::Event& _e = *static_cast<const wz::Event*>(eventHandle);
-
         TransformComponent& _transform = *components.Get<TransformComponent>();
 
-        switch (_e.GetEventType()) {
+        switch (e.GetEventType()) {
             case wz::EventType::app_render:
             {
-                string _wndTitle = "Entity inspector##" + std::to_string(reinterpret_cast<uintptr_t>(_transform.entity));
-                ImGui::Begin(_wndTitle.c_str());
-                ImGui::DragFloat3("Position", glm::value_ptr(_transform.position), .05f);
-                ImGui::DragFloat3("Rotation", glm::value_ptr(_transform.rotation), .01f);
-                ImGui::DragFloat3("Scale", glm::value_ptr(_transform.scale), .01f);
                 if (components.Has<ModelComponent>()) {
                     ModelComponent& _model = *components.Get<ModelComponent>();
                     SubmitModel(_transform, _model);
@@ -254,10 +44,9 @@ public:
                     LightComponent& _light = *components.Get<LightComponent>();
                     SubmitLight(_transform, _light);
                 }
-                ImGui::End();
                 break;
             }
-            default: break;
+            default: WZ_CORE_ASSERT(false, "System doesn't handle subscribed event"); break;
         }
 	}
 };
@@ -266,15 +55,16 @@ class CameraSystem
     : public ecs::System {
 public:
     CameraSystem() {
+        AddComponentType<TransformComponent>();
 		AddComponentType<ViewComponent>();
         AddComponentType<EnvironmentComponent>();
 
-        Subscribe((int32)wz::EventType::app_init);
-        Subscribe((int32)wz::EventType::app_frame_begin);
-        Subscribe((int32)wz::EventType::app_update);
-        Subscribe((int32)wz::EventType::app_render);
-        Subscribe((int32)wz::EventType::app_frame_end);
-        Subscribe((int32)wz::EventType::window_resize);
+        Subscribe(wz::EventType::app_init);
+        Subscribe(wz::EventType::app_frame_begin);
+        Subscribe(wz::EventType::app_update);
+        Subscribe(wz::EventType::app_render);
+        Subscribe(wz::EventType::app_frame_end);
+        Subscribe(wz::EventType::window_resize);
 	}
 
     void Init(ViewComponent& view) const {
@@ -285,13 +75,12 @@ public:
         wz::Renderer::SetRenderTarget(view.renderTarget);
         wz::RenderCommand::SetViewport(wz::Viewport(0, 0, view.resolution.x, view.resolution.y));
 
-        wz::RenderCommand::SetClearColor(.1f, .2f, .5f, 1.f);
         wz::RenderCommand::SetCullMode(wz::WZ_CULL_BACK);
         wz::RenderCommand::ToggleDepthTesting(true);
-        //wz::RenderCommand::ToggleBlending(true);
+        wz::RenderCommand::ToggleBlending(true);
     }
 
-    void BeginRenderer(ViewComponent& view, EnvironmentComponent& environment) const {
+    void BeginRenderer(TransformComponent& transform, ViewComponent& view, EnvironmentComponent& environment) const {
         WZ_CORE_TRACE("Beginning renderer from camera system");
 
         if (view.resolution != view.previousResolution) {
@@ -303,7 +92,6 @@ public:
 
         view.renderTarget->Bind();
 
-        wz::RenderCommand::SetClearColor(.1f, .5f, .1f, 1.f);
         wz::RenderCommand::Clear();
         wz::RenderCommand::SetCullMode(wz::WZ_CULL_BACK);
         wz::RenderCommand::ToggleDepthTesting(true);
@@ -313,7 +101,16 @@ public:
 
         wz::RenderCommand::SetViewport(wz::Viewport(0, 0, wz::Application::Get().GetWindow().GetWidth(), wz::Application::Get().GetWindow().GetHeight()));
         wz::RenderCommand::Clear();
-        wz::Renderer::Begin(view.ToMat4(), view.position, environment.value);
+
+        mat4 _view = mat4(1.f);
+        _view = glm::rotate(_view, transform.rotation.x, vec3(1, 0, 0));
+		_view = glm::rotate(_view, transform.rotation.y, vec3(0, 1, 0));
+		_view = glm::rotate(_view, transform.rotation.z, vec3(0, 0, 1));
+        _view = glm::translate(_view, transform.position);
+
+        mat4 _projection = view.ToMat4();
+
+        wz::Renderer::Begin(_projection * glm::inverse(transform.ToMat4()), transform.position, environment.value);
     }
 
     void OnUpdate(ViewComponent& view, float delta) const {
@@ -322,53 +119,6 @@ public:
 
     void OnRender(ViewComponent& view, EnvironmentComponent& environment) const {
 
-        ImGui::DockSpaceOverViewport(ImGui::GetMainViewport());
-
-        ImGui::Begin("Camera");
-
-        ImGui::Text("Transform");
-        ImGui::DragFloat3("Position##cam", glm::value_ptr(view.position), .1f);
-        ImGui::DragFloat3("Rotation##cam", glm::value_ptr(view.rotation), .05f);
-
-        ImGui::Spacing();
-
-        ImGui::Text("Projection");
-        ImGui::DragFloat("FOV##cam", &view.fov, .05f);
-
-        ImGui::DragFloat("Near clipping##cam", &view.nearClip, .05f);
-        ImGui::DragFloat("Far clipping##cam", &view.farClip, .05f);
-
-        ImGui::Checkbox("Dynamic resolution", &view.dynamicResolution);
-        if (!view.dynamicResolution) {
-            ImGui::DragFloat2("Resolution##cam", glm::value_ptr(view.resolution));
-        }
-
-        ImGui::Spacing();
-
-        ImGui::Text("Environment");
-
-        ImGui::ColorEdit4("Ambient", environment.value.ambient.rgba);
-
-        /*static vec4 vp = vec4(0, 0, 1600, 900);
-        ImGui::DragFloat4("Viewport", glm::value_ptr(vp));
-        wz::RenderCommand::SetViewport(wz::Viewport(vp.x, vp.y, vp.z, vp.w));*/
-        ImGui::End();
-
-        ImGui::Begin("Game Render");
-        ImVec2 _windowSize = ImGui::GetWindowSize();
-        //ImVec2 _windowPos = ImGui::GetWindowPos();
-        if (view.dynamicResolution) {
-            view.resolution = vec2(_windowSize.x, _windowSize.y);
-        }// w / h = a; w = a * h; w / a = h
-        float _aspect = view.resolution.x / view.resolution.y;
-        float _resToWndRatio = _windowSize.x / view.resolution.x;
-        ImVec2 _gameSize = ImVec2(ImVec2(view.resolution.x * _resToWndRatio, (view.resolution.x / _aspect) * _resToWndRatio));
-        if (_gameSize.y > _windowSize.y) {
-            _gameSize.y = _windowSize.y;
-            _gameSize.x = _gameSize.y * _aspect;
-        }
-        ImGui::Image(reinterpret_cast<void*>(view.renderTarget->GetTextureId()), _gameSize, ImVec2(0, 1), ImVec2(1, 0));
-        ImGui::End();
     }
 
     void EndRenderer(ViewComponent& view) const {
@@ -381,19 +131,19 @@ public:
 
     }
 
-	virtual void OnEvent(const void* eventHandle,
+	virtual void OnEvent(const wz::Event& e,
 						 ecs::ComponentGroup& components) const override {
-		const wz::Event& _e = *static_cast<const wz::Event*>(eventHandle);
 
         ViewComponent& _view = *components.Get<ViewComponent>();
         EnvironmentComponent& _environment = *components.Get<EnvironmentComponent>();
+        TransformComponent& _transform = *components.Get<TransformComponent>();
 
-        switch (_e.GetEventType()) {
+        switch (e.GetEventType()) {
             case wz::EventType::app_init: Init(_view); break;
-            case wz::EventType::app_frame_begin: BeginRenderer(_view, _environment); break;
+            case wz::EventType::app_frame_begin: BeginRenderer(_transform, _view, _environment); break;
             case wz::EventType::app_update:
             {
-                auto& _uE = *static_cast<const wz::AppUpdateEvent*>(eventHandle);
+                const wz::AppUpdateEvent& _uE = (const wz::AppUpdateEvent&)e;
                 OnUpdate(_view, _uE.GetDeltaTime());
                 break;
             }
@@ -401,10 +151,11 @@ public:
             case wz::EventType::app_frame_end: EndRenderer(_view); break;
             case wz::EventType::window_resize:
             {
-                const wz::WindowResizeEvent& _wE = *static_cast<const wz::WindowResizeEvent*>(eventHandle);
+                const wz::WindowResizeEvent& _wE = (const wz::WindowResizeEvent&)e;
                 OnWindowResize(_wE, _view);
+                break;
             }
-            default: break;
+            default: WZ_CORE_ASSERT(false, "System doesn't handle subscribed event"); break;
         }
 	}
 };
@@ -422,9 +173,16 @@ public:
     }
 
     void CreateCamera() {
+        EntityInfo _infoComponent;
+        _infoComponent.name = new string("Main Camera");
+        _infoComponent.selected = true;
+
+        TransformComponent _transformComp;
+        _transformComp.position = vec3(0, 8, 20);
+        _transformComp.rotation = vec3(0, 0, 0);
+        _transformComp.scale = vec3(1, 1, 1);
+
         ViewComponent _viewComp;
-        _viewComp.position = vec3(2.5f, -8, 20);
-        _viewComp.rotation = vec3(0, wz::to_radians(180), 0);
         _viewComp.fov = 65;
         _viewComp.nearClip = .1f;
         _viewComp.farClip = 10000.f;
@@ -433,15 +191,19 @@ public:
         EnvironmentComponent _environment;
 
         ecs::IComponent* _comps[] = {
-            &_viewComp, &_environment
+            &_infoComponent, &_transformComp, &_viewComp, &_environment
         };
         ecs::StaticCId _ids[] = {
-            _viewComp.staticId, _environment.staticId
+            _infoComponent.staticId, _transformComp.staticId, _viewComp.staticId, _environment.staticId
         };
-        m_clientEcs.CreateEntity(_comps, _ids, 2);
+        m_clientEcs.CreateEntity(_comps, _ids, 4);
     }
 
     void CreateModel(string handle, vec3 position = vec3(0, 0, 0), vec3 rotation = vec3(0, 0, 0), vec3 scale = vec3(1, 1, 1)) {
+        EntityInfo _infoComponent;
+        _infoComponent.name = new string(handle);
+        _infoComponent.selected = true;
+
         TransformComponent _transform;
         _transform.position = position;
         _transform.scale = scale;
@@ -453,16 +215,20 @@ public:
 
 
         ecs::IComponent* _comps[] = {
-            &_transform, &_model
+            &_infoComponent, &_transform, &_model
         };
         ecs::StaticCId _ids[] = {
-            _transform.staticId, _model.staticId
+            _infoComponent.staticId, _transform.staticId, _model.staticId
         };
 
-        m_clientEcs.CreateEntity(_comps, _ids, 2);
+        m_clientEcs.CreateEntity(_comps, _ids, 3);
     }
 
     void CreateLamp(string modelHandle, wz::LightType type, vec3 position = vec3(0, 0, 0), vec3 rotation = vec3(0, 0, 0), vec3 scale = vec3(1, 1, 1)) {
+        EntityInfo _infoComponent;
+        _infoComponent.name = new string(modelHandle + "Light");
+        _infoComponent.selected = true;
+
         TransformComponent _transform;
         _transform.position = position;
         _transform.scale = scale;
@@ -475,41 +241,45 @@ public:
         LightComponent _light;
         _light.type = type;
         _light.color = wz::Color(.8f, .85f, .85f, 1.f);
-        _light.intensity = 1.5f;
+        _light.intensity = 1.f;
         _light.range = 25.f;
 
         ecs::IComponent* _comps[] = {
-            &_transform, &_model, &_light
+            &_infoComponent, &_transform, &_model, &_light
         };
         ecs::StaticCId _ids[] = {
-            _transform.staticId, _model.staticId, _light.staticId
+            _infoComponent.staticId, _transform.staticId, _model.staticId, _light.staticId
         };
 
-        m_clientEcs.CreateEntity(_comps, _ids, 3);
+        m_clientEcs.CreateEntity(_comps, _ids, 4);
     }
 
     void CreateSun() {
+        EntityInfo _infoComponent;
+        _infoComponent.name = new string("Sun");
+        _infoComponent.selected = true;
+
         TransformComponent _transform;
         _transform.rotation = vec3(0, 0, -1);
 
         LightComponent _light;
         _light.type = wz::LightType::DIRECTIONAL;
         _light.color = wz::Color(.8f, .85f, .85f, 1.f);
-        _light.intensity = 2.f;
+        _light.intensity = 1.f;
 
         ecs::IComponent* _comps[] = {
-            &_transform, &_light
+            &_infoComponent, &_transform, &_light
         };
         ecs::StaticCId _ids[] = {
-            _transform.staticId, _light.staticId
+            _infoComponent.staticId, _transform.staticId, _light.staticId
         };
 
-        m_clientEcs.CreateEntity(_comps, _ids, 2);
+        m_clientEcs.CreateEntity(_comps, _ids, 3);
     }
 
 	virtual
     void Init() override {
-        wz::Log::SetCoreLogLevel(LOG_LEVEL_DEBUG    );
+        wz::Log::SetCoreLogLevel(LOG_LEVEL_DEBUG);
 
         wz::Flagset _scriptFlags;
         _scriptFlags.SetBit(wz::SCRIPT_LUA);
@@ -553,13 +323,12 @@ public:
 
 
         CreateCamera();
-        CreateModel("Nanosuit", vec3(-10, 0, 0), vec3(0, wz::to_radians(180), 0));
-        CreateModel("Nanosuit", vec3(10, 0, 0), vec3(0, wz::to_radians(180), 0));
+        CreateModel("Nanosuit", vec3(0, 0, 0), vec3(0, 0, 0));
         //CreateLamp("Lightbulb", wz::LightType::POINT, vec3(-5, 0, 0), vec3(0), vec3(.125f, .125f, .125f));
         CreateLamp("Lightbulb", wz::LightType::POINT, vec3(5, 0, 0), vec3(0), vec3(.125f, .125f, .125f));
         CreateSun();
 
-
+        m_clientSystems.AddSystem<GUISystem>();
         m_clientSystems.AddSystem<CameraSystem>();
         m_clientSystems.AddSystem<RenderSystem>();
 	}

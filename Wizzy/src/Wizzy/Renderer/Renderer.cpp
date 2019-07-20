@@ -23,15 +23,14 @@ namespace Wizzy {
 
         s_environment = environment;
         s_isReady = true;
+
+        RenderCommand::SetClearColor(environment.clearColor.asVec4);
     }
     void Renderer::End() {
         WZ_CORE_ASSERT(s_isReady, "Begin() was not called on Renderer before End()");
         WZ_CORE_TRACE("Flushing renderer...");
 
-        if (s_renderTarget) {
-            s_renderTarget->Bind();
-            
-        }
+        if (s_renderTarget) s_renderTarget->Bind();
 
         while (!s_shaderQueue.IsEmpty()) {
 
@@ -70,7 +69,7 @@ namespace Wizzy {
 
         s_isReady = false;
 
-        s_renderTarget->Unbind();
+        if (s_renderTarget) s_renderTarget->Unbind();
     }
 
     void Renderer::SubmitLight(LightType type,
@@ -90,7 +89,6 @@ namespace Wizzy {
                             const mat4& transform,
                             RenderMode mode) {
         WZ_CORE_ASSERT(s_isReady, "Begin() was not called on Renderer before Submit()");
-
         WZ_CORE_ASSERT(ResourceManagement::Is<Shader>(material.shaderHandle), "Shader was either null handle or wrong type in renderer submit");
         WZ_CORE_TRACE("Pushing submission  to renderer...");
         s_shaderQueue.Push(material.shaderHandle);

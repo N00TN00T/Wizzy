@@ -127,6 +127,8 @@ WZ_CORE_ASSERT(false, "Invalid renderer API selected"); \
 
 #define DEFAULT(t) t()
 
+#define WZ_NULL_ENTITY_HANDLE nullptr
+
 namespace Wizzy {
     enum BufferUsage {
         WZ_STATIC = 0, WZ_DYNAMIC = 1, WZ_STREAM = 2

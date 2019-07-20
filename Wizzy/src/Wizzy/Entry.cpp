@@ -40,8 +40,7 @@ int main(int argc, char** argv) {
     	_app->Run();
     	delete _app;
     } catch (std::exception& e) {
-        WZ_CORE_CRITICAL("Unhandeled exception ({0}):");
-        WZ_CORE_CRITICAL("  {0}", e.what());
+        WZ_CORE_CRITICAL("Unhandeled exception: {0}", e.what());
     }
 
 

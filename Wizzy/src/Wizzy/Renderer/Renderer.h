@@ -43,10 +43,12 @@ namespace Wizzy {
     struct RenderEnvironment {
         bool useLighting;
         Color ambient;
+        Color clearColor;
 
         RenderEnvironment(bool useLighting = true,
-                          Color ambient = Color::darkGrey)
-            : useLighting(useLighting),  ambient(ambient) {}
+                          const Color& ambient = Color::darkGrey,
+                          const Color& clearColor = Color(.1f, .1f, .5f, 1.f))
+            : useLighting(useLighting),  ambient(ambient), clearColor(clearColor) {}
     };
 
     class Renderer {

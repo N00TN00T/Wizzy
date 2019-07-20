@@ -17,6 +17,8 @@
 #include <stdarg.h>
 #include <experimental/filesystem>
 #include <chrono>
+#include <cstring>
+#include <cstdint>
 
 /* std data structures */
 #include <string>
@@ -45,8 +47,6 @@
 #include <glm/gtc/type_ptr.hpp>
 
 #include <ulib.hpp>
-
-#include <ECS.hpp>
 
 /* wizzy headers */
 

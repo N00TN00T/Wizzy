@@ -1,5 +1,6 @@
 #pragma once
 
+#include "Wizzy/Ecs/ECSManager.h"
 #include "Wizzy/IWindow.h"
 
 namespace Wizzy {

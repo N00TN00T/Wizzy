@@ -28,7 +28,6 @@ workspace "Wizzy"
     lua = "Wizzy/vendor/lua",
     pybind11 = "Wizzy/vendor/pybind11/include",
     pybind11 = "Wizzy/vendor/ulib/include",
-    pdoes = "Wizzy/vendor/pdoes",
     assimp = "Wizzy/vendor/assimp/include"
   }
 
@@ -36,7 +35,6 @@ workspace "Wizzy"
   include "Wizzy/vendor/glad/"
   include "Wizzy/vendor/imgui/"
   include "Wizzy/vendor/lua"
-  include "Wizzy/vendor/pdoes"
   include "Wizzy/vendor/assimp"
 
 --[[------------------------------------------------------------------------------------
@@ -80,7 +78,6 @@ project "Wizzy"
     "%{include_dir.lua}",
     "%{include_dir.pybind11}",
     "%{include_dir.ulib}",
-    "%{include_dir.pdoes}",
     "%{include_dir.assimp}"
   }
 
@@ -227,7 +224,6 @@ project "Sandbox"
     "%{include_dir.lua}",
     "%{include_dir.pybind11}",
     "%{include_dir.ulib}",
-    "%{include_dir.pdoes}",
     "%{include_dir.assimp}"
   }
 
@@ -246,7 +242,6 @@ project "Sandbox"
     "glfw",
     "glad",
     "lua",
-    "pdoes",
     "assimp"
   }
 

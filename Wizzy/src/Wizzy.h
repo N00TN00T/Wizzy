@@ -27,5 +27,6 @@
 #include "Wizzy/Scripting/Script.h"
 #include "Wizzy/Scripting/LuaContext.h"
 
+#include "Wizzy/Ecs/ECSManager.h"
 
 namespace wz = ::Wizzy;
