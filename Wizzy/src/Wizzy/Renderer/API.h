@@ -2,6 +2,13 @@
 
 namespace Wizzy {
 
+    struct Viewport {
+        u32 x, y, width, height;
+
+        Viewport(u32 x, u32 y, u32 width, u32 height)
+            : x(x), y(y), width(width), height(height) {}
+    };
+
     enum class ShaderDataType : int8 {
         NONE = 0,
         FLOAT1, FLOAT2, FLOAT3, FLOAT4,

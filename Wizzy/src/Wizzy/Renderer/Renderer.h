@@ -3,6 +3,7 @@
 #include "Wizzy/Renderer/API.h"
 #include "Wizzy/Renderer/RenderCommand.h"
 #include "Wizzy/Renderer/Material.h"
+#include "Wizzy/Renderer/RenderTarget.h"
 
 namespace Wizzy {
 
@@ -30,11 +31,13 @@ namespace Wizzy {
         Color color;
         float range;
         float intensity;
+        float cutOff;
+        float smoothness;
 
         Light(LightType type, const vec3& position = vec3(0), const vec3& rotation = vec3(0),
-              const Color& color = Color::white, float range = 1, float intensity = 1)
+              const Color& color = Color::white, float range = 1, float intensity = 1, float cutOff = glm::radians(12.5f), float smoothness = .2f)
             : type(type), position(position), rotation(rotation),
-              color(color), range(range), intensity(intensity) {}
+              color(color), range(range), intensity(intensity), cutOff(cutOff), smoothness(smoothness) {}
     };
 
     struct RenderEnvironment {
@@ -59,7 +62,9 @@ namespace Wizzy {
                          const vec3& rotation,
                          const Color& color = Color(.80f, .85f, .85f, 1.f),
                          float range = 50.f,
-                         float intensity = 1.f);
+                         float intensity = 1.f,
+                         float cutOff = glm::radians(12.5f),
+                         float smoothness = .2f);
         static
         void Submit(const VertexArrayPtr& va,
                     const Material& material,
@@ -71,24 +76,36 @@ namespace Wizzy {
         inline static
         int8 GetAPI() { return RendererAPI::GetAPI(); }
 
+        inline static
+        void SetRenderTarget(const RenderTargetPtr& renderTarget) {
+            s_renderTarget = renderTarget;
+        }
+
+        inline static
+        const RenderTargetPtr& GetRenderTarget() {
+            return s_renderTarget;
+        }
+
     private:
         static
         void RenderSubmissions(std::deque<Submission>& submissions);
 
     private:
         static
-        mat4 s_camTransform;
+        mat4                                                        s_camTransform;
         static
-        vec3 s_viewPos;
+        vec3                                                        s_viewPos;
         static
-        RenderEnvironment s_environment;
+        RenderEnvironment                                           s_environment;
         static
-        std::vector<Light> s_lights;
+        std::vector<Light>                                          s_lights;
         static
-        bool s_isReady;
+        bool                                                        s_isReady;
         static
-        std::unordered_map<ShaderHandle, std::deque<Submission>> s_submissions;
+        std::unordered_map<ShaderHandle, std::deque<Submission>>    s_submissions;
         static
-        ulib::Queue<ShaderHandle> s_shaderQueue;
+        ulib::Queue<ShaderHandle>                                   s_shaderQueue;
+        static
+        RenderTargetPtr                                             s_renderTarget;
     };
 }

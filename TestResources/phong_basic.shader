@@ -51,6 +51,8 @@ struct Light {
     vec4 color;
     float intensity;
     float range;
+    float cutOff;
+    float smoothness;
 };
 
 uniform vec4 u_albedo = vec4(1.0, 1.0, 1.0, 1.0);
@@ -105,8 +107,21 @@ void CalculatePointLight(vec3 position, vec4 color, float intensity, float metal
     specular += spec * color.xyz * intensity * distanceIntensity;
 }
 
-void CalculateSpotLight(vec3 position, vec3 direction, vec4 color, float intensity, float metallic, float range, inout vec3 diffuse, inout vec3 specular) {
+void CalculateSpotLight(vec3 position, vec3 direction, vec4 color, float intensity, float metallic, float range, float cutOff, float smoothness, inout vec3 diffuse, inout vec3 specular) {
 
+    vec3 lightPos = position;
+    vec3 lightDiff = lightPos - fragPos;
+    vec3 lightDir = normalize(lightDiff);
+
+    smoothness = clamp(smoothness, 0.01, 1.0);
+
+    float theta = dot(lightDir, normalize(-direction));
+    float epsilon = (1.0 - smoothness) * cutOff;
+    intensity *= clamp((theta - cutOff) / epsilon, 0.0, 1.0);
+
+    if(theta > cutOff) {
+        CalculatePointLight(position, color, intensity, metallic, range, diffuse, specular);
+    }
 }
 
 void main()
@@ -135,7 +150,7 @@ void main()
                 CalculatePointLight(u_lights[i].position, u_lights[i].color, u_lights[i].intensity, metallic, u_lights[i].range, diffuse, specular);
                 break;
             case LIGHT_TYPE_SPOT:
-                CalculateSpotLight(u_lights[i].position, u_lights[i].direction, u_lights[i].color, u_lights[i].intensity, metallic, u_lights[i].range, diffuse, specular);
+                CalculateSpotLight(u_lights[i].position, u_lights[i].direction, u_lights[i].color, u_lights[i].intensity, metallic, u_lights[i].range, u_lights[i].cutOff, u_lights[i].smoothness, diffuse, specular);
                 break;
         }
 

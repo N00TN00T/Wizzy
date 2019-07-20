@@ -21,12 +21,8 @@ namespace Wizzy {
         }
 
         inline static
-        void SetViewport(u32 x, u32 y, u32 w, u32 h) {
-            s_rendererAPI->SetViewport(x, y, w, h);
-        }
-        inline static
-        void SetViewport(vec2 pos, vec2 size) {
-            s_rendererAPI->SetViewport(pos, size);
+        void SetViewport(const Viewport& vp) {
+            s_rendererAPI->SetViewport(vp);
         }
 
         inline static
@@ -37,6 +33,11 @@ namespace Wizzy {
         inline static
         void ToggleDepthTesting(bool value) {
             s_rendererAPI->ToggleDepthTesting(value);
+        }
+
+        inline static
+        void ToggleBlending(bool value) {
+            s_rendererAPI->ToggleBlending(value);
         }
 
         inline static

@@ -18,14 +18,10 @@ namespace Wizzy {
         GL_CALL(glDrawElements(GL_RenderModeToAPIRenderMode(mode),
                                 va->GetIndexBuffer()->GetCount(),
                                 GL_UNSIGNED_INT, nullptr));
-        /*glDrawElements(GL_RenderModeToAPIRenderMode(mode),
-                                va->GetIndexBuffer()->GetCount(),
-                                GL_UNSIGNED_INT, nullptr);*/
-
     }
 
-    void GLRendererAPI::SetViewport(u32 x, u32 y, u32 w, u32 h) {
-        GL_CALL(glViewport(x, y, w, h));
+    void GLRendererAPI::SetViewport(const Viewport& vp) {
+        GL_CALL(glViewport(vp.x, vp.y, vp.width, vp.height));
     }
 
     void GLRendererAPI::SetCullMode(CullMode mode) {
@@ -49,5 +45,19 @@ namespace Wizzy {
         } else {
             GL_CALL(glDisable(GL_DEPTH_TEST));
         }
+
+        m_depthTestingEnabled = value;
+    }
+    void GLRendererAPI::ToggleBlending(bool value) {
+        if (value == m_blendingEnabled) return;
+
+        if (value) {
+            GL_CALL(glEnable(GL_BLEND));
+            GL_CALL(glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA));
+        } else {
+            GL_CALL(glDisable(GL_BLEND));
+        }
+
+        m_blendingEnabled = value;
     }
 }

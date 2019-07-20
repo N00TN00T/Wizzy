@@ -1,6 +1,8 @@
 #include "spch.h"
 #include <Wizzy.h>
 
+#include <glad/glad.h>
+
 struct ModelComponent
  	: public ecs::Component<ModelComponent> {
     char *handle;
@@ -37,15 +39,19 @@ struct ViewComponent
 
     // projection
     float fov;
-    float aspectRatio;
     float nearClip;
     float farClip;
-    bool dynamicAspectRatio = false;
+    vec2 resolution;
+    bool dynamicResolution = false;
+
 
     // control settings
     float panSpeed = 10.f;
     float rotationSpeed = 1.f;
     float orbitSpeed = 1.f;
+
+    wz::RenderTargetPtr renderTarget;
+    vec2 previousResolution;
 
     mat4 ToMat4() {
         mat4 _view = glm::identity<mat4>();
@@ -56,9 +62,9 @@ struct ViewComponent
         _view = glm::translate(_view, position);
 
         mat4 _projection = glm::identity<mat4>();
-
+        double _aspect = resolution.x / resolution.y;
         _projection = glm::perspectiveFov<double>(wz::to_radians(fov),
-                                                 1.0 * aspectRatio,
+                                                 1.0 * _aspect,
                                                  1.0,
                                                  nearClip,
                                                  farClip);
@@ -73,6 +79,8 @@ struct LightComponent
     wz::Color color;
     float range;
     float intensity;
+    float cutOff = 12.5f;
+    float smoothness = .2f;
 };
 
 class RenderSystem
@@ -119,9 +127,16 @@ public:
 
         ImGui::DragFloat("Intensity", &light.intensity, .01f);
 
-        ImGui::DragFloat("Range", &light.range, .1f);
+        if (light.type != wz::LightType::DIRECTIONAL) {
+            ImGui::DragFloat("Range", &light.range, .1f);
+        }
 
-        wz::Renderer::SubmitLight(light.type, transform.position, transform.rotation, light.color, light.range, light.intensity);
+        if (light.type == wz::LightType::SPOT) {
+            ImGui::DragFloat("Cutoff", &light.cutOff);
+            ImGui::SliderFloat("Smoothness", &light.smoothness, .01f, 1.f);
+        }
+
+        wz::Renderer::SubmitLight(light.type, transform.position, transform.rotation, light.color, light.range, light.intensity, glm::radians(light.cutOff), light.smoothness);
     }
 
     void SubmitModel(TransformComponent& transform, ModelComponent& modelComponent) const {
@@ -262,15 +277,41 @@ public:
         Subscribe((int32)wz::EventType::window_resize);
 	}
 
-    void Init() const {
+    void Init(ViewComponent& view) const {
         WZ_CORE_TRACE("Initializing renderer from camera system");
+
+        view.renderTarget = wz::RenderTargetPtr(wz::RenderTarget::Create(view.resolution.x, view.resolution.y));
+
+        wz::Renderer::SetRenderTarget(view.renderTarget);
+        wz::RenderCommand::SetViewport(wz::Viewport(0, 0, view.resolution.x, view.resolution.y));
+
         wz::RenderCommand::SetClearColor(.1f, .2f, .5f, 1.f);
         wz::RenderCommand::SetCullMode(wz::WZ_CULL_BACK);
         wz::RenderCommand::ToggleDepthTesting(true);
+        //wz::RenderCommand::ToggleBlending(true);
     }
 
     void BeginRenderer(ViewComponent& view, EnvironmentComponent& environment) const {
         WZ_CORE_TRACE("Beginning renderer from camera system");
+
+        if (view.resolution != view.previousResolution) {
+            view.renderTarget = wz::RenderTargetPtr(wz::RenderTarget::Create(view.resolution.x, view.resolution.y));
+            wz::Renderer::SetRenderTarget(view.renderTarget);
+        }
+
+        view.previousResolution = view.resolution;
+
+        view.renderTarget->Bind();
+
+        wz::RenderCommand::SetClearColor(.1f, .5f, .1f, 1.f);
+        wz::RenderCommand::Clear();
+        wz::RenderCommand::SetCullMode(wz::WZ_CULL_BACK);
+        wz::RenderCommand::ToggleDepthTesting(true);
+
+        view.renderTarget->Unbind();
+
+
+        wz::RenderCommand::SetViewport(wz::Viewport(0, 0, wz::Application::Get().GetWindow().GetWidth(), wz::Application::Get().GetWindow().GetHeight()));
         wz::RenderCommand::Clear();
         wz::Renderer::Begin(view.ToMat4(), view.position, environment.value);
     }
@@ -280,6 +321,9 @@ public:
     }
 
     void OnRender(ViewComponent& view, EnvironmentComponent& environment) const {
+
+        ImGui::DockSpaceOverViewport(ImGui::GetMainViewport());
+
         ImGui::Begin("Camera");
 
         ImGui::Text("Transform");
@@ -290,41 +334,14 @@ public:
 
         ImGui::Text("Projection");
         ImGui::DragFloat("FOV##cam", &view.fov, .05f);
-        static char _aspectPreview[1024] = "16:9";
-#define ASPECT_RATIO_OPTION(x, y) \
-{ \
-    string _label = (string(#x) + ":" + string(#y)); \
-    if (ImGui::MenuItem(_label.c_str())) { \
-        view.aspectRatio = (float)x / (float)y; \
-        strcpy(_aspectPreview, _label.c_str()); \
-        view.dynamicAspectRatio = false;\
-    } \
-} \
-
-        if (ImGui::BeginCombo("Aspect ratio", _aspectPreview)) {
-
-            ASPECT_RATIO_OPTION(16, 9);
-
-            ASPECT_RATIO_OPTION(16, 10);
-
-            ASPECT_RATIO_OPTION(4, 3);
-
-            ASPECT_RATIO_OPTION(9, 16);
-
-            ASPECT_RATIO_OPTION(10, 16);
-
-            ASPECT_RATIO_OPTION(3, 4);
-
-            if (ImGui::MenuItem("Dynamic")) {
-                view.dynamicAspectRatio = true;
-                strcpy(_aspectPreview, "Dynamic");
-            }
-
-            ImGui::EndCombo();
-        }
 
         ImGui::DragFloat("Near clipping##cam", &view.nearClip, .05f);
         ImGui::DragFloat("Far clipping##cam", &view.farClip, .05f);
+
+        ImGui::Checkbox("Dynamic resolution", &view.dynamicResolution);
+        if (!view.dynamicResolution) {
+            ImGui::DragFloat2("Resolution##cam", glm::value_ptr(view.resolution));
+        }
 
         ImGui::Spacing();
 
@@ -332,19 +349,36 @@ public:
 
         ImGui::ColorEdit4("Ambient", environment.value.ambient.rgba);
 
+        /*static vec4 vp = vec4(0, 0, 1600, 900);
+        ImGui::DragFloat4("Viewport", glm::value_ptr(vp));
+        wz::RenderCommand::SetViewport(wz::Viewport(vp.x, vp.y, vp.z, vp.w));*/
+        ImGui::End();
+
+        ImGui::Begin("Game Render");
+        ImVec2 _windowSize = ImGui::GetWindowSize();
+        //ImVec2 _windowPos = ImGui::GetWindowPos();
+        if (view.dynamicResolution) {
+            view.resolution = vec2(_windowSize.x, _windowSize.y);
+        }// w / h = a; w = a * h; w / a = h
+        float _aspect = view.resolution.x / view.resolution.y;
+        float _resToWndRatio = _windowSize.x / view.resolution.x;
+        ImVec2 _gameSize = ImVec2(ImVec2(view.resolution.x * _resToWndRatio, (view.resolution.x / _aspect) * _resToWndRatio));
+        if (_gameSize.y > _windowSize.y) {
+            _gameSize.y = _windowSize.y;
+            _gameSize.x = _gameSize.y * _aspect;
+        }
+        ImGui::Image(reinterpret_cast<void*>(view.renderTarget->GetTextureId()), _gameSize, ImVec2(0, 1), ImVec2(1, 0));
         ImGui::End();
     }
 
     void EndRenderer(ViewComponent& view) const {
+        wz::RenderCommand::SetViewport(wz::Viewport(0, 0, view.resolution.x, view.resolution.y));
         WZ_CORE_TRACE("Ending Renderer from camera system");
         wz::Renderer::End();
     }
 
     void OnWindowResize(const wz::WindowResizeEvent& e, ViewComponent& view) const {
-        wz::RenderCommand::SetViewport(0, 0, e.GetX(), e.GetY());
-        if (view.dynamicAspectRatio) {
-            view.aspectRatio = (float)e.GetX() / (float)e.GetY();
-        }
+
     }
 
 	virtual void OnEvent(const void* eventHandle,
@@ -355,7 +389,7 @@ public:
         EnvironmentComponent& _environment = *components.Get<EnvironmentComponent>();
 
         switch (_e.GetEventType()) {
-            case wz::EventType::app_init: Init(); break;
+            case wz::EventType::app_init: Init(_view); break;
             case wz::EventType::app_frame_begin: BeginRenderer(_view, _environment); break;
             case wz::EventType::app_update:
             {
@@ -392,9 +426,9 @@ public:
         _viewComp.position = vec3(2.5f, -8, 20);
         _viewComp.rotation = vec3(0, wz::to_radians(180), 0);
         _viewComp.fov = 65;
-        _viewComp.aspectRatio = 16.f / 9.f;
         _viewComp.nearClip = .1f;
         _viewComp.farClip = 10000.f;
+        _viewComp.resolution = vec2(1280, 720);
 
         EnvironmentComponent _environment;
 
@@ -475,7 +509,7 @@ public:
 
 	virtual
     void Init() override {
-        wz::Log::SetCoreLogLevel(LOG_LEVEL_DEBUG);
+        wz::Log::SetCoreLogLevel(LOG_LEVEL_DEBUG    );
 
         wz::Flagset _scriptFlags;
         _scriptFlags.SetBit(wz::SCRIPT_LUA);

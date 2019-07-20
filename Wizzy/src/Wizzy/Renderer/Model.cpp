@@ -76,7 +76,7 @@ namespace Wizzy {
                                      aiProcess_Triangulate |
                                      aiProcess_JoinIdenticalVertices |
                                      aiProcess_GenNormals |
-                                     aiProcess_CalcTangentSpace |
+                                     //aiProcess_CalcTangentSpace |
                                      aiProcess_SortByPType |
                                      aiProcess_RemoveRedundantMaterials |
                                      aiProcess_OptimizeMeshes |
@@ -297,7 +297,6 @@ namespace Wizzy {
         WZ_CORE_TRACE("Handling textures of texture type {0} for material...", textureType);
         std::vector<TextureHandle> _textures;
         u32 _count = mat->GetTextureCount((aiTextureType)textureType);
-        WZ_CORE_DEBUG(mat->GetTextureCount(aiTextureType_SPECULAR));
         string _fileDirectory = ulib::File::directory_of(sourceFile);
         string _fileName = ulib::File::without_extension(ulib::File::name_of(sourceFile));
         if (_count == 0) {

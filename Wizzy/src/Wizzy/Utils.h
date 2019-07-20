@@ -18,6 +18,4 @@ namespace Wizzy {
     double inline to_degrees(double rad)  {
         return rad * 57.2957795;
     }
-
-
 }

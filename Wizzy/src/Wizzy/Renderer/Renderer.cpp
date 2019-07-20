@@ -14,18 +14,24 @@ namespace Wizzy {
     bool Renderer::s_isReady(false);
     std::unordered_map<ShaderHandle, std::deque<Submission>> Renderer::s_submissions;
     ulib::Queue<ShaderHandle> Renderer::s_shaderQueue;
+    RenderTargetPtr Renderer::s_renderTarget;
 
     void Renderer::Begin(const mat4& camTransform, const vec3& viewPos, const RenderEnvironment& environment) {
         WZ_CORE_TRACE("Beginning renderer...");
         s_camTransform = camTransform;
         s_viewPos = viewPos;
-        WZ_CORE_DEBUG("{0}, {1}, {2}", s_viewPos.x, s_viewPos.y, s_viewPos.z);
+
         s_environment = environment;
         s_isReady = true;
     }
     void Renderer::End() {
         WZ_CORE_ASSERT(s_isReady, "Begin() was not called on Renderer before End()");
         WZ_CORE_TRACE("Flushing renderer...");
+
+        if (s_renderTarget) {
+            s_renderTarget->Bind();
+            
+        }
 
         while (!s_shaderQueue.IsEmpty()) {
 
@@ -49,6 +55,8 @@ namespace Wizzy {
                     _shader.Upload4f("u_lights[" + std::to_string(i) + "].color", s_lights[i].color.asVec4);
                     _shader.Upload1f("u_lights[" + std::to_string(i) + "].range", s_lights[i].range);
                     _shader.Upload1f("u_lights[" + std::to_string(i) + "].intensity", s_lights[i].intensity);
+                    _shader.Upload1f("u_lights[" + std::to_string(i) + "].cutOff", glm::cos(s_lights[i].cutOff));
+                    _shader.Upload1f("u_lights[" + std::to_string(i) + "].smoothness", glm::cos(s_lights[i].smoothness));
                 }
             }
 
@@ -61,6 +69,8 @@ namespace Wizzy {
         s_lights.clear();
 
         s_isReady = false;
+
+        s_renderTarget->Unbind();
     }
 
     void Renderer::SubmitLight(LightType type,
@@ -68,9 +78,11 @@ namespace Wizzy {
                                const vec3& rotation,
                                const Color& color,
                                float range,
-                               float intensity) {
+                               float intensity,
+                               float cutOff,
+                               float smoothness) {
         WZ_CORE_TRACE("Submitting light...");
-        s_lights.push_back({type, position, rotation, color, range, intensity});
+        s_lights.push_back({type, position, rotation, color, range, intensity, cutOff, smoothness});
     }
 
     void Renderer::Submit(const VertexArrayPtr& va,
@@ -93,6 +105,7 @@ namespace Wizzy {
             _submission.va->Bind();
             _submission.va->GetIndexBuffer()->Bind();
             _shader.UploadMat4("u_worldTransform", _submission.transform);
+
             RenderCommand::DrawIndexed(_submission.va, _submission.renderMode);
 
             _submission.va->Unbind();

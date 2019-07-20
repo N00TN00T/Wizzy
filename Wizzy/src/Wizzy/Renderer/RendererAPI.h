@@ -24,16 +24,14 @@ namespace Wizzy {
         void DrawIndexed(const VertexArrayPtr& va, RenderMode mode) = 0;
 
         virtual
-        void SetViewport(u32 x, u32 y, u32 w, u32 h) = 0;
-        inline
-        void SetViewport(vec2 pos, vec2 size) {
-            SetViewport(pos.x, pos.y, size.x, size.y);
-        }
+        void SetViewport(const Viewport& vp) = 0;
 
         virtual
         void SetCullMode(CullMode mode) = 0;
         virtual
         void ToggleDepthTesting(bool value) = 0;
+        virtual
+        void ToggleBlending(bool value) = 0;
 
         inline static
         int8 GetAPI() { return s_API; }
