@@ -21,9 +21,6 @@
 [submodule "Wizzy/vendor/ulib"]
 	path = Wizzy/vendor/ulib
 	url = https://github.com/N00TN00T/ulib
-[submodule "Wizzy/vendor/pdoes"]
-	path = Wizzy/vendor/pdoes
-	url = https://github.com/N00TN00T/Pure-data-oriented-ECS-System
 [submodule "Wizzy/vendor/assimp"]
 	path = Wizzy/vendor/assimp
 	url = https://github.com/N00TN00T/assimp
