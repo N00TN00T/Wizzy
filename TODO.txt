@@ -1,0 +1,2 @@
+- Only show inspector on selected Entity (Scene hiearchy)
+- Move systems into files

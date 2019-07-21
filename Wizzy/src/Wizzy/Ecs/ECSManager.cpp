@@ -199,20 +199,20 @@ namespace ecs {
 		size_t _typeSize = _typeInfo.size;
 
 		auto _srcIndex = _memPool.size() - _typeSize;
-		IComponent *_srcComponent = (IComponent*)(&_memPool[_srcIndex]);
+		byte *_srcBytes = &_memPool[_srcIndex];
 
-		IComponent *_destComponent = (IComponent*)(&_memPool[memIdx]);
+		byte *_dstBytes = &_memPool[memIdx];
 
-		_freeFn(_destComponent);
+		_freeFn((IComponent*)_dstBytes);
 
 		if (memIdx == _srcIndex) {
 			_memPool.resize(_srcIndex);
 			return;
 		}
 
-		memcpy(_destComponent, _srcComponent, _typeSize);
+		memcpy(_dstBytes, _srcBytes, _typeSize);
 
-		auto& _srcComponents = ToEntityData(_srcComponent->entity);
+		auto& _srcComponents = ToEntityData(((IComponent*)_srcBytes)->entity);
 		for (auto& _componentPair : _srcComponents) {
 			if (componentId == _componentPair.first && _srcIndex == _componentPair.second) {
 				_componentPair.second = memIdx;

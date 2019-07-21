@@ -21,6 +21,9 @@ namespace Wizzy {
         virtual
         u32 GetHeight() const = 0;
 
+        virtual
+        void SetSize(u32 width, u32 height) = 0;
+
 
         static
         RenderTarget* Create(u32 width, u32 height);

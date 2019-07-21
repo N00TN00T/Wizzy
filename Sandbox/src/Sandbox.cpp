@@ -60,11 +60,8 @@ public:
         AddComponentType<EnvironmentComponent>();
 
         Subscribe(wz::EventType::app_init);
-        Subscribe(wz::EventType::app_frame_begin);
-        Subscribe(wz::EventType::app_update);
         Subscribe(wz::EventType::app_render);
         Subscribe(wz::EventType::app_frame_end);
-        Subscribe(wz::EventType::window_resize);
 	}
 
     void Init(ViewComponent& view) const {
@@ -73,7 +70,6 @@ public:
         view.renderTarget = wz::RenderTargetPtr(wz::RenderTarget::Create(view.resolution.x, view.resolution.y));
 
         wz::Renderer::SetRenderTarget(view.renderTarget);
-        wz::RenderCommand::SetViewport(wz::Viewport(0, 0, view.resolution.x, view.resolution.y));
 
         wz::RenderCommand::SetCullMode(wz::WZ_CULL_BACK);
         wz::RenderCommand::ToggleDepthTesting(true);
@@ -83,24 +79,19 @@ public:
     void BeginRenderer(TransformComponent& transform, ViewComponent& view, EnvironmentComponent& environment) const {
         WZ_CORE_TRACE("Beginning renderer from camera system");
 
-        if (view.resolution != view.previousResolution) {
-            view.renderTarget = wz::RenderTargetPtr(wz::RenderTarget::Create(view.resolution.x, view.resolution.y));
+        if (view.renderTarget != wz::Renderer::GetRenderTarget() || view.resolution != view.previousResolution) {
+            view.resolution.x = glm::max(view.resolution.x, 1.f);
+            view.resolution.y = glm::max(view.resolution.y, 1.f);
+            view.renderTarget->SetSize(view.resolution.x, view.resolution.y);
             wz::Renderer::SetRenderTarget(view.renderTarget);
+            wz::RenderCommand::SetViewport(wz::Viewport(0, 0, view.resolution.x, view.resolution.y));
         }
 
         view.previousResolution = view.resolution;
 
         view.renderTarget->Bind();
-
         wz::RenderCommand::Clear();
-        wz::RenderCommand::SetCullMode(wz::WZ_CULL_BACK);
-        wz::RenderCommand::ToggleDepthTesting(true);
-
         view.renderTarget->Unbind();
-
-
-        wz::RenderCommand::SetViewport(wz::Viewport(0, 0, wz::Application::Get().GetWindow().GetWidth(), wz::Application::Get().GetWindow().GetHeight()));
-        wz::RenderCommand::Clear();
 
         mat4 _view = mat4(1.f);
         _view = glm::rotate(_view, transform.rotation.x, vec3(1, 0, 0));
@@ -113,48 +104,20 @@ public:
         wz::Renderer::Begin(_projection * glm::inverse(transform.ToMat4()), transform.position, environment.value);
     }
 
-    void OnUpdate(ViewComponent& view, float delta) const {
-
-    }
-
-    void OnRender(ViewComponent& view, EnvironmentComponent& environment) const {
-
-    }
-
     void EndRenderer(ViewComponent& view) const {
-        wz::RenderCommand::SetViewport(wz::Viewport(0, 0, view.resolution.x, view.resolution.y));
         WZ_CORE_TRACE("Ending Renderer from camera system");
         wz::Renderer::End();
     }
 
-    void OnWindowResize(const wz::WindowResizeEvent& e, ViewComponent& view) const {
-
-    }
-
-	virtual void OnEvent(const wz::Event& e,
-						 ecs::ComponentGroup& components) const override {
-
+	virtual void OnEvent(const wz::Event& e, ecs::ComponentGroup& components) const override {
+        TransformComponent& _transform = *components.Get<TransformComponent>();
         ViewComponent& _view = *components.Get<ViewComponent>();
         EnvironmentComponent& _environment = *components.Get<EnvironmentComponent>();
-        TransformComponent& _transform = *components.Get<TransformComponent>();
 
         switch (e.GetEventType()) {
             case wz::EventType::app_init: Init(_view); break;
-            case wz::EventType::app_frame_begin: BeginRenderer(_transform, _view, _environment); break;
-            case wz::EventType::app_update:
-            {
-                const wz::AppUpdateEvent& _uE = (const wz::AppUpdateEvent&)e;
-                OnUpdate(_view, _uE.GetDeltaTime());
-                break;
-            }
-            case wz::EventType::app_render: OnRender(_view, _environment); break;
+            case wz::EventType::app_render: BeginRenderer(_transform, _view, _environment); break;
             case wz::EventType::app_frame_end: EndRenderer(_view); break;
-            case wz::EventType::window_resize:
-            {
-                const wz::WindowResizeEvent& _wE = (const wz::WindowResizeEvent&)e;
-                OnWindowResize(_wE, _view);
-                break;
-            }
             default: WZ_CORE_ASSERT(false, "System doesn't handle subscribed event"); break;
         }
 	}
@@ -328,9 +291,9 @@ public:
         CreateLamp("Lightbulb", wz::LightType::POINT, vec3(5, 0, 0), vec3(0), vec3(.125f, .125f, .125f));
         CreateSun();
 
-        m_clientSystems.AddSystem<GUISystem>();
         m_clientSystems.AddSystem<CameraSystem>();
         m_clientSystems.AddSystem<RenderSystem>();
+        m_clientSystems.AddSystem<GUISystem>();
 	}
 
     virtual

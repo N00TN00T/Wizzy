@@ -39,19 +39,49 @@ namespace Wizzy {
 
     void GLRenderTarget::Bind() const {
         GL_CALL(glBindFramebuffer(GL_FRAMEBUFFER, m_frameBufferId));
-        //GL_CALL(glBindRenderbuffer(GL_RENDERBUFFER, m_renderBufferId));
-        //GL_CALL(glBindTexture(GL_TEXTURE_2D, m_textureId));
     }
     void GLRenderTarget::Unbind() const {
-        //GL_CALL(glBindTexture(GL_TEXTURE_2D, 0));
-        //GL_CALL(glBindRenderbuffer(GL_RENDERBUFFER, 0));
         GL_CALL(glBindFramebuffer(GL_FRAMEBUFFER, 0));
+    }
+
+    void GLRenderTarget::SetSize(u32 width, u32 height) {
+
+        WZ_CORE_TRACE("Changing size on GL RenderTarget (framebuffer)");
+
+        GL_CALL(glBindFramebuffer(GL_FRAMEBUFFER, m_frameBufferId));
+
+        SetTexture(m_textureId, width, height);
+
+        SetRenderBuffer(m_renderBufferId, width, height);
+
+        GL_CALL(glBindFramebuffer(GL_FRAMEBUFFER, 0));
+
+        WZ_CORE_TRACE("Changed size from { {0}, {1} } to { {2}, {3} }", m_width, m_height, width, height);
+
+        m_width = width;
+        m_height = height;
     }
 
     u32 GLRenderTarget::CreateTexture(u32 width, u32 height) {
         u32 _textureId;
         GL_CALL(glGenTextures(1, &_textureId));
-        GL_CALL(glBindTexture(GL_TEXTURE_2D, _textureId));
+
+        SetTexture(_textureId, width, height);
+
+        return _textureId;
+    }
+
+    u32 GLRenderTarget::CreateRenderBuffer(u32 width, u32 height) {
+        u32 _renderBufferId;
+        GL_CALL(glGenRenderbuffers(1, &_renderBufferId));
+
+        SetRenderBuffer(_renderBufferId, width, height);
+
+        return _renderBufferId;
+    }
+
+    void GLRenderTarget::SetTexture(u32 textureId, u32 width, u32 height) {
+        GL_CALL(glBindTexture(GL_TEXTURE_2D, textureId));
 
         GL_CALL(glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, width, height, 0, GL_RGBA,
                      GL_UNSIGNED_BYTE, NULL));
@@ -62,22 +92,20 @@ namespace Wizzy {
         GL_CALL(glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT));
 
         GL_CALL(glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0,
-                               GL_TEXTURE_2D, _textureId, 0));
+                               GL_TEXTURE_2D, textureId, 0));
+
         GL_CALL(glBindTexture(GL_TEXTURE_2D, 0));
-        return _textureId;
     }
-    u32 GLRenderTarget::CreateRenderBuffer(u32 width, u32 height) {
-        u32 _renderBufferId;
-        GL_CALL(glGenRenderbuffers(1, &_renderBufferId));
-        GL_CALL(glBindRenderbuffer(GL_RENDERBUFFER, _renderBufferId));
+    void GLRenderTarget::SetRenderBuffer(u32 renderBufferId, u32 width, u32 height) {
+        GL_CALL(glBindRenderbuffer(GL_RENDERBUFFER, renderBufferId));
 
         GL_CALL(glRenderbufferStorage(GL_RENDERBUFFER, GL_DEPTH24_STENCIL8,
                                       width, height));
         GL_CALL(glFramebufferRenderbuffer(GL_FRAMEBUFFER,
                                           GL_DEPTH_STENCIL_ATTACHMENT,
                                           GL_RENDERBUFFER,
-                                          _renderBufferId));
+                                          renderBufferId));
+
         GL_CALL(glBindRenderbuffer(GL_RENDERBUFFER, 0));
-        return _renderBufferId;
     }
 }

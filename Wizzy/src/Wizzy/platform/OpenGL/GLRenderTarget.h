@@ -25,9 +25,14 @@ namespace Wizzy {
             return m_height;
         }
 
+        virtual
+        void SetSize(u32 width, u32 height) override;
+
     private:
         u32 CreateTexture(u32 width, u32 height);
         u32 CreateRenderBuffer(u32 width, u32 height);
+        void SetTexture(u32 textureId, u32 width, u32 height);
+        void SetRenderBuffer(u32 renderBufferId, u32 width, u32 height);
 
     private:
         u32 m_frameBufferId, m_renderBufferId, m_textureId;
