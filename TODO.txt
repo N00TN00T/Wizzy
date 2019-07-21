@@ -1,2 +1,8 @@
-- Only show inspector on selected Entity (Scene hiearchy)
+# Small tasks
 - Move systems into files
+
+# Medium tasks
+- Only show inspector on selected Entity (Scene hiearchy)
+
+# Large tasks
+- Make a new, more modular, implementation of the ECS-System (Keep the API)
