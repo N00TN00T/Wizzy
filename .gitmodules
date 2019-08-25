@@ -12,15 +12,9 @@
 [submodule "Wizzy/vendor/glm"]
 	path = Wizzy/vendor/glm
 	url = https://github.com/g-truc/glm
-[submodule "Wizzy/vendor/lua"]
-	path = Wizzy/vendor/lua
-	url = https://github.com/N00TN00T/lua
-[submodule "Wizzy/vendor/pybind11"]
-	path = Wizzy/vendor/pybind11
-	url = https://github.com/N00TN00T/pybind11
 [submodule "Wizzy/vendor/ulib"]
 	path = Wizzy/vendor/ulib
 	url = https://github.com/N00TN00T/ulib
-[submodule "Wizzy/vendor/assimp"]
-	path = Wizzy/vendor/assimp
-	url = https://github.com/N00TN00T/assimp
+[submodule "Wizzy/vendor/LuaBridge"]
+	path = Wizzy/vendor/LuaBridge
+	url = https://github.com/vinniefalco/LuaBridge
