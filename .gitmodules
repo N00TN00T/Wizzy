@@ -15,6 +15,3 @@
 [submodule "Wizzy/vendor/ulib"]
 	path = Wizzy/vendor/ulib
 	url = https://github.com/N00TN00T/ulib
-[submodule "Wizzy/vendor/LuaBridge"]
-	path = Wizzy/vendor/LuaBridge
-	url = https://github.com/vinniefalco/LuaBridge
