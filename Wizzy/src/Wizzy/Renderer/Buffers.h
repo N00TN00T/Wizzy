@@ -4,48 +4,6 @@
 
 namespace Wizzy {
 
-    inline
-    size_t ShaderDataTypeSize(ShaderDataType type) {
-        switch (type) {
-            case ShaderDataType::NONE:      break;
-            case ShaderDataType::FLOAT1:    return 1 * 4;
-            case ShaderDataType::FLOAT2:    return 2 * 4;
-            case ShaderDataType::FLOAT3:    return 3 * 4;
-            case ShaderDataType::FLOAT4:    return 4 * 4;
-            case ShaderDataType::MAT3:      return 9 * 4;
-            case ShaderDataType::MAT4:      return 16 * 4;
-            case ShaderDataType::INT1:      return 1 * 4;
-            case ShaderDataType::INT2:      return 2 * 4;
-            case ShaderDataType::INT3:      return 3 * 4;
-            case ShaderDataType::INT4:      return 4 * 4;
-            case ShaderDataType::BOOL:      return 1;
-        }
-
-        WZ_CORE_ASSERT(false, "Unimplemented shader data type");
-        return 0;
-    }
-
-    inline
-    u32 ShaderDataTypeElementCount(ShaderDataType type) {
-        switch (type) {
-            case ShaderDataType::NONE:      break;
-            case ShaderDataType::FLOAT1:    return 1;
-            case ShaderDataType::FLOAT2:    return 2;
-            case ShaderDataType::FLOAT3:    return 3;
-            case ShaderDataType::FLOAT4:    return 4;
-            case ShaderDataType::MAT3:      return 9;
-            case ShaderDataType::MAT4:      return 16;
-            case ShaderDataType::INT1:      return 1;
-            case ShaderDataType::INT2:      return 2;
-            case ShaderDataType::INT3:      return 3;
-            case ShaderDataType::INT4:      return 4;
-            case ShaderDataType::BOOL:      return 1;
-        }
-
-        WZ_CORE_ASSERT(false, "Unimplemented shader data type");
-        return 0;
-    }
-
     struct BufferElement {
         ShaderDataType type;
         string name;
@@ -106,8 +64,11 @@ namespace Wizzy {
         virtual
         const BufferLayout& GetLayout() const = 0;
 
+        virtual void* Map() = 0;
+        virtual void Unmap() = 0;
+
         static
-        VertexBuffer* Create(void *data, size_t size);
+        VertexBuffer* Create(void *data, size_t size, BufferEnum usage = WZ_BUFFER_USAGE_STATIC_DRAW);
     };
 
     class IndexBuffer {

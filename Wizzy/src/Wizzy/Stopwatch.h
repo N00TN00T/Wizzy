@@ -11,8 +11,8 @@ namespace Wizzy {
     	public:
     		Stopwatch(bool active = true);
 
-    		double ElapsedSeconds();
-    		double ElapsedMilliseconds();
+    		double ElapsedSeconds() const;
+    		double ElapsedMilliseconds() const;
 
     		void SetElapsedSeconds(double value);
 

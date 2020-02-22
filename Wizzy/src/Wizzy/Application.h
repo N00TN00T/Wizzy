@@ -36,7 +36,7 @@ namespace Wizzy {
 		virtual void Shutdown() = 0;
 
 	protected:
-		std::unique_ptr<IWindow> m_window;
+		std::shared_ptr<IWindow> m_window;
 		ecs::ECSManager m_clientEcs;
 		ecs::SystemLayer m_clientSystems;
 		ecs::ECSManager m_engineEcs;

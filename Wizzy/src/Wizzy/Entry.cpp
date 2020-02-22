@@ -2,6 +2,7 @@
 #include "Entry.h"
 #include "Log.h"
 #include "Wizzy/Application.h"
+#include "Wizzy/WizzyExceptions.h"
 
 extern Wizzy::Application* CreateApplication();
 
@@ -24,7 +25,10 @@ void handle_crash(int sig) {
 }
 #endif
 
-int main(int argc, char** argv) {
+int main(int argc, char** argv) 
+{
+
+    SetExecutablePath(argv[0]);
 
 #ifdef __GNUC__
     signal(SIGSEGV, handle_crash);
@@ -35,14 +39,20 @@ int main(int argc, char** argv) {
 	Wizzy::Log::Init();
     WZ_CORE_INFO("Initialized the logs");
 
-    try {
+    try
+    {
         auto _app = CreateApplication();
-    	_app->Run();
-    	delete _app;
-    } catch (std::exception& e) {
-        WZ_CORE_CRITICAL("Unhandeled exception: {0}", e.what());
+        _app->Run();
+        delete _app;
     }
-
+    /*catch (const std::exception & e)
+    {
+        WZ_CORE_ASSERT(false, "Unhandled exception: '" + string(e.what()) + "'");
+    }*/
+    catch (const Wizzy::Exception & e)
+    {
+        WZ_CORE_CRITICAL(e.GetUnhandledMessage());
+    }
 
 	return 0;
 }

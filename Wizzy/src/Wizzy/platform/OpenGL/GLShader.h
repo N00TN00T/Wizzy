@@ -4,7 +4,7 @@ namespace Wizzy {
     class GLShader
         : public Shader {
     public:
-        GLShader(const string& data, const Flagset& flags);
+        GLShader(const ResData& data, const PropertyLibrary& props);
         virtual ~GLShader();
 
         void Bind() const override;
@@ -30,10 +30,18 @@ namespace Wizzy {
         void Upload3f(const string& name, const vec3& value) override;
 		virtual
         void Upload4f(const string& name, const vec4& value) override;
+        virtual void Upload1iv(const string& name, const u32& count, const int32* value) override;
+        virtual void Upload2iv(const string& name, const u32& count, const int32* value) override;
+        virtual void Upload3iv(const string& name, const u32& count, const int32* value) override;
+        virtual void Upload4iv(const string& name, const u32& count, const int32* value) override;
+        virtual void Upload1fv(const string& name, const u32& count, const float* value) override;
+        virtual void Upload2fv(const string& name, const u32& count, const vec2& value) override;
+        virtual void Upload3fv(const string& name, const u32& count, const vec3& value) override;
+        virtual void Upload4fv(const string& name, const u32& count, const vec4& value) override;
 
-        inline virtual
-        string Serialize() const override {
-            return m_rawSource;
+
+        inline virtual ResData Serialize() const override {
+            return ResData((const byte*)m_rawSource.data(), (const byte*)m_rawSource.data() + m_rawSource.size());
 		}
 
     protected:
@@ -43,5 +51,7 @@ namespace Wizzy {
         string              m_rawSource;
 		ShaderProgramSource m_source;
         u32					m_shaderId;
+
+        
     };
 }

@@ -13,6 +13,10 @@ namespace ecs {
 		}
 	}
 
+	void System::AddAllComponentTypes(ComponentFlags flags) {
+		m_processAllComponents = true;
+	}
+
 	void System::Subscribe(Wizzy::EventType eventId) {
 		m_subscriptions.push_back(eventId);
 	}

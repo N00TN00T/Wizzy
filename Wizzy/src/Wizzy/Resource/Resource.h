@@ -1,42 +1,65 @@
 #pragma once
 
+#include "Wizzy/PropertyLibrary.h"
+
+#define __HANDLE_DEF struct Handle : public Resource::Handle { using Resource::Handle::Handle; }
+
 namespace Wizzy {
 
-    typedef string ResourceHandle;
-    typedef ulib::Bitset Flagset;
+    typedef std::vector<byte> ResData;
+    typedef u32 uId;
 
-    typedef ResourceHandle ShaderHandle;
-    typedef ResourceHandle TextureHandle;
-    typedef ResourceHandle ModelHandle;
-    typedef ResourceHandle MaterialHandle;
-    typedef ResourceHandle ScriptHandle;
-
-    class Resource {
+    class Resource 
+    {
     public:
+        
+        struct Handle 
+        {
+            Handle() : id(WZ_NULL_RESOURCE_HANDLE) {}
+            Handle(uId id) : id(id) {}
+            Handle(const Handle&) = default;
+            operator uId&() { return id; }
 
-        Resource(const Flagset& flags,
-                 const string& resourceType,
-                 const string& extension);
-        virtual
-        ~Resource() {}
+            friend bool operator >(const Handle& a, const Handle& b)
+            {
+                return a.id > b.id;
+            }
+            friend bool operator <(const Handle& a, const Handle& b)
+            {
+                return a.id < b.id;
+            }
 
-        virtual
-        string Serialize() const = 0;
-        inline
-        const string& GetType() const { return m_resourceType; }
-        inline
-        const string& GetExtension() const { return m_extension; }
-        inline
-        Flagset& GetFlags() { return m_flags; }
-        inline
-        bool IsValid() const { return m_isValid; }
+            //Handle& operator=(const Handle&) = default;
+
+            bool operator==(const Handle& other) const
+            {
+                return other.id == id;
+            }
+
+            uId id; 
+
+            struct hash
+            {
+                size_t operator()(const Wizzy::Resource::Handle& h) const
+                {
+                    return h.id;
+                }
+            };
+        };
+
+        template <typename T>
+        using HandleMap = std::unordered_map<Resource::Handle, T, Resource::Handle::hash>;
+
+    public:
+        Resource(const PropertyLibrary& props);
+        virtual ~Resource() {}
+
+        inline PropertyLibrary& GetProps() { return m_props; }
+
+        virtual ResData Serialize() const = 0;
 
     protected:
-        Flagset m_flags;
-        bool m_isValid = false;
+        PropertyLibrary m_props;
 
-    private:
-        string          m_resourceType;
-        string          m_extension;
     };
 }

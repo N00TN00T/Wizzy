@@ -6,9 +6,12 @@
 #include "Wizzy/Log.h"
 #include "Wizzy/Events/AppEvent.h"
 #include "Wizzy/ImGuiSystem.h"
+#include "Wizzy/Stopwatch.h"
+
+#include "Wizzy/Instrumentor.h"
 
 
-#define DISPATCH_EVENT_LOCAL(eType, ...) { auto _e = eType(__VA_ARGS__); this->OnEvent(_e); } [](){return 0;}()
+#define DISPATCH_EVENT_LOCAL(eType, ...) { this->OnEvent(eType(__VA_ARGS__)); }
 
 namespace Wizzy {
 
@@ -23,6 +26,7 @@ namespace Wizzy {
 	}
 
 	void Application::OnEvent(Event& e) {
+		WZ_PROFILE_FUNCTION();
 		EventDispatcher _dispatcher(e);
 
 		_dispatcher.Dispatch<WindowCloseEvent>([this](WindowCloseEvent& e) {
@@ -36,8 +40,10 @@ namespace Wizzy {
 		m_engineEcs.NotifySystems(m_engineSystems, e);
 	}
 
-	void Application::Run() {
-
+	void Application::Run() 
+	{
+		WZ_PROFILE_BEGIN_SESSION("Wizzy", "benchmark.json");
+		WZ_PROFILE_FUNCTION();
 		s_instance = this;
 
 		string _wndTitle = m_props.appName
@@ -60,7 +66,7 @@ namespace Wizzy {
 			1600,
 			900);
 
-		m_window = std::unique_ptr<IWindow>(IWindow::Create(_windowProps));
+		m_window = std::shared_ptr<IWindow>(IWindow::Create(_windowProps));
 		m_window->SetEventCallback(WZ_BIND_FN(Application::OnEvent));
 
 		m_running = true;
@@ -80,19 +86,33 @@ namespace Wizzy {
 		this->Init();
 
 		DISPATCH_EVENT_LOCAL(AppInitEvent);
+		std::future<void> as;
+		int64 f = 0;
+		//std::thread* renderThread;
 		while (m_running) {
+			string frameStr = "FRAME #" + std::to_string(++f);
+			WZ_PROFILE_SCOPE(frameStr.c_str());
 			m_window->OnFrameBegin();
+
 			DISPATCH_EVENT_LOCAL(AppFrameBeginEvent, m_window->GetDeltaTime());
 
 			DISPATCH_EVENT_LOCAL(AppUpdateEvent, m_window->GetDeltaTime());
 
 			DISPATCH_EVENT_LOCAL(AppRenderEvent);
+			//WZ_DEBUG("hi");
+			//as = std::async(std::launch::async, &Application::OnEvent, this, AppRenderEvent());
+
+			//std::thread(&Application::OnEvent, this, AppRenderEvent()).detach();
 
 			DISPATCH_EVENT_LOCAL(AppFrameEndEvent, m_window->GetDeltaTime());
+			
 
 			m_window->OnFrameEnd();
+
 		}
+		DISPATCH_EVENT_LOCAL(AppShutdownEvent, 0);
 
 		this->Shutdown();
+		WZ_PROFILE_END_SESSION();
 	}
 }

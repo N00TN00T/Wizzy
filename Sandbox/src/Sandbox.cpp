@@ -1,308 +1,178 @@
 #include "spch.h"
 
-#include "GUI.h"
+#include "Sandbox.h"
 
-class RenderSystem
-    : public ecs::System {
-public:
-    RenderSystem() {
-        AddComponentType<TransformComponent>();
-        AddComponentType<ModelComponent>(FLAG_OPTIONAL);
-        AddComponentType<LightComponent>(FLAG_OPTIONAL);
+EngineManagerSystem::EngineManagerSystem()
+{
+	AddComponentType<EngineData>();
 
-        Subscribe(wz::EventType::app_render);
-    }
+	Subscribe(wz::EventType::app_init);
+	Subscribe(wz::EventType::app_frame_begin);
+	Subscribe(wz::EventType::app_update);
+	Subscribe(wz::EventType::app_render);
+	Subscribe(wz::EventType::app_frame_end);
+	Subscribe(wz::EventType::app_shutdown);
+}
 
-    void SubmitLight(TransformComponent& transform, LightComponent& light) const {
+void EngineManagerSystem::OnEvent(const wz::Event& e, ecs::ComponentGroup& components) const
+{
+	WZ_PROFILE_FUNCTION()
+		EngineData& _testComp = *components.Get<EngineData>();
 
-        wz::Renderer::SubmitLight(light.type, transform.position, transform.rotation, light.color, light.range, light.intensity, glm::radians(light.cutOff), light.smoothness);
-    }
+	wz::ResourceManagement::SetResourceDir(_testComp.resourcePath);
 
-    void SubmitModel(TransformComponent& transform, ModelComponent& modelComponent) const {
-        WZ_CORE_TRACE("Submitting model from handle '{0}'", modelComponent.handle);
-        auto& _model = wz::ResourceManagement::Get<wz::Model>(modelComponent.handle);
-        auto& _meshes = _model.GetMeshes();
+	switch (e.GetEventType())
+	{
+	case wz::EventType::app_init:
+	{
+		if (ulib::File::exists(_testComp.resourcePath + "ResourceList.rl"))
+		{
+			wz::ResourceManagement::LoadResourceList("ResourceList.rl");
+		}
 
-        for (wz::Mesh& _mesh : _meshes) {
-            auto& _material = wz::ResourceManagement::Get<wz::Material>(_mesh.GetMaterialHandle());
-            wz::Renderer::Submit(_mesh.GetVAO(), _material, transform.ToMat4());
-        }
-    }
+		_testComp.hndShader = (wz::Shader::Handle)wz::ResourceManagement::HandleOf("test.shader");
+		_testComp.hndTexture = (wz::Texture::Handle)wz::ResourceManagement::HandleOf("test.png");
 
-    virtual void OnEvent(const wz::Event& e,
-						 ecs::ComponentGroup& components) const override {
-        TransformComponent& _transform = *components.Get<TransformComponent>();
+		/*auto hnd = wz::ResourceManagement::AddToResourceDir<wz::Texture>(ulib::File::directory_of(GetExecutablePath()) + "/../../../test/test.png", "textures/test.png", wz::Texture::GetTemplateProps());
+		wz::ResourceManagement::Load(hnd);*/
 
-        switch (e.GetEventType()) {
-            case wz::EventType::app_render:
-            {
-                if (components.Has<ModelComponent>()) {
-                    ModelComponent& _model = *components.Get<ModelComponent>();
-                    SubmitModel(_transform, _model);
-                }
-                if (components.Has<LightComponent>()) {
-                    LightComponent& _light = *components.Get<LightComponent>();
-                    SubmitLight(_transform, _light);
-                }
-                break;
-            }
-            default: WZ_CORE_ASSERT(false, "System doesn't handle subscribed event"); break;
-        }
+		/*hnd = wz::ResourceManagement::AddToResourceDir<wz::Shader>(ulib::File::directory_of(GetExecutablePath()) + "/../../../test/test.shader", "textures/test.shader", wz::Shader::GetTemplateProps());
+		wz::ResourceManagement::Load(hnd);*/
+
+		wz::RenderCommand::SetClearColor(.5f, .5f, .5f, 1.f);
+
+		wz::RenderCommand::SetCullMode(wz::WZ_CULL_NONE);
+
+		wz::RenderCommand::ToggleDepthTesting(false);
+
+		wz::RenderCommand::ToggleBlending(true);
+
+		_testComp.window->SetVSync(false);
+
+		_testComp.renderTarget = wz::RenderTargetPtr(wz::RenderTarget::Create(_testComp.window->GetWidth(), _testComp.window->GetHeight()));
+
+		return;
 	}
-};
-
-class CameraSystem
-    : public ecs::System {
-public:
-    CameraSystem() {
-        AddComponentType<TransformComponent>();
-		AddComponentType<ViewComponent>();
-        AddComponentType<EnvironmentComponent>();
-
-        Subscribe(wz::EventType::app_init);
-        Subscribe(wz::EventType::app_render);
-        Subscribe(wz::EventType::app_frame_end);
+	case wz::EventType::app_frame_begin:
+	{
+		WZ_PROFILE_SCOPE("app_frame_begin");
+		wz::RenderCommand::Clear();
+		return;
 	}
+	case wz::EventType::app_update:
+	{
+		WZ_PROFILE_SCOPE("app_update");
+		_testComp.timeSinceValidate += ((wz::AppUpdateEvent&)e).GetDeltaTime();
+		if (_testComp.timeSinceValidate >= 1.f / _testComp.validationRate)
+		{
+			_testComp.ftStr = std::to_string(((wz::AppUpdateEvent&)e).GetDeltaTime() * 1000.f);
+			_testComp.timeSinceValidate = 0.f;
+			try
+			{
+				wz::ResourceManagement::Validate(false);
+			}
+			catch (const wz::ResourceFileMissingException & e)
+			{
+				wz::ResourceManagement::Delete(e.GetId());
+				WZ_CORE_WARN("A file was missing and unregistered from the project:");
+				wz::Log::SetExtra(false);
+				WZ_CORE_WARN("    Exception: {0}", e.GetMessage());
+				WZ_CORE_WARN("    File:      {0}", e.GetPath());
+				wz::Log::SetExtra(true);
+			}
+			catch (const wz::Exception & e)
+			{
+				WZ_CORE_CRITICAL("Failed to validate resources beyond fixing!");
+				wz::Log::SetExtra(false);
+				WZ_CORE_CRITICAL(e.GetUnhandledMessage());
+				WZ_BREAK;
+				wz::Log::SetExtra(true);
+			}
 
-    void Init(ViewComponent& view) const {
-        WZ_CORE_TRACE("Initializing renderer from camera system");
+			wz::ResourceManagement::Validate(true);
+		}
 
-        view.renderTarget = wz::RenderTargetPtr(wz::RenderTarget::Create(view.resolution.x, view.resolution.y));
+		if (wz::Input::GetKey(WZ_KEY_R))
+		{
+			_testComp.rotation += 20.f * ((wz::AppUpdateEvent&)e).GetDeltaTime();
+		}
 
-        wz::Renderer::SetRenderTarget(view.renderTarget);
+		if (wz::Input::GetKey(WZ_KEY_W))
+		{
+			_testComp.scale += 1.f * ((wz::AppUpdateEvent&)e).GetDeltaTime();
+		}
+		if (wz::Input::GetKey(WZ_KEY_S))
+		{
+			_testComp.scale -= 1.f * ((wz::AppUpdateEvent&)e).GetDeltaTime();
+		}
 
-        wz::RenderCommand::SetCullMode(wz::WZ_CULL_BACK);
-        wz::RenderCommand::ToggleDepthTesting(true);
-        wz::RenderCommand::ToggleBlending(true);
-    }
+		auto mouse = wz::Input::GetMousePos();
+		_testComp.pos = mouse;
+		ImGui::Begin("Performance");
 
-    void BeginRenderer(TransformComponent& transform, ViewComponent& view, EnvironmentComponent& environment) const {
-        WZ_CORE_TRACE("Beginning renderer from camera system");
+		ImGui::LabelText("frametime", "%sms", _testComp.ftStr.c_str());
 
-        if (view.renderTarget != wz::Renderer::GetRenderTarget() || view.resolution != view.previousResolution) {
-            view.resolution.x = glm::max(view.resolution.x, 1.f);
-            view.resolution.y = glm::max(view.resolution.y, 1.f);
-            view.renderTarget->SetSize(view.resolution.x, view.resolution.y);
-            wz::Renderer::SetRenderTarget(view.renderTarget);
-            wz::RenderCommand::SetViewport(wz::Viewport(0, 0, view.resolution.x, view.resolution.y));
-        }
+		ImGui::End();
 
-        view.previousResolution = view.resolution;
-
-        view.renderTarget->Bind();
-        wz::RenderCommand::Clear();
-        view.renderTarget->Unbind();
-
-        mat4 _view = mat4(1.f);
-        _view = glm::rotate(_view, transform.rotation.x, vec3(1, 0, 0));
-		_view = glm::rotate(_view, transform.rotation.y, vec3(0, 1, 0));
-		_view = glm::rotate(_view, transform.rotation.z, vec3(0, 0, 1));
-        _view = glm::translate(_view, transform.position);
-
-        mat4 _projection = view.ToMat4();
-
-        wz::Renderer::Begin(_projection * glm::inverse(transform.ToMat4()), transform.position, environment.value);
-    }
-
-    void EndRenderer(ViewComponent& view) const {
-        WZ_CORE_TRACE("Ending Renderer from camera system");
-        wz::Renderer::End();
-    }
-
-	virtual void OnEvent(const wz::Event& e, ecs::ComponentGroup& components) const override {
-        TransformComponent& _transform = *components.Get<TransformComponent>();
-        ViewComponent& _view = *components.Get<ViewComponent>();
-        EnvironmentComponent& _environment = *components.Get<EnvironmentComponent>();
-
-        switch (e.GetEventType()) {
-            case wz::EventType::app_init: Init(_view); break;
-            case wz::EventType::app_render: BeginRenderer(_transform, _view, _environment); break;
-            case wz::EventType::app_frame_end: EndRenderer(_view); break;
-            default: WZ_CORE_ASSERT(false, "System doesn't handle subscribed event"); break;
-        }
+		return;
 	}
-};
+	case wz::EventType::app_render:
+	{
+		WZ_PROFILE_SCOPE("app_render");
+		wz::Renderer2D::Begin(_testComp.hndShader, glm::ortho<float>(0, _testComp.window->GetWidth(), 0, _testComp.window->GetHeight(), -1, 1));
 
-class Sandbox
-	: public Wizzy::Application {
-public:
+		wz::Renderer2D::SubmitImage(_testComp.hndTexture, _testComp.pos, _testComp.scale, _testComp.rotation, wz::Color::white);
+		wz::Renderer2D::SubmitRect(wz::Rect(100, 100, 100, 100), wz::Color::blue);
 
-	Sandbox() {
+		wz::Renderer2D::End(_testComp.renderTarget);
 
+		ImGui::Begin("Game");
+
+		ImGui::Image((ImTextureID)_testComp.renderTarget->GetTextureId(), ImGui::GetWindowSize(), { 0, 1 }, { 1, 0 });
+
+		ImGui::End();
+
+		return;
 	}
-
-    ~Sandbox() {
-
-    }
-
-    void CreateCamera() {
-        EntityInfo _infoComponent;
-        _infoComponent.name = new string("Main Camera");
-        _infoComponent.selected = true;
-
-        TransformComponent _transformComp;
-        _transformComp.position = vec3(0, 8, 20);
-        _transformComp.rotation = vec3(0, 0, 0);
-        _transformComp.scale = vec3(1, 1, 1);
-
-        ViewComponent _viewComp;
-        _viewComp.fov = 65;
-        _viewComp.nearClip = .1f;
-        _viewComp.farClip = 10000.f;
-        _viewComp.resolution = vec2(1280, 720);
-
-        EnvironmentComponent _environment;
-
-        ecs::IComponent* _comps[] = {
-            &_infoComponent, &_transformComp, &_viewComp, &_environment
-        };
-        ecs::StaticCId _ids[] = {
-            _infoComponent.staticId, _transformComp.staticId, _viewComp.staticId, _environment.staticId
-        };
-        m_clientEcs.CreateEntity(_comps, _ids, 4);
-    }
-
-    void CreateModel(string handle, vec3 position = vec3(0, 0, 0), vec3 rotation = vec3(0, 0, 0), vec3 scale = vec3(1, 1, 1)) {
-        EntityInfo _infoComponent;
-        _infoComponent.name = new string(handle);
-        _infoComponent.selected = true;
-
-        TransformComponent _transform;
-        _transform.position = position;
-        _transform.scale = scale;
-        _transform.rotation = rotation;
-
-        ModelComponent _model;
-        _model.handle = new char[handle.size()];
-        strcpy(_model.handle, handle.c_str());
-
-
-        ecs::IComponent* _comps[] = {
-            &_infoComponent, &_transform, &_model
-        };
-        ecs::StaticCId _ids[] = {
-            _infoComponent.staticId, _transform.staticId, _model.staticId
-        };
-
-        m_clientEcs.CreateEntity(_comps, _ids, 3);
-    }
-
-    void CreateLamp(string modelHandle, wz::LightType type, vec3 position = vec3(0, 0, 0), vec3 rotation = vec3(0, 0, 0), vec3 scale = vec3(1, 1, 1)) {
-        EntityInfo _infoComponent;
-        _infoComponent.name = new string(modelHandle + "Light");
-        _infoComponent.selected = true;
-
-        TransformComponent _transform;
-        _transform.position = position;
-        _transform.scale = scale;
-        _transform.rotation = rotation;
-
-        ModelComponent _model;
-        _model.handle = new char[modelHandle.size()];
-        strcpy(_model.handle, modelHandle.c_str());
-
-        LightComponent _light;
-        _light.type = type;
-        _light.color = wz::Color(.8f, .85f, .85f, 1.f);
-        _light.intensity = 1.f;
-        _light.range = 25.f;
-
-        ecs::IComponent* _comps[] = {
-            &_infoComponent, &_transform, &_model, &_light
-        };
-        ecs::StaticCId _ids[] = {
-            _infoComponent.staticId, _transform.staticId, _model.staticId, _light.staticId
-        };
-
-        m_clientEcs.CreateEntity(_comps, _ids, 4);
-    }
-
-    void CreateSun() {
-        EntityInfo _infoComponent;
-        _infoComponent.name = new string("Sun");
-        _infoComponent.selected = true;
-
-        TransformComponent _transform;
-        _transform.rotation = vec3(0, 0, -1);
-
-        LightComponent _light;
-        _light.type = wz::LightType::DIRECTIONAL;
-        _light.color = wz::Color(.8f, .85f, .85f, 1.f);
-        _light.intensity = 1.f;
-
-        ecs::IComponent* _comps[] = {
-            &_infoComponent, &_transform, &_light
-        };
-        ecs::StaticCId _ids[] = {
-            _infoComponent.staticId, _transform.staticId, _light.staticId
-        };
-
-        m_clientEcs.CreateEntity(_comps, _ids, 3);
-    }
-
-	virtual
-    void Init() override {
-        wz::Log::SetCoreLogLevel(LOG_LEVEL_DEBUG);
-
-        wz::Flagset _scriptFlags;
-        _scriptFlags.SetBit(wz::SCRIPT_LUA);
-
-        string _projectDir = BASE_DIR;
-        wz::ResourceManagement::Load<wz::Shader>(
-            _projectDir + "TestResources/basic.shader",
-            "DefaultShader"
-        );
-        wz::ResourceManagement::Load<wz::Shader>(
-            _projectDir + "TestResources/phong_basic.shader",
-            WZ_DEFAULT_SHADER_HANDLE
-        );
-        wz::ResourceManagement::Load<wz::Model>(
-            _projectDir + "TestResources/nanosuit/nanosuit.blend",
-            "Nanosuit"
-        );
-        wz::ResourceManagement::Load<wz::Model>(
-            _projectDir + "TestResources/lightbulb/Lightbulb_General_Poly_OBJ.obj",
-            "Lightbulb"
-        );
-        wz::ResourceManagement::Load<wz::Script>(
-            _projectDir + "TestResources/testScript.lua",
-            "TestScript",
-            _scriptFlags
-        );
-        wz::ResourceManagement::Load<wz::Texture>(
-            _projectDir + "TestResources/prism.jpeg",
-            "PrismTexture001"
-        );
-        wz::ResourceManagement::Load<wz::Material>(
-            _projectDir + "TestResources/testMaterial.mat",
-            "TestMaterial"
-        );
-
-
-        for (auto& _mesh : wz::ResourceManagement::Get<wz::Model>("Lightbulb").GetMeshes()) {
-            auto& _mat = wz::ResourceManagement::Get<wz::Material>(_mesh.GetMaterialHandle());
-            _mat.diffuseMapHandle = wz::Texture::WhiteTexture();
-        }
-
-
-        CreateCamera();
-        CreateModel("Nanosuit", vec3(0, 0, 0), vec3(0, 0, 0));
-        //CreateLamp("Lightbulb", wz::LightType::POINT, vec3(-5, 0, 0), vec3(0), vec3(.125f, .125f, .125f));
-        CreateLamp("Lightbulb", wz::LightType::POINT, vec3(5, 0, 0), vec3(0), vec3(.125f, .125f, .125f));
-        CreateSun();
-
-        m_clientSystems.AddSystem<CameraSystem>();
-        m_clientSystems.AddSystem<RenderSystem>();
-        m_clientSystems.AddSystem<GUISystem>();
+	case wz::EventType::app_frame_end:
+	{
+		WZ_PROFILE_SCOPE("app_frame_end");
+		return;
+	}
+	case wz::EventType::app_shutdown:
+	{
+		wz::ResourceManagement::WriteResourceList("ResourceList.rl");
+		return;
+	}
 	}
 
-    virtual
-    void Shutdown() override {
+}
 
-    }
+Sandbox::Sandbox()
+{
+}
 
-};
+Sandbox::~Sandbox()
+{
+}
 
-Wizzy::Application* CreateApplication() {
-    return new Sandbox();
+void Sandbox::Init()
+{
+	WZ_PROFILE_FUNCTION();
+	wz::Log::SetCoreLogLevel(LOG_LEVEL_DEBUG);
+
+	EngineData t;
+	t.resourcePath = ulib::File::directory_of(GetExecutablePath()) + "/../../../res/";
+	t.window = m_window;
+
+	ecs::IComponent* tPtr = &t;
+
+	m_clientEcs.CreateEntity(&tPtr, &t.staticId, 1);
+
+	m_clientSystems.AddSystem<EngineManagerSystem>();
+}
+
+
+void Sandbox::Shutdown()
+{
 }

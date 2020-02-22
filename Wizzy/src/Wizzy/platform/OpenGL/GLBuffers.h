@@ -2,49 +2,57 @@
 
 #include "Wizzy/Renderer/Buffers.h"
 
-namespace Wizzy {
+namespace Wizzy
+{
     class GLVertexBuffer
-        : public VertexBuffer {
+        : public VertexBuffer
+    {
     public:
-        GLVertexBuffer(void *data, size_t size);
+        GLVertexBuffer(void* data, size_t size, BufferEnum usage);
         virtual
-        ~GLVertexBuffer();
+            ~GLVertexBuffer();
 
         virtual
-        void SetData(void *data, size_t size) override;
+            void SetData(void* data, size_t size) override;
 
         virtual
-        void Bind() const override;
+            void Bind() const override;
         virtual
-        void Unbind() const override;
+            void Unbind() const override;
 
         inline virtual
-        void SetLayout(const BufferLayout& layout) override { m_layout = layout; }
+            void SetLayout(const BufferLayout& layout) override { m_layout = layout; }
         inline virtual
-        const BufferLayout& GetLayout() const override { return m_layout; }
+            const BufferLayout& GetLayout() const override { return m_layout; }
+
+        virtual void* Map() override;
+        virtual void Unmap() override;
 
     private:
         u32 m_id;
         BufferLayout m_layout;
+
+       
     };
 
     class GLIndexBuffer
-        : public IndexBuffer {
+        : public IndexBuffer
+    {
     public:
-        GLIndexBuffer(u32 *data, u32 count);
+        GLIndexBuffer(u32* data, u32 count);
         virtual
-        ~GLIndexBuffer();
+            ~GLIndexBuffer();
 
         virtual
-        void SetData(u32 *data, u32 count) override;
+            void SetData(u32* data, u32 count) override;
 
         inline virtual
-        u32 GetCount() const override { return m_count; }
+            u32 GetCount() const override { return m_count; }
 
         virtual
-        void Bind() const override;
+            void Bind() const override;
         virtual
-        void Unbind() const override;
+            void Unbind() const override;
 
     private:
         u32 m_id;
@@ -54,28 +62,31 @@ namespace Wizzy {
 
 
     class GLVertexArray
-        : public VertexArray{
+        : public VertexArray
+    {
     public:
         GLVertexArray();
         virtual
-        ~GLVertexArray();
+            ~GLVertexArray();
 
         virtual
-        void Bind() const override;
+            void Bind() const override;
         virtual
-        void Unbind() const override;
+            void Unbind() const override;
 
         virtual
-        void PushVertexBuffer(const VertexBufferPtr& buffer) override;
+            void PushVertexBuffer(const VertexBufferPtr& buffer) override;
         virtual
-        void SetIndexBuffer(const IndexBufferPtr& buffer) override;
+            void SetIndexBuffer(const IndexBufferPtr& buffer) override;
 
         virtual inline
-        const std::vector<VertexBufferPtr>& GetVertexBuffers() const override {
+            const std::vector<VertexBufferPtr>& GetVertexBuffers() const override
+        {
             return m_vertexBuffers;
         }
         virtual inline
-        const IndexBufferPtr& GetIndexBuffer() const override {
+            const IndexBufferPtr& GetIndexBuffer() const override
+        {
             return m_indexBuffer;
         }
 
@@ -83,5 +94,6 @@ namespace Wizzy {
         u32 m_id;
         IndexBufferPtr m_indexBuffer;
         std::vector<VertexBufferPtr> m_vertexBuffers;
+        u32 m_vertexBufferIndex = 0;
     };
 }

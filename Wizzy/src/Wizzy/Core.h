@@ -43,16 +43,19 @@
 
 	#define WZ_ASSERT(x, ...) if (!(x)) { WZ_CRITICAL(ASSERT_MSG(x), __VA_ARGS__); WZ_BREAK; }
 	#define WZ_CORE_ASSERT(x, ...) if (!(x)) { WZ_CORE_CRITICAL(ASSERT_MSG(x), __VA_ARGS__); WZ_BREAK; }
-    #define WZ_LUA_ASSERT(x, msg) if (!(x)) { throw std::exception(msg); }
 
 #else
 
-	#define ASSERT_MSG ("Critical error: '{0}'")
+	/*#define ASSERT_MSG ("Critical error: '{0}'")
 
 	#define EMMIT_ASSERTION_IF_FALSE(x, ...) if (!(x)) { WZ_CRITICAL(ASSERT_MSG, __VA_ARGS__); }
 
 	#define WZ_ASSERT(x, ...) EMMIT_ASSERTION_IF_FALSE(x, __VA_ARGS__)
-	#define WZ_CORE_ASSERT(x, ...) EMMIT_ASSERTION_IF_FALSE(x, __VA_ARGS__)
+	#define WZ_CORE_ASSERT(x, ...) EMMIT_ASSERTION_IF_FALSE(x, __VA_ARGS__)*/
+
+
+	#define WZ_ASSERT(x,...) x;
+	#define WZ_CORE_ASSERT(x,...)x;
 
 #endif
 
@@ -65,35 +68,17 @@
 
 #define WZ_MAKE_VERSION(major, minor, patch) (std::to_string(major) + "." + std::to_string(minor) + "." + std::to_string(patch))
 #define WZ_VERSION_MAJOR 0
-#define WZ_VERSION_MINOR 2
-#define WZ_VERSION_PATCH 2
+#define WZ_VERSION_MINOR 1
+#define WZ_VERSION_PATCH 0
 #define WZ_VERSION	WZ_MAKE_VERSION(WZ_VERSION_MAJOR, WZ_VERSION_MINOR, WZ_VERSION_PATCH)
+
+#define WZ_VERSION_SUM(major, minor, patch)		(major * 1000 + minor * 100 + patch)
 
 #ifdef __GNUC__
 	#define typestr(T) string(abi::__cxa_demangle(typeid(T).name(), 0, 0, 0))
 #else
 	#define typestr(T) string(typeid(T).name())
 #endif
-
-
-/* DECIDING THE BASE DIRECTORY */
-#ifndef WZ_CONFIG_DIST
-    #ifdef __GNUC__
-        #ifdef __CODELITE__
-            #define BASE_DIR "../"
-        #elif defined(__XCODE__)
-            #error Wizzy is not yet set up for compiling with xcode
-        #else
-            #define BASE_DIR ""
-        #endif /* ifdef __CODELITE__ */
-    #elif defined (_MSC_VER)
-        #define BASE_DIR IsDebuggerPresent() ? "../" : "../../../"
-    #else
-        #define BASE_DIR "../../../"
-    #endif /* defined (_MSC_VER) */
-#else
-    #error Wizzy is not set up for distribution yet
-#endif /* ifndef WZ_CONFIG_DIST */
 
 #define WZ_NULL_ENTITY_HANDLE nullptr
 
@@ -113,14 +98,7 @@
 } \
 WZ_CORE_ASSERT(false, "Invalid renderer API selected"); \
 
-#define WZ_EXTENSION_MATERIAL   	"wzmat"
-#define WZ_EXTENSION_TEXTURE    	"wztxr"
-#define WZ_EXTENSION_SHADER     	"wzsdr"
-#define WZ_EXTENSION_SCRIPT     	"wzscr"
-#define WZ_EXTENSION_MODEL      	"wzmdl"
-
-#define WZ_NULL_RESOURCE_HANDLE 	"NULL"
-#define WZ_DEFAULT_SHADER_HANDLE    "PhongShader"
+#define WZ_NULL_RESOURCE_HANDLE 	0
 
 #define WZ_UNLOADED_TEXTURE_COLOR   ::Wizzy::Color::red
 #define WZ_INVALID_TEXTURE_COLOR    ::Wizzy::Color::magenta
@@ -129,11 +107,47 @@ WZ_CORE_ASSERT(false, "Invalid renderer API selected"); \
 
 #define WZ_NULL_ENTITY_HANDLE nullptr
 
-namespace Wizzy {
-    enum BufferUsage {
-        WZ_STATIC = 0, WZ_DYNAMIC = 1, WZ_STREAM = 2
-    };
+#define WZ_NS_BEGIN(ns) namespace ns {
+#define WZ_NS_END }
 
-    class Application;
-    typedef Wizzy::Application* (*create_application_fn)();
+// Serialization
+
+#define WZ_TOKEN_HEADER							"!½WZ\n"
+#define WZ_TOKEN_FOOTER							"\nWZ½!"
+#define WZ_BYTE_TOKEN_BEGIN_FLOAT				((byte)4)
+#define WZ_BYTE_TOKEN_BEGIN_INT					((byte)5)
+#define WZ_BYTE_TOKEN_BEGIN_STRING				((byte)6)
+#define WZ_BYTE_TOKEN_BEGIN_BOOL				((byte)7)
+#define WZ_BYTE_TOKEN_NEXT_ITEM					((byte)21)
+#define WZ_BYTE_TOKEN_FLAG_SEPARATOR			((byte)14)
+#define WZ_BYTE_TOKEN_DATA_SEPARATOR			((byte)12)
+#define WZ_BYTE_TOKEN_END						((byte)10)
+#define WZ_IS_TYPE_BYTE(b)						(b == WZ_BYTE_TOKEN_BEGIN_FLOAT || b == WZ_BYTE_TOKEN_BEGIN_INT || b == WZ_BYTE_TOKEN_BEGIN_STRING || b == WZ_BYTE_TOKEN_BEGIN_BOOL)
+#define WZ_IS_BYTE_TOKEN(b)						(WZ_IS_TYPE_BYTE(b) || b == WZ_BYTE_TOKEN_NEXT_ITEM || b == WZ_BYTE_TOKEN_END || b == WZ_BYTE_TOKEN_FLAG_SEPARATOR || b == WZ_BYTE_TOKEN_DATA_SEPARATOR)
+
+#define IS_IMAGE_EXTENSION(x)	((string(x) == ".jpg" || string(x) == ".png" || string(x) == ".tga" || string(x) == ".bmp" || string(x) == ".psd" || string(x) == ".gif" || string(x) == ".hdr" || string(x) == ".pic") || \
+								(string(x) == ".JPG" || string(x) == ".PNG" || string(x) == ".TGA" || string(x) == ".BMP" || string(x) == ".PSD" || string(x) == ".GIF" || string(x) == ".HDR" || string(x) == ".PIC") || \
+								(string(x) == "JPG" || string(x) == "PNG" || string(x) == "TGA" || string(x) == "BMP" || string(x) == "PSD" || string(x) == "GIF" || string(x) == "HDR" || string(x) == "PIC") || \
+								(string(x) == "jpg" || string(x) == "png" || string(x) == "tga" || string(x) == "bmp" || string(x) == "psd" || string(x) == "gif" || string(x) == "hdr" || string(x) == "pic"))
+#define IS_SHADER_EXTENSION(x)	(string(x) == ".shader" || string(x) == ".SHADER"|| string(x) == "shader"|| string(x) == "SHADER")
+#define IS_MODEL_EXTENSION(x)	((string(x) == ".obj" || string(x) == ".fbx" || string(x) == ".blend") ||\
+								(string(x) == ".OBJ" || string(x) == ".FBX" || string(x) == ".BLEND") ||\
+								(string(x) == "OBJ" || string(x) == "FBX" || string(x) == "BLEND") ||\
+								(string(x) == "obj" || string(x) == "fbx" || string(x) == "blend"))
+#define IS_SCRIPT_EXTENSION(x)	(string(x) == ".lua" || string(x) == ".LUA"|| string(x) == "lua"|| string(x) == "LUA")
+
+#define _KB(x)		(1024 * x)
+#define _MB(x)		(_KB(1000) * x)
+#define _GB(x)		(_MB(1000) * x)
+
+namespace Wizzy {
+
+	enum ScriptEnum {
+		SCRIPT_TYPE_NONE = -1,
+
+		SCRIPT_TYPE_CONFIG,
+		SCRIPT_TYPE_SYSTEM,
+		SCRIPT_TYPE_COMPONENT
+	};
+	
 }

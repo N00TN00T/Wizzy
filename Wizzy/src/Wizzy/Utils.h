@@ -18,4 +18,21 @@ namespace Wizzy {
     double inline to_degrees(double rad)  {
         return rad * 57.2957795;
     }
+
+	inline std::vector<string> split_string(const string& str, char delimiter) {
+
+		std::vector<string> _ret;
+
+		std::stringstream _stream(str);
+		string _line = "";
+
+		while (std::getline(_stream, _line, delimiter)) {
+
+			if (_line != "") _ret.push_back(_line);
+
+		}
+
+		return _ret;
+
+	}
 }

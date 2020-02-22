@@ -1,6 +1,8 @@
 #include "wzpch.h"
 
 #include "Wizzy/Ecs/ECSManager.h"
+#include "Wizzy/Instrumentor.h"
+
 
 namespace ecs {
 
@@ -69,85 +71,107 @@ namespace ecs {
 		m_entites.pop_back();
 	}
 
-	std::vector<IComponent*> ECSManager::GetComponents(EntityHandle entity) {
-		std::vector<IComponent*> _components;
+	std::vector<std::pair<StaticCId, IComponent*>> ECSManager::GetComponents(EntityHandle entity) {
+		std::vector<std::pair<StaticCId, IComponent*>> _components;
 
 		for (auto& [id, memPool] : m_components) {
-			_components.push_back(GetComponentInternal(ToRawType(entity), memPool, id));
+			auto _comp = GetComponentInternal(ToRawType(entity), memPool, id);
+			if (_comp)
+				_components.push_back({ id, _comp });
 		}
 
 		return _components;
 	}
 
 	void ECSManager::NotifySystems(const SystemLayer& systems, Wizzy::Event& e) {
+		WZ_PROFILE_FUNCTION();
         ComponentGroup _toUpdate;
 		for (size_t i = 0; i < systems.SystemCount(); i++) {
             uint16_t _systemUpdates = 0;
 			auto* _system = systems[i];
+
 			if (!_system->IsSubscribed(e.GetEventType())) continue;
-			const auto& _systemTypes = _system->GetTypeIds();
-			const auto& _systemFlags = _system->GetFlags();
-			if (_systemTypes.size() == 1) {
-				const auto& _componentType = _systemTypes[0];
-				const auto& _typeSize = IComponent::StaticInfo(_componentType).size;
-				const auto& _memPool = m_components[_componentType];
-				for (size_t j = 0; j < _memPool.size(); j += _typeSize) {
-					_toUpdate.Push((IComponent*)&_memPool[i], _componentType);
-					_system->OnEvent(e, _toUpdate);
-                    _systemUpdates++;
-                    _toUpdate.Clear();
+
+			if (_system->ProcessAll()) {
+
+				for (const auto& _entity : m_entites) {
+
+					ComponentGroup _group;
+
+					for (auto [_id, _comp] : GetComponents(_entity)) {
+						_group.Push(_comp, _id);
+					}
+
+					_systemUpdates++;
+					_system->OnEvent(e, _group);
+
 				}
+
 			} else {
-				/* _lc = least common */
-				uint32_t _lcIndex = FindLeastCommonComponentIndex(_systemTypes,
-															 _systemFlags);
-				StaticCId _lcType = _systemTypes[_lcIndex];
-				const auto& _lcTypeSize = IComponent::StaticInfo(_lcType).size;
-				auto _lcMemPool = m_components[_lcType];
+				const auto& _systemTypes = _system->GetTypeIds();
+				const auto& _systemFlags = _system->GetFlags();
+				if (_systemTypes.size() == 1) {
+					const auto& _componentType = _systemTypes[0];
+					const auto& _typeSize = IComponent::StaticInfo(_componentType).size;
+					const auto& _memPool = m_components[_componentType];
+					for (size_t j = 0; j < _memPool.size(); j += _typeSize) {
+						_toUpdate.Push((IComponent*)& _memPool[j], _componentType);
+						_system->OnEvent(e, _toUpdate);
+						_systemUpdates++;
+						_toUpdate.Clear();
+					}
+				} else {
+					/* _lc = least common */
+					uint32_t _lcIndex = FindLeastCommonComponentIndex(_systemTypes,
+						_systemFlags);
+					StaticCId _lcType = _systemTypes[_lcIndex];
+					const auto& _lcTypeSize = IComponent::StaticInfo(_lcType).size;
+					auto _lcMemPool = m_components[_lcType];
 
-                /* Hint the componentgroup about how many elemets there will be
-                    as to allocate all needed memory here instead of allocating
-                    a small amount for each component push */
-                _toUpdate.HintCount(_lcMemPool.size() / _lcTypeSize);
+					/* Hint the componentgroup about how many elemets there will be
+						as to allocate all needed memory here instead of allocating
+						a small amount for each component push */
+					_toUpdate.HintCount(_lcMemPool.size() / _lcTypeSize);
 
-				bool _isValid = true;
-				/* Iterate through the components of the least common of the
-					system types, instead of just iterating through the first
-					typegroup of components as it could be any amount of
-					components. */
-				for (size_t j = 0; j < _lcMemPool.size(); j += _lcTypeSize) {
-					IComponent *_ofFirstType = (IComponent*)&_lcMemPool[j];
+					bool _isValid = true;
+					/* Iterate through the components of the least common of the
+						system types, instead of just iterating through the first
+						typegroup of components as it could be any amount of
+						components. */
+					for (size_t j = 0; j < _lcMemPool.size(); j += _lcTypeSize) {
+						IComponent* _ofFirstType = (IComponent*)& _lcMemPool[j];
 
-					Entity *_entity = ToRawType(_ofFirstType->entity);
-					for (size_t k = 0; k < _systemTypes.size(); k++) {
-						const auto& _systemType = _systemTypes[k];
-						const auto& _systemFlag = _systemFlags[k];
-						IComponent *_entityComp = GetComponentInternal(
-													_entity,
-													m_components[_systemType],
-													_systemType
-												);
+						Entity* _entity = ToRawType(_ofFirstType->entity);
+						for (size_t k = 0; k < _systemTypes.size(); k++) {
+							const auto& _systemType = _systemTypes[k];
+							const auto& _systemFlag = _systemFlags[k];
+							IComponent* _entityComp = GetComponentInternal(
+								_entity,
+								m_components[_systemType],
+								_systemType
+							);
 
-						if (!_entityComp &&
-							(_systemFlag & System::FLAG_OPTIONAL) == 0) {
-							/* Entity does not have a component of a system
-							 	component type AND that component is not optional*/
-							_isValid = false;
-							break;
+							if (!_entityComp &&
+								(_systemFlag & System::FLAG_OPTIONAL) == 0) {
+								/* Entity does not have a component of a system
+									component type AND that component is not optional*/
+								_isValid = false;
+								break;
+							}
+
+							if (_entityComp)
+								_toUpdate.Push(_entityComp, _systemType);
 						}
 
-						if (_entityComp)
-							_toUpdate.Push(_entityComp, _systemType);
-					}
-
-					if (_isValid) {
-						_system->OnEvent(e, _toUpdate);
-                        _systemUpdates++;
-                        _toUpdate.Clear();
+						if (_isValid) {
+							_system->OnEvent(e, _toUpdate);
+							_systemUpdates++;
+							_toUpdate.Clear();
+						}
 					}
 				}
+				WZ_CORE_ASSERT(_systemUpdates != 0, "Unused system '" + typestr(*_system) + "'");
 			}
-			WZ_CORE_ASSERT(_systemUpdates != 0, "Unused system '" + typestr(*_system) + "'");
 		}
 	}
 	void ECSManager::AddComponentInternal(Entity *entity,
@@ -180,6 +204,7 @@ namespace ecs {
 	IComponent* ECSManager::GetComponentInternal(Entity * entity,
 											const ComponentMem& memPool,
 											const StaticCId & componentId) {
+		WZ_PROFILE_FUNCTION();
 		const auto& _entityComps = entity->second;
 
 		for (const auto& _comp : _entityComps) {
@@ -224,6 +249,7 @@ namespace ecs {
 	}
 	uint32_t ECSManager::FindLeastCommonComponentIndex(const std::vector<StaticCId>& types,
 											const std::vector<System::ComponentFlags>& flags) {
+		WZ_PROFILE_FUNCTION();
 		size_t _minNumComponents = SIZE_MAX;
 		uint32_t _minIndex = UINT32_MAX;
 

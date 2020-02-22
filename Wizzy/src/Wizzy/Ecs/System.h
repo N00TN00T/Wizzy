@@ -15,12 +15,15 @@ namespace ecs {
 		inline const std::vector<ComponentFlags>& GetFlags() const { return m_flags; }
 		inline const bool& IsValid() const { return m_isValid; }
 
+		inline bool ProcessAll() const { return m_processAllComponents; }
+
 		bool IsSubscribed(Wizzy::EventType eventId) const;
 
 	protected:
 		void AddComponentType(StaticCId type, ComponentFlags flags = FLAG_NONE);
 		template <typename TComponent>
 		void AddComponentType(ComponentFlags flags = FLAG_NONE);
+		void AddAllComponentTypes(ComponentFlags flags = FLAG_NONE);
 		void Subscribe(Wizzy::EventType eventId);
 		void SubscribeAll();
 
@@ -30,6 +33,7 @@ namespace ecs {
 		bool m_isValid = false;
 		std::vector<Wizzy::EventType> m_subscriptions;
 		bool m_subscribeAll = false;
+		bool m_processAllComponents = false;
 
  	};
 

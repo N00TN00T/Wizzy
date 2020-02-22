@@ -7,8 +7,10 @@
 
 namespace Wizzy {
 
-    Shader::~Shader() {
+    const PropertyLibrary* Shader::s_templateProps;
 
+    Shader::~Shader() {
+        
     }
 
     void Shader::UploadData(const string& name, ShaderDataType type, void* data) {
@@ -40,10 +42,18 @@ namespace Wizzy {
         }
     }
 
-    Shader* Shader::Create(const string& sourceFile, const string& data, const Flagset& flags) {
+    Resource* Shader::Create(const ResData& data, const PropertyLibrary& props) {
 
-        CREATE_BY_API(new GLShader(data, flags));
+        CREATE_BY_API(new GLShader(data, props));
 
         return nullptr;
+    }
+    const PropertyLibrary& Shader::GetTemplateProps()
+    {
+        if (!s_templateProps)
+        {
+            s_templateProps = new PropertyLibrary;
+        }
+        return *s_templateProps;
     }
 }

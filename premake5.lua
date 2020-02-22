@@ -14,7 +14,7 @@ workspace "Wizzy"
   }
 
   files { "**premake5.lua" }
-  buildoptions { "-rdynamic" }
+  
   output_dir = "%{cfg.buildcfg}-%{cfg.system}-%{cfg.architecture}"
 
   -- Include directories relative to root directory
@@ -25,17 +25,16 @@ workspace "Wizzy"
     imgui = "Wizzy/vendor/imgui",
     glm = "Wizzy/vendor/glm",
     stb = "Wizzy/vendor/stb",
-    lua = "Wizzy/vendor/lua",
-    pybind11 = "Wizzy/vendor/pybind11/include",
-    pybind11 = "Wizzy/vendor/ulib/include",
-    assimp = "Wizzy/vendor/assimp/include"
+    lua = "Wizzy/vendor/lua/src",
+    ulib = "Wizzy/vendor/ulib/include",
+    assimp = "Wizzy/vendor/assimp/include",
+	luabridge = "Wizzy/vendor/LuaBridge/Source"
   }
 
   include "Wizzy/vendor/glfw/"
   include "Wizzy/vendor/glad/"
   include "Wizzy/vendor/imgui/"
   include "Wizzy/vendor/lua"
-  include "Wizzy/vendor/assimp"
 
 --[[------------------------------------------------------------------------------------
        CORE PROJECT
@@ -45,8 +44,6 @@ project "Wizzy"
   location "Wizzy"
   kind "StaticLib"
   language "C++"
-
-   buildoptions { "-Wall", "-Werror" }
 
   targetdir ("bin/" .. output_dir .. "/%{prj.name}")
   objdir ("bin-int/" .. output_dir .. "/%{prj.name}")
@@ -76,16 +73,15 @@ project "Wizzy"
     "%{include_dir.glm}",
     "%{include_dir.stb}",
     "%{include_dir.lua}",
-    "%{include_dir.pybind11}",
     "%{include_dir.ulib}",
-    "%{include_dir.assimp}"
+    "%{include_dir.assimp}",
+	"%{include_dir.luabridge}"
   }
 
   defines
   {
     "WZ_EXPORT",
-    "WZ_USE_OPENGL",
-    "STB_IMAGE_IMPLEMENTATION"
+    "WZ_USE_OPENGL"
   }
 
   filter "action:codelite"
@@ -105,7 +101,7 @@ project "Wizzy"
     defines
     {
       "WZ_PLATFORM_WINDOWS",
-      "GLFW_INCLUDE_NONE",
+      --"GLFW_INCLUDE_NONE",
       "PDOES_API=__declspec(dllimport)"
     }
 
@@ -144,7 +140,7 @@ project "Wizzy"
 
     includedirs { "/usr/include/python3.6" }
 
-
+	buildoptions { "-Wall", "-Werror" }
 
 ---------------------------------------------------------------------
 
@@ -194,15 +190,11 @@ project "Sandbox"
   language "C++"
   architecture "x64"
 
-  buildoptions { "-Wall", "-Werror" }
-
   targetdir ("bin/" .. output_dir .. "/%{prj.name}")
   objdir ("bin-int/" .. output_dir .. "/%{prj.name}")
 
   pchheader "spch.h"
   pchsource "Sandbox/src/spch.cpp"
-
-  buildoptions { "-Wall" }
 
   files
   {
@@ -222,15 +214,14 @@ project "Sandbox"
     "%{include_dir.glm}",
     "%{include_dir.stb}",
     "%{include_dir.lua}",
-    "%{include_dir.pybind11}",
     "%{include_dir.ulib}",
-    "%{include_dir.assimp}"
+    "%{include_dir.assimp}",
+	"%{include_dir.luabridge}"
   }
 
   defines
   {
       "WZ_USE_OPENGL",
-      "STB_IMAGE_IMPLEMENTATION",
       "ULIB_NO_INCLUDE",
       "WZ_EXPORT"
   }
@@ -241,8 +232,7 @@ project "Sandbox"
     "imgui",
     "glfw",
     "glad",
-    "lua",
-    "assimp"
+    "lua"
   }
 
   filter "action:codelite"
@@ -278,10 +268,12 @@ project "Sandbox"
       "pthread",
       "Xi",
       "dl",
-      "stdc++fs"
+      "stdc++fs",
+	  "Wizzy/vendor/assimp/linux/lib/assimp-vc140-mt"
     }
 
-    includedirs { "/usr/include/python3.6" }
+	buildoptions { "-Wall", "-Werror" }
+
 ---------------------------------------------------------------------
 
 ---------------------------------------------------------------------
@@ -296,7 +288,6 @@ project "Sandbox"
     {
       "WZ_PLATFORM_WINDOWS",
       "GLFW_INCLUDE_NONE",
-      "PDOES_API=__declspec(dllexport)"
     }
 
     --postbuildcommands { "{COPY} %{cfg.buildtarget.abspath}/../../Wizzy/vendor/assimp/lib/windows/assimp.dll.4 %{cfg.buildtarget.directory}/assimp.dll.4" }
@@ -305,7 +296,7 @@ project "Sandbox"
     {
         "opengl32.lib",
         "glu32.lib",
-        "Wizzy/vendor/assimp/build/windows/assimp"
+		"Wizzy/vendor/assimp/windows/lib/assimp-vc140-mt"
     }
 
     -- Windows-specific files

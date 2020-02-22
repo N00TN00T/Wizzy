@@ -32,6 +32,6 @@ namespace Wizzy {
 		double _x, _y;
 		glfwGetCursorPos(_window, &_x, &_y);
 
-		return vec2(_x, _y);
+		return vec2(_x, _app.GetWindow().GetHeight() - _y);
 	}
 }

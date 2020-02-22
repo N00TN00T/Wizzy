@@ -1,11 +1,20 @@
 #pragma once
 
+#include "Wizzy/Resource/Resource.h"
 #include "Wizzy/Renderer/API.h"
+#include "Wizzy/Renderer/Texture.h"
 
 namespace Wizzy {
 
-    class RenderTarget {
+    
+
+    class RenderTarget : public Resource {
     public:
+
+        __HANDLE_DEF;
+
+        RenderTarget(const PropertyLibrary& props) : Resource(props) {}
+
         virtual
         ~RenderTarget() {}
 
@@ -24,9 +33,12 @@ namespace Wizzy {
         virtual
         void SetSize(u32 width, u32 height) = 0;
 
-
         static
         RenderTarget* Create(u32 width, u32 height);
+
+        static Resource* Create(const ResData& data, const PropertyLibrary& props);
+
+        static const PropertyLibrary& GetTemplateProps();
     };
 
     typedef std::shared_ptr<RenderTarget> RenderTargetPtr;

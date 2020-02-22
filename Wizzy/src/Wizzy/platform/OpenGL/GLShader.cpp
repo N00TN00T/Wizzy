@@ -6,18 +6,52 @@
 #include "Wizzy/platform/OpenGL/GLShader.h"
 #include "Wizzy/platform/OpenGL/GLErrorHandling.h"
 #include "Wizzy/platform/OpenGL/GLAPI.h"
+#include "Wizzy/Utils.h"
+#include "Wizzy/PropertyLibrary.h"
+#include "Wizzy/WizzyExceptions.h"
 
 #define U_LOCATION(p, n) glGetUniformLocation(p, n)
 
+bool string_is_glsl_type(const string& str) {
+	return str == "mat4" || str == "vec2" || str == "vec3" || str == "vec4" || str == "mat3" || str == "float" || str == "int" || str == "bool" || str == "sampler2d";
+}
+
 namespace Wizzy {
 
-    GLShader::GLShader(const string& data, const Flagset& flags)
-        : Shader(flags), m_rawSource(data), m_shaderId(WZ_SHADER_ID_INVALID) {
-        m_isValid = this->ParseShader(data) && this->Compile();
+	ShaderDataType string_to_shader_type(const string& str) {
+		
+		WZ_CORE_ASSERT(string_is_glsl_type(str), "String was not a supported glsl type");
+
+		if		(str == "mat3")	return ShaderDataType::MAT3;
+		else if (str == "mat4") return ShaderDataType::MAT4;
+		else if (str == "vec2") return ShaderDataType::FLOAT2;
+		else if (str == "vec3") return ShaderDataType::FLOAT3;
+		else if (str == "vec4") return ShaderDataType::FLOAT4;
+		else if (str == "float") return ShaderDataType::FLOAT1;
+		else if (str == "int") return ShaderDataType::INT1;
+		else if (str == "bool") return ShaderDataType::BOOL;
+		else if (str == "sampler2d") return ShaderDataType::TEXTURE2D;
+
+	}
+
+    GLShader::GLShader(const ResData& data, const PropertyLibrary& props)
+        : Shader(props), m_shaderId(WZ_SHADER_ID_INVALID) {
+
+        m_rawSource = string((const char*)data.data(), data.size());
+        if (!this->ParseShader(m_rawSource))
+        {
+            WZ_THROW(Exception, "Failed parsing shader");
+        }
+        if (!this->Compile())
+        {
+            WZ_THROW(Exception, "Failed compiling shader");
+        }
+
+		
     }
 
     GLShader::~GLShader() {
-
+        GL_CALL(glDeleteProgram(m_shaderId));
     }
 
     void GLShader::Bind() const {
@@ -69,6 +103,39 @@ namespace Wizzy {
 		GL_CALL(glUniform4f(U_LOCATION(m_shaderId, name.c_str()), value.x, value.y, value.z, value.w));
 	}
 
+    void GLShader::Upload1iv(const string& name, const u32& count, const int32* value)
+    {
+        GL_CALL(glUniform1iv(U_LOCATION(m_shaderId, name.c_str()), count, value));
+    }
+    void GLShader::Upload2iv(const string& name, const u32& count, const int32* value)
+    {
+        GL_CALL(glUniform2iv(U_LOCATION(m_shaderId, name.c_str()), count, value));
+    }
+    void GLShader::Upload3iv(const string& name, const u32& count, const int32* value)
+    {
+        GL_CALL(glUniform3iv(U_LOCATION(m_shaderId, name.c_str()), count, value));
+    }
+    void GLShader::Upload4iv(const string& name, const u32& count, const int32* value)
+    {
+        GL_CALL(glUniform4iv(U_LOCATION(m_shaderId, name.c_str()), count, value));
+    }
+    void GLShader::Upload1fv(const string& name, const u32& count, const float* value)
+    {
+        GL_CALL(glUniform1fv(U_LOCATION(m_shaderId, name.c_str()), count, value));
+    }
+    void GLShader::Upload2fv(const string& name, const u32& count, const vec2& value)
+    {
+        GL_CALL(glUniform2fv(U_LOCATION(m_shaderId, name.c_str()), count, glm::value_ptr(value)));
+    }
+    void GLShader::Upload3fv(const string& name, const u32& count, const vec3& value)
+    {
+        GL_CALL(glUniform3fv(U_LOCATION(m_shaderId, name.c_str()), count, glm::value_ptr(value)));
+    }
+    void GLShader::Upload4fv(const string& name, const u32& count, const vec4& value)
+    {
+        GL_CALL(glUniform4fv(U_LOCATION(m_shaderId, name.c_str()), count, glm::value_ptr(value)));
+    }
+
     bool GLShader::ParseShader(const string& data) {
         enum class ShaderType { invalid = -1, vertex = 0, fragment = 1 };
         enum ShaderLightMode  {
@@ -85,6 +152,7 @@ namespace Wizzy {
 		string _fragSource = "";
 		ShaderType _shaderType = ShaderType::invalid;
         ShaderLightMode _lightMode = ShaderLightMode::none;
+		string _processed = "";
 
         u32 _lineNum = 1;
 		string _line;
@@ -126,19 +194,48 @@ namespace Wizzy {
                         break;
                     case ShaderType::invalid:
                         if (_line != "\n") {
-                            WZ_CORE_WARN("Shader source line '{0}' ignored as no shader type was specified (vertex/fragment)",
+                            WZ_CORE_WARN("Shader source line '{0}' ignored as no shader type was specified (vertex/fragment/geometry)",
                                                             _lineNum);
                         }
                         break;
                 }
 
             }
+
+			if (_line.find("#") == string::npos || (_line.find("#") != string::npos && _line.find("#") > _line.find("//"))) {
+				_processed += _line;
+			}
+
             _lineNum++;
         }
 
-        m_flags.SetBit(_lightMode);
+        m_props.SetProperty("LightMode", (int32)_lightMode);
 
 		m_source = { _vertSource, _fragSource };
+
+		_sourceStream = std::stringstream(_processed);
+		_line = "";
+
+		while (std::getline(_sourceStream, _line, ';')) {
+
+			auto _words = split_string(_line, ' ');
+
+			/*bool _skipLine = false;
+			for (const auto& _word : _words) {
+
+				if (_word[0] == '/' && _word[1] == '/') { _skipLine = true; break; }
+
+			}
+
+			if (_skipLine) continue;*/
+
+			bool _canSize5 = _words.size() == 5 && _words[3] == "=";
+
+			if ((_canSize5 || _words.size() == 3) && _words[0] == "uniform" && string_is_glsl_type(_words[1])) {
+				m_fields.push_back( { string_to_shader_type(_words[1]), _words[2] } );
+			}
+		}
+
         WZ_CORE_INFO("Successfully parsed shader");
         return true;
     }
@@ -195,7 +292,11 @@ namespace Wizzy {
                 delete _fLog;
             }
         }
-        WZ_CORE_ASSERT(_vCompileSuccess && _fCompileSuccess, _errMsg);
+
+		if (!_vCompileSuccess && !_fCompileSuccess) {
+			WZ_CORE_ERROR(_errMsg);
+			return false;
+		}
 
         GL_CALL(glAttachShader(_program, _vShader));
         GL_CALL(glAttachShader(_program, _fShader));
@@ -209,9 +310,12 @@ namespace Wizzy {
         char *_linkLog = new char[512];
         GL_CALL(glGetProgramInfoLog(_program, 512, NULL, _linkLog));
 
+		if (!_linkSuccess) {
+			WZ_CORE_ERROR("Failed linking shaders into program...");
+			WZ_CORE_ERROR("    ...{0}", string(_linkLog));
+			return false;
+		}
 
-        WZ_CORE_ASSERT(_linkSuccess, "Failed linking shaders into program: '"
-                                        + string(_linkLog) + "'");
         delete _linkLog;
 
         GL_CALL(glValidateProgram(_program));
@@ -225,4 +329,5 @@ namespace Wizzy {
 
         return true;
     }
+    
 }

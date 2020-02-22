@@ -50,6 +50,43 @@ namespace ecs {
 		ECSManager(const ECSManager&) = delete;
 		~ECSManager();
 
+		template <typename ...TComponent>
+		EntityHandle CreateEntity(TComponent&... args)
+		{
+			ecs::IComponent* comps[] =
+			{
+				&args...
+			};
+
+			ecs::StaticCId ids[] =
+			{
+				args.staticId...
+			};
+
+			return this->CreateEntity(comps, ids, sizeof(comps) / sizeof(ecs::IComponent*));
+		}
+
+		template <typename ...TComponent>
+		EntityHandle CreateEntity()
+		{
+			ecs::IComponent* comps[] =
+			{
+				new TComponent...
+			};
+
+			ecs::StaticCId ids[] =
+			{
+				TComponent::staticId...
+			};
+
+			auto hnd = this->CreateEntity(comps, ids, sizeof(comps) / sizeof(ecs::IComponent*));
+			for (int i = 0; i < sizeof(comps) / sizeof(ecs::IComponent*); i++)
+			{
+				delete comps[i];
+			}
+			return hnd;
+		}
+
 		EntityHandle CreateEntity(IComponent **components,
 									const StaticCId *ids,
 									size_t numComponents);
@@ -62,7 +99,7 @@ namespace ecs {
 		template <typename TComponent>
 		TComponent* GetComponent(EntityHandle entity);
 
-		std::vector<IComponent*> GetComponents(EntityHandle entity);
+		std::vector<std::pair<StaticCId, IComponent*>> GetComponents(EntityHandle entity);
 
 		void NotifySystems(const SystemLayer& systems, Wizzy::Event& e);
 

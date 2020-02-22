@@ -11,6 +11,8 @@
 #include "Wizzy/Renderer/RendererAPI.h"
 #include "Wizzy/Renderer/API.h"
 
+#include "Wizzy/Instrumentor.h"
+
 namespace Wizzy {
 	IWindow *IWindow::Create(const WindowProps& props) {
 		return new WindowsWindow(props);
@@ -31,6 +33,7 @@ namespace Wizzy {
 	}
 
 	void WindowsWindow::Init(const WindowProps& props) {
+		WZ_PROFILE_FUNCTION();
 		m_data.title = props.title;
 		m_data.width = props.width;
 		m_data.height = props.height;
@@ -51,8 +54,8 @@ namespace Wizzy {
 		WZ_CORE_TRACE("Creating window '{0}'...",
 			props.title);
 
-		glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 3);
-		glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 3);
+		glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 4);
+		glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 5);
 		glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
 		m_glfwWindow = glfwCreateWindow(props.width, props.height, props.title.c_str(), nullptr, nullptr);
 
@@ -160,26 +163,37 @@ namespace Wizzy {
 	}
 
 	void WindowsWindow::Shutdown() {
+		WZ_PROFILE_FUNCTION();
 		glfwDestroyWindow(m_glfwWindow);
 		glfwTerminate();
 	}
 
 	void WindowsWindow::OnFrameBegin() {
-
+		WZ_PROFILE_FUNCTION();
 	}
 
 	void WindowsWindow::OnFrameEnd() {
+		WZ_PROFILE_FUNCTION();
+		{
+			WZ_PROFILE_SCOPE("Set delta");
+			double _now = glfwGetTime();
+			float _delta = static_cast<float>(_now - m_lastTime);
+			m_data.deltaTime = _delta;
+			m_lastTime = _now;
+		}
 
-		double _now = glfwGetTime();
-		float _delta = static_cast<float>(_now - m_lastTime);
-		m_data.deltaTime = _delta;
-		m_lastTime = _now;
-
-		glfwPollEvents();
-		m_context->SwapBuffers();
+		{
+			WZ_PROFILE_SCOPE("Poll events");
+			glfwPollEvents();
+		}
+		{
+			WZ_PROFILE_SCOPE("Swap buffers");
+			m_context->SwapBuffers();
+		}
 	}
 
 	void WindowsWindow::SetVSync(bool enabled) {
+		WZ_PROFILE_FUNCTION();
 		glfwSwapInterval(enabled);
 		m_data.vsync = enabled;
 	}

@@ -5,11 +5,7 @@
 
 namespace Wizzy {
 
-    Resource::Resource(const Flagset& flags,
-                       const string& resourceType,
-                       const string& extension)
-            : m_flags(flags),
-              m_resourceType(resourceType),
-              m_extension(extension) {}
+    Resource::Resource(const PropertyLibrary& props)
+            : m_props(props) {}
 
 }

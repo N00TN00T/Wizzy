@@ -11,12 +11,12 @@ namespace Wizzy {
         GL_CALL(glClearColor(r, g, b, a));
     }
     void GLRendererAPI::Clear()  {
-        GL_CALL(glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT));
+        GL_CALL(glClear(GL_COLOR_BUFFER_BIT));
     }
 
-    void GLRendererAPI::DrawIndexed(const VertexArrayPtr& va, RenderMode mode) {
+    void GLRendererAPI::DrawIndexed(const VertexArrayPtr& va, u32 indexCount, RenderMode mode) {
         GL_CALL(glDrawElements(GL_RenderModeToAPIRenderMode(mode),
-                                va->GetIndexBuffer()->GetCount(),
+                                indexCount,
                                 GL_UNSIGNED_INT, nullptr));
     }
 

@@ -15,10 +15,13 @@
 #include <new>
 #include <cmath>
 #include <stdarg.h>
-#include <experimental/filesystem>
+#include <filesystem>
 #include <chrono>
 #include <cstring>
 #include <cstdint>
+#include <variant>
+#include <mutex>
+#include <future>
 
 /* std data structures */
 #include <string>
@@ -43,7 +46,8 @@
 #include <glm/gtc/matrix_inverse.hpp>
 #include <glm/gtc/type_ptr.hpp>
 
-#include <ulib.hpp>
+#include <lua.hpp>
+#include <LuaBridge/LuaBridge.h>
 
 /* wizzy headers */
 
@@ -51,20 +55,23 @@
 #include "Wizzy/Log.h"
 #include "Wizzy/Color.h"
 
+#include <ulib.hpp>
+
 /* Platform/Compiler specific headers */
-#ifdef WZ_PLATFORM_WINDOWS
-namespace WinAPI {
-    #include <Windows.h>
-}
-#endif
-#ifdef __GNUC__
-    #include <cxxabi.h>
-#endif
+//#ifdef WZ_PLATFORM_WINDOWS
+//namespace WinAPI {
+//    #include <Windows.h>
+//}
+//#endif
+//#ifdef __GNUC__
+//    #include <cxxabi.h>
+//#endif
 
 /* typedefs */
 
 typedef std::string string;
 typedef uint8_t byte;
+typedef int8_t sbyte;
 typedef int8_t int8;
 typedef uint8_t uint8;
 typedef uint8 u8;
@@ -83,3 +90,6 @@ typedef glm::vec3 vec3;
 typedef glm::vec4 vec4;
 typedef glm::mat3 mat3;
 typedef glm::mat4 mat4;
+
+const string& GetExecutablePath();
+void SetExecutablePath(const string& p);

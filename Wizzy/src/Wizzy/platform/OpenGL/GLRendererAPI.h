@@ -22,7 +22,7 @@ namespace Wizzy {
         void ToggleBlending(bool value) override;
 
         virtual
-        void DrawIndexed(const VertexArrayPtr& va, RenderMode mode) override;
+        void DrawIndexed(const VertexArrayPtr& va, u32 indexCount, RenderMode mode) override;
     private:
         bool m_cullingEnabled = false;
         bool m_depthTestingEnabled = false;

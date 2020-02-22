@@ -1,11 +1,16 @@
 CHANGELOG FOR WIZZY
 
 
-0.2.1 - Textures
-* Implemented Texture class based on 2d images to apply to shading
-* Added the 'flags' parameter to ResourceManagement::Import to easily hint settings for resource loading.
+0.1.0 - Version history documentation
+- Started recording changes and versioning Wizzy
+- Features as of now:
+	- Platform-abstracted rendering API
+	- 2D Batch Renderer
+	- Basic 3D Renderer
+	- Advanced Resource Management system
+	- Advanced Logging System
+	- Platform-abstracted OS Window & Input polling
+	- Windows & Linux build support
+	- Event System
+	- ECS System
 
-0.2.2 - Mesh importing
-* Implemented mesh class, containing a VertexArray and all the data that was used to create the vertex array.-
-* Implemented Model resource - a list of meshes imported from model files
-* Added the RenderMode option when submitting drawdata to be able to draw in line mode instead of triangle mode

@@ -4,24 +4,31 @@
 #include "Wizzy/Resource/ResourceManagement.h"
 #include "Wizzy/Renderer/Shader.h"
 #include "Wizzy/Renderer/Texture.h"
+#include "Wizzy/Utils.h"
+#include "Wizzy/WizzyExceptions.h"
 
 namespace Wizzy {
-    Material::Material(const string& data, const Flagset& flags)
-        : Resource(flags, "Material", WZ_EXTENSION_MATERIAL),
-          shaderHandle(WZ_NULL_RESOURCE_HANDLE) {
-        m_isValid = Init(data);
+    Material::Material(const ResData& data, const PropertyLibrary& props)
+        : Resource(props), m_hShader(WZ_NULL_RESOURCE_HANDLE) 
+    {
+		
     }
-    Material::Material(ShaderHandle shaderHandle)
-        : Resource(Flagset(), "Material", WZ_EXTENSION_MATERIAL),
-          shaderHandle(shaderHandle) {
-        m_isValid = true;
+    Material::Material(Shader::Handle shaderHandle)
+        : Resource(PropertyLibrary()),
+		  m_hShader(shaderHandle) {
+		
+		
     }
 
-    void Material::Bind() {
+	Material::~Material() {
+		
+	}
 
-        auto& _shader = ResourceManagement::Get<Shader>(shaderHandle);
+    void Material::Bind() 
+    {
+		
 
-        int32 _diffuseLocation = 0;
+        /*int32 _diffuseLocation = 0;
         int32 _specularLocation = 0;
 
         if (ResourceManagement::Is<Texture>(diffuseMapHandle)) {
@@ -60,15 +67,18 @@ namespace Wizzy {
 
         for (const auto& _prop : m_properties) {
             _shader.UploadData(_prop.first, _prop.second.type, _prop.second.data);
-        }
+        }*/
     }
 
-    string Material::Serialize() const {
-        WZ_CORE_ERROR("Material serialization not yet implemented");
-        return "";
-    }
+    ResData Material::Serialize() const {
+        string _serialized = "shader:" + std::to_string(m_hShader.id) + "\n";
 
-    bool Material::Init(const string& data) {
-        return true;
+		// TODO: serialize data
+
+		return ResData((byte*)_serialized.data(), ((byte*)_serialized.data()) + _serialized.size());
+    }
+    const PropertyLibrary& Material::GetTemplateProps()
+    {
+        return PropertyLibrary();
     }
 }

@@ -6,6 +6,7 @@ namespace Wizzy {
 
 	LoggerPtr Log::s_coreLogger;
 	LoggerPtr Log::s_clientLogger;
+	bool Log::s_extra = true;
 
 	void Log::Init() {
 		spdlog::set_pattern("[%H:%M:%S:%e] %n: %^(%l) %v%$");

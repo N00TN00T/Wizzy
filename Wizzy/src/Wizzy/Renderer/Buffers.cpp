@@ -6,9 +6,9 @@
 #include "Wizzy/platform/OpenGL/GLBuffers.h"
 
 namespace Wizzy {
-    VertexBuffer* VertexBuffer::Create(void *data, size_t size) {
+    VertexBuffer* VertexBuffer::Create(void *data, size_t size, BufferEnum usage) {
 
-        CREATE_BY_API(new GLVertexBuffer(data, size));
+        CREATE_BY_API(new GLVertexBuffer(data, size, usage));
 
         return nullptr;
     }

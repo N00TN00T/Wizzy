@@ -13,7 +13,7 @@
 namespace Wizzy {
 	ImGuiSystem::ImGuiSystem() {
 		AddComponentType<ImGuiComponent>();
-
+		
 		Subscribe(EventType::app_frame_begin);
 		Subscribe(EventType::app_frame_end);
 
@@ -64,7 +64,8 @@ namespace Wizzy {
 		_style.Colors[ImGuiCol_WindowBg].w = 1.0f;
 
 		Application& _app = Application::Get();
-		// TODO: Cross-platform support
+		
+
 		GLFWwindow *_window = static_cast<GLFWwindow*>(_app.GetWindow().GetNativeWindow());
 
 		bool _glfwInitResult = ImGui_ImplGlfw_InitForOpenGL(_window, true);

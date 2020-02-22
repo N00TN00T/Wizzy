@@ -1,8 +1,15 @@
 # Small tasks
-- Move systems into files
 
 # Medium tasks
-- Only show inspector on selected Entity (Scene hiearchy)
+- Function overloads in Renderer2D to be able to render to a RenderTarget::Handle instead of a RenderTargetPtr
+- Font rendering
 
 # Large tasks
-- Make a new, more modular, implementation of the ECS-System (Keep the API)
+##Misc
+- Refactor renderer2D to use manually allocated RAM for the buffer and upload to VRAM (glBufferSubData) instead of mapping the buffer
+- Resource Manifest
+##Editor
+- Editor Project System
+- Editor Resource Management GUI
+- Editor full ImGui customization
+- Sound :(

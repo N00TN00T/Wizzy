@@ -4,9 +4,9 @@ namespace Wizzy {
     class GLTexture
         : public Texture {
     public:
-        GLTexture(const string& data, const ulib::Bitset& flags);
+        GLTexture(const ResData& data, const PropertyLibrary& flags);
         GLTexture(byte *rawData, int32 width, int32 height,
-                const Flagset& flags = Flagset());
+                const PropertyLibrary& props = PropertyLibrary());
         ~GLTexture();
 
         virtual
@@ -22,5 +22,7 @@ namespace Wizzy {
 
     private:
         u32                 m_textureId = WZ_TEXTURE_ID_INVALID;
+
+    public:
     };
 }

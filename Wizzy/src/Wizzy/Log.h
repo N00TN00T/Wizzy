@@ -29,9 +29,13 @@ namespace Wizzy {
 			s_clientLogger->set_level((spdlog::level::level_enum)level);
 		}
 
+		inline static void SetExtra(bool on) { s_extra = on; }
+		inline static bool Extra() { return s_extra; }
+
 	private:
 		static LoggerPtr s_coreLogger;
 		static LoggerPtr s_clientLogger;
+		static bool s_extra;
 	};
 
     inline std::string LogLevelToString(LogLevel level) {
@@ -50,10 +54,10 @@ namespace Wizzy {
 
 #if defined WZ_CONFIG_DEBUG
 	#define PRINT_PREFIX_CORE(l)\
-		if(::Wizzy::Log::GetCoreLogger()->level() <= (::Wizzy::LogLevel)l)\
+		if(::Wizzy::Log::Extra() && ::Wizzy::Log::GetCoreLogger()->level() <= (::Wizzy::LogLevel)l)\
 			printf("==========%s:%d==========\n", __FILENAME__, __LINE__)
 	#define PRINT_PREFIX(l) \
-		if(::Wizzy::Log::GetClientLogger()->level() <= (::Wizzy::LogLevel)l)\
+		if(::Wizzy::Log::Extra() && ::Wizzy::Log::GetClientLogger()->level() <= (::Wizzy::LogLevel)l)\
 			printf("==========%s:%d==========\n", __FILENAME__, __LINE__)
 #else
 	#define PRINT_PREFIX(l)

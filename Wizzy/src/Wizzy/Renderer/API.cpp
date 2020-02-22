@@ -5,6 +5,26 @@
 #include "Wizzy/Renderer/Renderer.h"
 
 namespace Wizzy {
+    u32 BufferUsageToAPIBufferUsage(BufferEnum v)
+    {
+        CREATE_BY_API(GL_BufferUsageToAPIBufferUsage(v));
+
+        return 0;
+    }
+    size_t ShaderDataTypeSize(ShaderDataType type) {
+		 
+		CREATE_BY_API(GL_ShaderDataTypeSize(type));
+
+		return 0;
+	}
+
+	u32 ShaderDataTypeElementCount(ShaderDataType type) {
+
+		CREATE_BY_API(GL_ShaderDataTypeElementCount(type));
+
+		return 0;
+	}
+
     int32 ShaderDataTypeToAPIType(ShaderDataType sType) {
 
         CREATE_BY_API(GL_ShaderDataTypeToAPIType(sType));

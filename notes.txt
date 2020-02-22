@@ -1,0 +1,8 @@
+For editor, make systems and put their gui in an noter system (i.e. MySystem & MySystemGui). 
+This way these systems can be reused when making a game-running project to run a game 
+without the editor.
+
+The resource manifest should be the resource directory built into a resources.manifest file 
+which will be used for a published game project. SetResourceDir() should accept .manifest
+files and parse them to create a virtual directory for the resources so ResourceManagement
+can be used the same way in the editor game and the published game.

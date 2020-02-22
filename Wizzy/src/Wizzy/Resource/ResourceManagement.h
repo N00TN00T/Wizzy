@@ -1,172 +1,340 @@
- #pragma once
+#pragma once
 
+#include "Wizzy/WizzyExceptions.h"
 #include "Wizzy/Resource/Resource.h"
-#include "Wizzy/Events/Event.h"
 
 /*
 
-Ownership of ALL resources imported with or created in ResourceManagement
-belongs to ResourceManagement. The only correct way to unload/free
-these resources is by calling Unload(string alias) or UnloadAll()
+Intended way of use:
 
+Instead of passing around pointers to resources they are associated with handles which
+can be passed around safely without accidentally touching garbage memory. The handle is
+associated with info about the resource, such as the path, name, props and resource index.
+This means that you may have a valid handle that points to a unloaded Resource so it's
+important to always make sure the resource is loaded before redeeming a handle to retrieve
+the associated resource.
+
+Handles are like pointers, if you lose them you have no way of accessing the memory
+they are associated with.
+
+To load a NEW resource from a file that is NOT in the resource directory
+	1.	Call AddToResourceDir<T>(string file, string resPath, PropertyLibrary props)
+			- 'file' is the file to be copied to the resource directory
+			- 'resPath' is the relative path from the resource directory as root
+			- 'props' is the import configuration
+			- The return value is a Resource::Handle where T is the resource class type
+	2.	Call Load(Resource::Handle handle)
+		- 'handle' is the handle registered and returned from AddToResourceDir()
+
+To load a resource that's already in the resource dir but not yet registered to a handle
+	Call Load(string resPath, uId id, PropertyLibrary defaultProps)
+		- 'resPath' is the relative resource directory path to a file that should exist
+		- 'id' is the id to be assigned to the handle
+		- 'defaultProps' is the props to be assigned if there aren't any serialized ones found
 */
 
-namespace Wizzy {
+namespace Wizzy
+{
+	typedef Resource* (*ResourceCreateFn)(const ResData&, const PropertyLibrary&); //td::function<Resource * (string, const PropertyLibrary&)> ResourceCreateFn;
 
-    typedef std::set<string>::iterator FileIdx;
-    typedef std::function<bool(Event&)> ResourceEventCallbackFn;
+	struct ResourceInfo
+	{
+		string				resPath;
+		u32					resourceIndex;
+		PropertyLibrary		props;
+		ResourceCreateFn	createFn;
+		ResData				source;
+		string				type;
 
-    class ResourceManagement {
-    public:
-        ResourceManagement() = delete;
+		inline string name() const 
+		{ 
+			static string cache = "";
+			static string lastPath = "";
 
-        inline static
-        void SetEventCallbackFn(ResourceEventCallbackFn fn) {
-            s_callbackFn = fn;
-        }
+			if (resPath != lastPath)
+			{
+				cache = ulib::File::name_of(resPath);
+			}
 
-/*
-        Create and add a resource of given type from given file and assign the
-        handle that will be used to retrieve the resource. Ownership of
-        allocated memory will belong to resource management. Also send in a
-        bitset of flags allowing broader customization of the resource settings.
-*/
-        template <typename TResource>
-        static
-        void Load(string file, const ResourceHandle& handle,
-                  Flagset flags = Flagset());
+			lastPath = resPath;
+			return cache;
+		}
+	};
 
-/*
-        Add an already created resource and associate it, and given file, with
-        given handle. Calling this will give ownership of the resource memory
-        to resource management, meaning it will and should only be freed
-        through resource management.
-*/
-        static
-        bool Add(Resource *resource, const ResourceHandle& handle);
+	class ResourceManagement
+	{
+	public:
+		static void LoadResourceList(const string& listFile);
+		static void WriteResourceList(const string& listFile);
+		// Add file to resource directory and register it to a handle. Will NOT load the resource.
+		template <typename T>
+		static typename T::Handle  AddToResourceDir(const string& file, string resPath, const PropertyLibrary& props);
 
-/*
-        Unload the resource associated with given handle from memory and remove
-        it.
-*/
-        static
-        void Unload(const ResourceHandle& handle);
+		// Add a resource already in memory and register to a handle
+		template <typename T>
+		static typename T::Handle AddResource(T* resource, const string& resPath, const PropertyLibrary& props);
 
-/*
-        Unload and load the resource associated with given handle.
-*/
-        template <typename TResource>
-        static
-        void Reload(const ResourceHandle& handle);
+		// Load a file already in the resource directory and register it to a handle
+		template <typename T>
+		static typename T::Handle Load(const string& resPath, uId id, const PropertyLibrary& defaultProps = PropertyLibrary());
 
-/*
-        Serialize the resource associated with given handle (by calling
-        per-resource defined 'Serialize()') and write the data to the file
-        associated with the given handle.
-*/
-        static
-        void Save(const ResourceHandle& handle);
+		// Load a file associated with given handle
+		static void Load(Resource::Handle handle);
 
-/*
-        Unload and remove all resource and, optionally, save them beforehand.
-*/
-        static
-        void Flush(bool save = false);
+		// Overwrite file data with the serialized data of the resource in memory
+		static void Save(Resource::Handle handle);
 
-/*
-        Retrieve and return the file associated with given handle.
-*/
-        static
-        const string& FileOf(const ResourceHandle& handle);
+		static void Unload(Resource::Handle handle);
 
-/*
-        Check whether or not given handle is valid. If no resource is associated
-        with given handle, or it's a null handle, it's invalid.
-*/
-        static
-        bool IsValid(const ResourceHandle& handle);
+		static void Reload(Resource::Handle handle, const PropertyLibrary& props);
+		static void Reload(Resource::Handle handle);
 
-/*
-        Check whether or not given handle is of given type. Returns false if
-        given handle is invalid.
-*/
-        template <typename TResource>
-        static
-        bool Is(const ResourceHandle& handle);
+		static void Delete(Resource::Handle handle);
 
-/*
-        Return the resource associated with given handle, if that resource is
-        of given type.
-*/
-        template <typename TResource>
-        static
-        TResource& Get(const ResourceHandle& handle);
+		template <typename T>
+		static T& Get(typename T::Handle handle);
+		template <typename T>
+		static bool TryGet(typename T::Handle handle, T* outResource);
 
-        static
-        void Rename(const ResourceHandle& oldHandle, const ResourceHandle& newHandle);
+		// Returns true if handle is registered correctly
+		static bool IsValid(Resource::Handle handle);
+		// Returns true if handle to file is registered correctly
+		static bool IsValid(const string& resPath);
+		// Returns true if handle is valid an associated resource is loaded
+		static bool IsLoaded(Resource::Handle handle);
 
-        inline static
-        void SetResourceDirectory(const string& dir) { s_resourceDir = dir; }
+		// Returns the handle for either resPath or name
+		static Resource::Handle HandleOf(const string& str);
 
-        inline static
-        const std::set<ResourceHandle>& GetHandles() { return s_handles; }
+		template <typename T>
+		static void ForEach(std::function<void(const Resource::Handle&)> fn);
+		static void ForEach(std::function<void(const Resource::Handle&)> fn);
 
-    private:
-        static
-        std::set<ResourceHandle> s_handles;
-        static
-        std::set<string> s_files;
-        static
-        std::unordered_map<ResourceHandle, FileIdx> s_fileIndices;
-        static
-        std::unordered_map<ResourceHandle, Resource*> s_resources;
-        static
-        string s_resourceDir;
-        static
-        ResourceEventCallbackFn s_callbackFn;
-    };
+		static void SetResourceDir(const string& dir);
 
-    template <typename TResource>
-    inline
-    void ResourceManagement::Load(string file, const ResourceHandle& handle, Flagset flags) {
-        WZ_CORE_TRACE("Loading resource of type '{0}' from file '{1}' with handle '{2}' and passing a set of flags", typestr(TResource), file, handle);
-        WZ_CORE_ASSERT(ulib::File::exists(file), "File '" + file + "' does not exist");
+		// Finds errors and throws exceptions for them
+		static void Validate(bool checkSources = false);
 
-        string _data = "";
-        bool _readSuccess = ulib::File::read(file, &_data);
-        WZ_CORE_ASSERT(_readSuccess, "Failed reading file");
+		static const ResourceInfo& GetInfoFor(Resource::Handle handle);
 
-        TResource *_resource = TResource::Create(file, _data, flags);
+	private:
+		template <typename T>
+		static typename T::Handle Register(string resPath, const PropertyLibrary& props);
+		template <typename T>
+		static typename T::Handle RegisterWithId(string resPath, uId id, const ResData& fileData, const PropertyLibrary& props);
 
-        if (!ResourceManagement::Add(_resource, handle)) {
-            WZ_CORE_ERROR("Failed adding loaded file, file unloaded and nothing changed");
-            delete _resource;
-        }
-    }
+		static string UniquenizePathName(const string& path);
 
-    template <typename TResource>
-    void ResourceManagement::Reload(const ResourceHandle& handle) {
-        WZ_CORE_TRACE("Reloading resource associated with handle '{0}'...", handle);
-        WZ_CORE_ASSERT(ResourceManagement::IsValid(handle), "Tried unloading invalid handle");
+	private:
+		static std::vector<Resource*> s_resource;
+		static Resource::HandleMap<ResourceInfo> s_resourceInfo;
+		static std::set<Resource::Handle> s_handles;
+		static string s_resourceDir;
+		static u32 s_freeIndicesCount;
+		static uId s_idCounter;
+	};
 
-        string _file = ResourceManagement::FileOf(handle);
-        Flagset flags = s_resources[handle]->GetFlags();
+#if WZ_VERSION_SUM(WZ_VERSION_MAJOR, WZ_VERSION_MINOR, WZ_VERSION_PATCH) <= WZ_VERSION_SUM(0, 1, 0)
 
-        Unload(handle);
-        Load<TResource>(_file, handle, flags);
-    }
+	template<typename T>
+	inline typename T::Handle ResourceManagement::AddToResourceDir(const string& file, string resPath, const PropertyLibrary& props)
+	{
+		WZ_CORE_TRACE("Adding resource to directory from '{0}' to respath '{1}'", file, resPath);
+		resPath = UniquenizePathName(resPath);
+		WZ_CORE_TRACE("Final respath: {0}", resPath);
 
-    template <typename TResource>
-    inline
-    bool ResourceManagement::Is(const ResourceHandle& handle) {
-        return ResourceManagement::IsValid(handle) &&
-               dynamic_cast<TResource*>(s_resources[handle]) != nullptr;
-    }
+		string fullPath = s_resourceDir + resPath;
 
-    template <typename TResource>
-    inline
-    TResource& ResourceManagement::Get(const ResourceHandle& handle) {
-        WZ_CORE_ASSERT(ResourceManagement::Is<TResource>(handle), "Tried getting resource by invalid handle or wrong type (handle: '" + handle + "', type: '" + string(typestr(TResource)) + "')");
-        return *dynamic_cast<TResource*>(s_resources[handle]);
-    }
+		string errReason = "";
+		if (!ulib::Directory::create_all(ulib::File::directory_of(fullPath), errReason))
+		{
+			WZ_THROW(Exception, "Failed creating directories in '" + fullPath + "' Reason: " + errReason);
+		}
+		if (!ulib::File::copy(file, fullPath))
+		{
+			WZ_THROW(Exception, "Could not copy file '" + file + "' to '" + fullPath + "'");
+		}
+
+		WZ_CORE_TRACE("Copied file to resource dir, now registering it...");
+		
+		return Register<T>(resPath, props);
+	}
+
+	template<typename T>
+	inline typename T::Handle ResourceManagement::AddResource(T* resource, const string& resPath, const PropertyLibrary& props)
+	{
+		WZ_CORE_ASSERT(resource != nullptr, "Cannot add a null resource");
+
+		ResData serialized = resource->Serialize();
+
+		string resFile = s_resourceDir + resPath;
+
+		if (ulib::File::exists(resFile))
+		{
+			resFile = UniquenizePathName(resFile);
+		}
+
+		if (!ulib::File::write(resFile, serialized))
+		{
+			WZ_THROW(ResourceFileAccessException, resFile);
+		}
+
+		auto handle = Register<T>(resPath, props);
+
+		auto& info = s_resourceInfo[handle];
+		s_resource[info.resourceIndex] = resource;
+		
+		info.source = serialized;
+
+		return handle;
+	}
+
+	template<typename T>
+	inline typename T::Handle ResourceManagement::Load(const string& resPath, uId id, const PropertyLibrary& props)
+	{
+		// Look for config file and if it exists, try to deserialize to props and send instead
+
+		WZ_CORE_TRACE("Loading a resource already in reasource dir");
+		PropertyLibrary cfgProps = props;
+
+		string configFile = s_resourceDir + resPath + ".wz";
+		if (ulib::File::exists(configFile))
+		{
+			WZ_CORE_TRACE("Config file found: {0}", configFile);
+			string cfgData = "";
+			if (!ulib::File::read(configFile, &cfgData, true))
+			{
+				WZ_THROW(ResourceFileAccessException, configFile);
+			}
+			
+			try
+			{
+				cfgProps.Deserialize(cfgData);
+				WZ_CORE_TRACE("Config file deserialized");
+			}
+			catch (const Exception& e)
+			{
+				WZ_CORE_ERROR("Failed to deseralize config file {0}", configFile);
+				WZ_CORE_ERROR("    Reason: {0}", e.GetMessage());
+			}
+		}
+
+		ResData fileData;
+		if (!ulib::File::read(s_resourceDir + resPath, &fileData, true))
+		{
+			WZ_THROW(ResourceFileAccessException, resPath);
+		}
+		auto handle = RegisterWithId<T>(resPath, id, fileData, cfgProps);
+		Load(handle);
+
+		return handle;
+	}
+
+	template<typename T>
+	inline T& ResourceManagement::Get(typename T::Handle handle)
+	{
+		WZ_CORE_ASSERT(IsValid(handle) && IsLoaded(handle), "Tried retrieving resource by invalid handle");
+
+		return (T&)*s_resource.at(s_resourceInfo[handle].resourceIndex);
+	}
+
+	template<typename T>
+	inline bool ResourceManagement::TryGet(typename T::Handle handle, T* outResource)
+	{
+		if (IsValid(handle) && IsLoaded(handle))
+		{
+			outResource = s_resource[s_resourceInfo[handle].resourceIndex];
+			return true;
+		}
+		return false;
+	}
+
+	template<typename T>
+	inline void ResourceManagement::ForEach(std::function<void(const Resource::Handle&)> fn)
+	{
+		for (const auto& _handle : s_handles)
+		{
+			if (typeid(Resource::Handle) == typeid(_handle))
+			{
+				fn(_handle);
+			}
+		}
+	}
+
+	template<typename T>
+	inline typename T::Handle ResourceManagement::Register(string resPath, const PropertyLibrary& props)
+	{
+		WZ_CORE_TRACE("Registering a resource of type '{0}' to path '{1}'", typestr(T), resPath);
+
+		if (!ulib::File::exists(s_resourceDir + resPath))
+		{
+			WZ_THROW(ResourceInvalidPathException, resPath);
+		}
+
+		ResData fileData;
+		if (!ulib::File::read(s_resourceDir + resPath, &fileData, true))
+		{
+			WZ_THROW(ResourceFileAccessException, resPath);
+		}
+
+		return RegisterWithId<T>(resPath, ++s_idCounter, fileData, props);
+	}
+
+	template<typename T>
+	inline typename T::Handle ResourceManagement::RegisterWithId(string resPath, uId id, const ResData& fileData, const PropertyLibrary& props)
+	{
+		WZ_CORE_TRACE("Creating a handle with ID {0}", id);
+
+		auto handle = T::Handle(id);
+
+		ResourceInfo info =
+		{
+			resPath,
+			s_resource.size(),
+			props,
+			T::Create,
+			fileData,
+			typestr(T)
+		};
+
+		info.props.SetProperty("SourceFile", resPath);
+		info.props.SetProperty("Type", typestr(T));
+
+		if (s_freeIndicesCount > 0)
+		{
+			for (int32 i = 0; i < s_resource.size(); i++)
+			{
+				if (s_resource[i] == nullptr)
+				{
+					info.resourceIndex = i;
+					s_freeIndicesCount--;
+					break;
+				}
+			}
+		}
+		else
+		{
+			s_resource.push_back(nullptr);
+		}
+		WZ_CORE_ASSERT(s_handles.emplace(handle).second, "Handle already exists, make sure to load resource list before adding new resources");
+		s_resourceInfo[handle] = info;
+
+		s_idCounter = std::max(s_idCounter, id);
+
+		WZ_CORE_INFO("Successfully registered a resource:");
+		Log::SetExtra(false);
+		WZ_CORE_INFO("    Type:    {0}", typestr(T));
+		WZ_CORE_INFO("    Respath: {0}", resPath);
+		WZ_CORE_INFO("    Id:      {0}", handle.id);
+		Log::SetExtra(true);
+
+		return handle;
+	}
+
+/* #elif WZ_VERSION_SUM(WZ_VERSION_MAJOR, WZ_VERSION_MINOR, WZ_VERSION_PATCH) <= WZ_VERSION_SUM(0, 1, 1) */
+
+#endif
+	
 }
+
+

@@ -157,4 +157,30 @@ namespace Wizzy {
 	private:
 		float m_deltaTime;
 	};
+
+	class AppShutdownEvent
+		: public Event
+	{
+	public:
+		inline AppShutdownEvent(int32 code = 0)
+			: m_code(code)
+		{
+		}
+
+		EVENT_CLASS_TYPE(app_shutdown)
+			EVENT_CLASS_CATEGORY(category_application)
+
+			inline const float& GetExitCode() const
+		{
+			return m_code;
+		}
+
+		inline virtual string ToString() const override
+		{
+			return GetName() + " code: " + std::to_string(m_code);
+		}
+
+	private:
+		int32 m_code;
+	};
 }

@@ -28,7 +28,9 @@ imgui.ini
 *dna.txt
 
 # Exceptions
-!vendor/bin/
-!vendor/bin/premake/premake5.exe
+!vendor/bin/premake/windows/premake5.exe
+!vendor/bin/premake/linux/premake5
+
+benchmark.json
 
 
