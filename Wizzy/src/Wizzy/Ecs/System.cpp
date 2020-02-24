@@ -2,7 +2,7 @@
 
 #include "Wizzy/Ecs/System.h"
 
-namespace ecs {
+namespace Wizzy {
 	void System::AddComponentType(StaticCId type, ComponentFlags flags) {
 		m_typeIds.push_back(type);
 		m_flags.push_back(flags);

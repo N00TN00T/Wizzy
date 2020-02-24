@@ -4,23 +4,23 @@
 #include "Wizzy/Resource/ResourceManagement.h"
 
 #include "Wizzy/Instrumentor.h"
+#include "Wizzy/WizzyExceptions.h"
 
 namespace Wizzy
 {
 	Renderer2D::RenderTargetData Renderer2D::s_windowTargetData;
-	std::unordered_map<RenderTargetPtr, Renderer2D::RenderTargetData> Renderer2D::s_renderTargetData;
+	std::unordered_map<RenderTarget::Handle, Renderer2D::RenderTargetData, RenderTarget::Handle::hash> Renderer2D::s_renderTargetData;
 
 	size_t Renderer2D::TEXTURE_SLOTS;
 	
-	void Renderer2D::Begin(const Shader::Handle& hndShader, const mat4& cameraTransform, RenderTargetPtr renderTarget)
+	void Renderer2D::Begin(const Shader::Handle& hndShader, const mat4& cameraTransform, RenderTarget::Handle hRenderTarget)
 	{
-		RenderTargetData& tData = renderTarget ? s_renderTargetData[renderTarget] : s_windowTargetData;
-		std::lock_guard<std::mutex> lock(tData.rendererMutex);
+		RenderTargetData& tData = ResourceManagement::IsLoaded(hRenderTarget) ? s_renderTargetData[hRenderTarget] : s_windowTargetData;
 
 		tData.camTransform = cameraTransform;
 
 		WZ_PROFILE_FUNCTION();
-		if (!tData.initialized) Init(renderTarget);
+		if (!tData.initialized) Init(hRenderTarget);
 
 		{
 			WZ_PROFILE_SCOPE("Mapping buffer");
@@ -31,7 +31,11 @@ namespace Wizzy
 
 		{
 			WZ_PROFILE_SCOPE("Begin Misc");
-			WZ_CORE_ASSERT(ResourceManagement::IsLoaded(hndShader), "Shader not laoded");
+			if (!ResourceManagement::IsLoaded(hndShader))
+			{
+				WZ_THROW(RendererInvalidShaderHandleException, hndShader.id);
+				tData.vbo->Unmap();
+			}
 
 			tData.shader = hndShader;
 
@@ -43,7 +47,7 @@ namespace Wizzy
 		}
 	}
 
-	void Renderer2D::SubmitImage(Texture::Handle hndTexture, const glm::vec2& position, const glm::vec2 scale, float rotation, const glm::vec4& color, RenderTargetPtr renderTarget)
+	void Renderer2D::SubmitImage(Texture::Handle hndTexture, const glm::vec2& position, const glm::vec2 scale, float rotation, const glm::vec4& color, RenderTarget::Handle hRenderTarget)
 	{
 		mat4 transform = glm::mat4(1.f);
 		{
@@ -54,14 +58,25 @@ namespace Wizzy
 			if (rotation != 0)
 				transform = glm::rotate(transform, glm::radians(rotation), vec3(0, 0, 1));
 		}
-		SubmitImage(hndTexture, transform, color, renderTarget);
+		SubmitImage(hndTexture, transform, color, hRenderTarget);
 	}
 
-	void Renderer2D::SubmitImage(Texture::Handle hndTexture, mat4 transform, const glm::vec4& color, RenderTargetPtr renderTarget)
+	void Renderer2D::SubmitImage(Texture::Handle hndTexture, mat4 transform, const glm::vec4& color, RenderTarget::Handle hRenderTarget)
 	{
 		WZ_PROFILE_FUNCTION();
 
-		RenderTargetData& tData = renderTarget ? s_renderTargetData[renderTarget] : s_windowTargetData;
+
+
+		RenderTargetData& tData = ResourceManagement::IsLoaded(hRenderTarget) ? s_renderTargetData[hRenderTarget] : s_windowTargetData;
+
+		if (!tData.ready)
+		{
+			WZ_THROW(RendererNotReadyException, hRenderTarget);
+		}
+		if (!ResourceManagement::IsLoaded(hndTexture))
+		{
+			WZ_THROW(RendererInvalidTextureHandleException, hndTexture);
+		}
 
 		VertexData* pBuffer = NULL;
 
@@ -79,9 +94,7 @@ namespace Wizzy
 		};
 		static vec3 offsetTranslation(0.f);
 
-		WZ_CORE_ASSERT(tData.ready, "Submitting before ready; call Begin() first");
-		WZ_CORE_ASSERT(ResourceManagement::IsValid(hndTexture), "Texture invalid when submitting");
-		WZ_CORE_ASSERT(ResourceManagement::IsLoaded(hndTexture), "Texture was not loaded when submitting");
+		
 
 #if WZ_PROFILE
 		::Wizzy::InstrumentationTimer timer_ = InstrumentationTimer("Submit prepare");
@@ -150,29 +163,37 @@ namespace Wizzy
 		if (tData.slotCount >= TEXTURE_SLOTS)
 		{
 			WZ_PROFILE_SCOPE("Premature flush");
-			End(renderTarget);
-			Begin(tData.shader, tData.camTransform, renderTarget);
+			End(hRenderTarget);
+			Begin(tData.shader, tData.camTransform, hRenderTarget);
 			tData.slotCount = 0;
 		}
 	}
 
-	void Renderer2D::SubmitRect(const Rect& rect, const glm::vec4& color, RectMode mode, RenderTargetPtr renderTarget)
+	void Renderer2D::SubmitRect(const Rect& rect, const glm::vec4& color, RectMode mode, RenderTarget::Handle hRenderTarget)
 	{
-		RenderTargetData& tData = renderTarget ? s_renderTargetData[renderTarget] : s_windowTargetData;
-		SubmitImage(tData.hndWhiteTexture, rect.position, rect.size, 0, color, renderTarget);
+		RenderTargetData& tData = ResourceManagement::IsLoaded(hRenderTarget) ? s_renderTargetData[hRenderTarget] : s_windowTargetData;
+		SubmitImage(tData.hndWhiteTexture, rect.position, rect.size, 0, color, hRenderTarget);
 	}
 
-	void Renderer2D::End( RenderTargetPtr renderTarget)
+	void Renderer2D::End( RenderTarget::Handle hRenderTarget)
 	{
 		WZ_PROFILE_FUNCTION();
 
-		RenderTargetData& tData = renderTarget ? s_renderTargetData[renderTarget] : s_windowTargetData;
+		RenderTargetData& tData = ResourceManagement::IsLoaded(hRenderTarget) ? s_renderTargetData[hRenderTarget] : s_windowTargetData;
+
+		if (!tData.ready)
+		{
+			WZ_THROW(RendererNotReadyException, hRenderTarget);
+		}
 
 		tData.vbo->Unmap();
 		tData.pBufferData = NULL;
 		tData.ready = false;
 
-		WZ_CORE_ASSERT(ResourceManagement::IsLoaded(tData.shader), "Shader was not loaded");
+		if (!ResourceManagement::IsLoaded(tData.shader))
+		{
+			WZ_THROW(RendererInvalidShaderHandleException, tData.shader.id);
+		}
 
 		auto& shader = ResourceManagement::Get<Shader>(tData.shader);
 		shader.Bind();
@@ -184,7 +205,8 @@ namespace Wizzy
 		tData.vao->Bind();
 		tData.vao->GetIndexBuffer()->Bind();
 
-		if (renderTarget)
+		RenderTarget* renderTarget = NULL;
+		if (ResourceManagement::TryGet<RenderTarget>(hRenderTarget, renderTarget))
 		{
 			renderTarget->Bind();
 			RenderCommand::Clear();
@@ -198,11 +220,17 @@ namespace Wizzy
 		tData.textureSlots.clear();
 	}
 
-	void Renderer2D::Init(RenderTargetPtr renderTarget)
+	bool Renderer2D::IsReady(RenderTarget::Handle hRenderTarget)
+	{
+		RenderTargetData& tData = ResourceManagement::IsLoaded(hRenderTarget) ? s_renderTargetData[hRenderTarget] : s_windowTargetData;
+		return tData.ready;
+	}
+
+	void Renderer2D::Init(RenderTarget::Handle hRenderTarget)
 	{
 		WZ_PROFILE_FUNCTION();
 
-		RenderTargetData& tData = (renderTarget ? s_renderTargetData[renderTarget] : s_windowTargetData);
+		RenderTargetData& tData = (ResourceManagement::IsLoaded(hRenderTarget) ? s_renderTargetData[hRenderTarget] : s_windowTargetData);
 
 		TEXTURE_SLOTS = MaxTextureSlot() + 1ULL;
 

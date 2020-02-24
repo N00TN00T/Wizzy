@@ -5,17 +5,17 @@
 namespace Wizzy {
 
 	struct ImGuiComponent
-		: public ecs::Component<ImGuiComponent> {
+		: public Wizzy::Component<ImGuiComponent> {
 
 	};
 
 	class ImGuiSystem
-		: public ecs::System {
+		: public Wizzy::System {
 	public:
 		ImGuiSystem();
 		~ImGuiSystem();
 		virtual void OnEvent(const Event& event,
-							 ecs::ComponentGroup& components) const override;
+							 Wizzy::ComponentGroup& components) const override;
 	private:
 		void Init() const;
 		void Shutdown() const;

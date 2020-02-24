@@ -2,7 +2,7 @@
 
 #include "Wizzy/Ecs/Component.h"
 
-namespace ecs {
+namespace Wizzy {
 
 	const ComponentInfo & IComponent::StaticInfo(StaticCId componentType) {
 		return componentTypes()[componentType];

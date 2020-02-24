@@ -3,7 +3,7 @@
 #include "Wizzy/Ecs/Component.h"
 #include "Wizzy/Events/Event.h"
 
-namespace ecs {
+namespace Wizzy {
 	class System {
 	public:
 		enum ComponentFlags {

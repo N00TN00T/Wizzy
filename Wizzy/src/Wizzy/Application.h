@@ -37,10 +37,10 @@ namespace Wizzy {
 
 	protected:
 		std::shared_ptr<IWindow> m_window;
-		ecs::ECSManager m_clientEcs;
-		ecs::SystemLayer m_clientSystems;
-		ecs::ECSManager m_engineEcs;
-		ecs::SystemLayer m_engineSystems;
+		Wizzy::ECSManager m_clientEcs;
+		Wizzy::SystemLayer m_clientSystems;
+		Wizzy::ECSManager m_engineEcs;
+		Wizzy::SystemLayer m_engineSystems;
 
 	private:
 		bool m_running;

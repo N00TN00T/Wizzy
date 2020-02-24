@@ -32,25 +32,21 @@ namespace Wizzy
         static size_t TEXTURE_SLOTS;
     public:
 
-        static void Begin(const Shader::Handle& hndShader, const mat4& cameraTransform = mat4(1), RenderTargetPtr renderTarget = NULL);
+        static void Begin(const Shader::Handle& hndShader, const mat4& cameraTransform = mat4(1), RenderTarget::Handle hRenderTarget = NULL);
 
-        static void SubmitImage(Texture::Handle texture,  const glm::vec2& position, const glm::vec2 scale, float rotation, const glm::vec4& color, RenderTargetPtr renderTarget = NULL);
-        static void SubmitImage(Texture::Handle texture,  mat4 transform, const glm::vec4& color, RenderTargetPtr renderTarget = NULL);
+        static void SubmitImage(Texture::Handle texture,  const glm::vec2& position, const glm::vec2 scale, float rotation, const glm::vec4& color, RenderTarget::Handle hRenderTarget = NULL);
+        static void SubmitImage(Texture::Handle texture,  mat4 transform, const glm::vec4& color, RenderTarget::Handle hRenderTarget = NULL);
 
         //static void SubmitText(Font::Handle font, const string& text, const glm::vec2& position, const glm::vec2 scale, const glm::vec4& color);
 
-        static void SubmitRect(const Rect& rect, const glm::vec4& color, RectMode mode = RectMode::Filled, RenderTargetPtr renderTarget = NULL);
+        static void SubmitRect(const Rect& rect, const glm::vec4& color, RectMode mode = RectMode::Filled, RenderTarget::Handle hRenderTarget = NULL);
         
-        static void End(RenderTargetPtr renderTarget = NULL);
+        static void End(RenderTarget::Handle hRenderTarget = NULL);
 
-        inline static bool IsReady(RenderTargetPtr renderTarget = NULL) 
-        {
-            RenderTargetData& tData = renderTarget ? s_renderTargetData[renderTarget] : s_windowTargetData;
-            return tData.ready; 
-        }
+        static bool IsReady(RenderTarget::Handle hRenderTarget = NULL);
 
     private:
-        static void Init(RenderTargetPtr renderTarget);
+        static void Init(RenderTarget::Handle hRenderTarget);
 
     
 
@@ -73,6 +69,6 @@ namespace Wizzy
         };
         
         static RenderTargetData s_windowTargetData;
-        static std::unordered_map<RenderTargetPtr, RenderTargetData> s_renderTargetData;
+        static std::unordered_map<RenderTarget::Handle, RenderTargetData, RenderTarget::Handle::hash> s_renderTargetData;
     };
 }

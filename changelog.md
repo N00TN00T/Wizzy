@@ -1,7 +1,7 @@
-CHANGELOG FOR WIZZY
+# CHANGELOG FOR WIZZY
 
 
-0.1.0 - Version history documentation
+## 0.1.0 - Version history documentation
 - Started recording changes and versioning Wizzy
 - Features as of now:
 	- Platform-abstracted rendering API
@@ -14,3 +14,5 @@ CHANGELOG FOR WIZZY
 	- Event System
 	- ECS System
 
+## 0.1.1 - ECS Serialization
+- 

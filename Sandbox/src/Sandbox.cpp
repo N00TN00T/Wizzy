@@ -14,7 +14,7 @@ EngineManagerSystem::EngineManagerSystem()
 	Subscribe(wz::EventType::app_shutdown);
 }
 
-void EngineManagerSystem::OnEvent(const wz::Event& e, ecs::ComponentGroup& components) const
+void EngineManagerSystem::OnEvent(const wz::Event& e, Wizzy::ComponentGroup& components) const
 {
 	WZ_PROFILE_FUNCTION()
 		EngineData& _testComp = *components.Get<EngineData>();
@@ -119,7 +119,7 @@ void EngineManagerSystem::OnEvent(const wz::Event& e, ecs::ComponentGroup& compo
 	case wz::EventType::app_render:
 	{
 		WZ_PROFILE_SCOPE("app_render");
-		wz::Renderer2D::Begin(_testComp.hndShader, glm::ortho<float>(0, _testComp.window->GetWidth(), 0, _testComp.window->GetHeight(), -1, 1));
+		/*wz::Renderer2D::Begin(_testComp.hndShader, glm::ortho<float>(0, _testComp.window->GetWidth(), 0, _testComp.window->GetHeight(), -1, 1));
 
 		wz::Renderer2D::SubmitImage(_testComp.hndTexture, _testComp.pos, _testComp.scale, _testComp.rotation, wz::Color::white);
 		wz::Renderer2D::SubmitRect(wz::Rect(100, 100, 100, 100), wz::Color::blue);
@@ -130,7 +130,7 @@ void EngineManagerSystem::OnEvent(const wz::Event& e, ecs::ComponentGroup& compo
 
 		ImGui::Image((ImTextureID)_testComp.renderTarget->GetTextureId(), ImGui::GetWindowSize(), { 0, 1 }, { 1, 0 });
 
-		ImGui::End();
+		ImGui::End();*/
 
 		return;
 	}
@@ -165,7 +165,7 @@ void Sandbox::Init()
 	t.resourcePath = ulib::File::directory_of(GetExecutablePath()) + "/../../../res/";
 	t.window = m_window;
 
-	ecs::IComponent* tPtr = &t;
+	Wizzy::IComponent* tPtr = &t;
 
 	m_clientEcs.CreateEntity(&tPtr, &t.staticId, 1);
 

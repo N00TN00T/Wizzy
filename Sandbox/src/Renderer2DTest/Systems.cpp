@@ -4,7 +4,7 @@
 
 #include "Systems.h"
 
-wz::RenderTargetPtr mainRenderTarget;
+wz::RenderTarget::Handle hMainRenderTarget = WZ_NULL_RESOURCE_HANDLE;
 
 ResourceManager::ResourceManager()
 {
@@ -15,7 +15,7 @@ ResourceManager::ResourceManager()
 	this->Subscribe(wz::EventType::app_shutdown);
 }
 
-void ResourceManager::OnEvent(const Wizzy::Event& e, ecs::ComponentGroup& components) const
+void ResourceManager::OnEvent(const Wizzy::Event& e, Wizzy::ComponentGroup& components) const
 {
 	auto& data = *components.Get<ResourceManagerComponent>();
 
@@ -38,7 +38,14 @@ void ResourceManager::OnEvent(const Wizzy::Event& e, ecs::ComponentGroup& compon
 			if (data.timeSinceValidate >= data.validationRate / 1.f)
 			{
 				data.timeSinceValidate = 0;
-				wz::ResourceManagement::Validate(true);
+
+				static std::future<void> future;
+				static bool first = true;
+				if (first || future.wait_for(std::chrono::seconds(0)) == std::future_status::ready)
+				{
+					future = std::async(std::launch::async, []() { wz::ResourceManagement::Validate(true); });
+					first = false;
+				}
 			}
 
 			return;
@@ -61,21 +68,27 @@ TextureRenderer::TextureRenderer()
 	Subscribe(wz::EventType::app_render);
 }
 
-void TextureRenderer::OnEvent(const Wizzy::Event& e, ecs::ComponentGroup& components) const
+void TextureRenderer::OnEvent(const Wizzy::Event& e, Wizzy::ComponentGroup& components) const
 {
-	if (!wz::Renderer2D::IsReady(mainRenderTarget)) return;
-
 	WZ_TRACE("Submitting a texture from texture renderer...");
 	auto& textureData = *components.Get<TextureComponent>();
 	auto& transform = *components.Get<TransformComponent>();
 
-	if (wz::ResourceManagement::IsLoaded(textureData.hTexture))
+	try
 	{
-		wz::Renderer2D::SubmitImage(textureData.hTexture, transform.position, transform.scale, transform.rotation, textureData.color, mainRenderTarget);
+		if (wz::ResourceManagement::IsLoaded(textureData.hTexture))
+		{
+			wz::Renderer2D::SubmitImage(textureData.hTexture, transform.position, transform.scale, transform.rotation, textureData.color, hMainRenderTarget);
+		}
+		else
+		{
+			wz::Renderer2D::SubmitRect(wz::Rect(transform.position, 64.f * transform.scale), wz::Color::red, Wizzy::RectMode::Filled);
+		}
 	}
-	else
+	catch (const wz::RendererException& e)
 	{
-		wz::Renderer2D::SubmitRect(wz::Rect(transform.position, 64.f * transform.scale), wz::Color::red, Wizzy::RectMode::Filled);
+		/*WZ_CORE_WARN("Failed submitting texture in TextureRenderer:");
+		WZ_CORE_WARN("{0}", e.GetMessage());*/
 	}
 }
 
@@ -93,7 +106,7 @@ RendererManager::RendererManager()
 	Subscribe(wz::EventType::window_resize);
 }
 
-void RendererManager::OnEvent(const Wizzy::Event& e, ecs::ComponentGroup& components) const
+void RendererManager::OnEvent(const Wizzy::Event& e, Wizzy::ComponentGroup& components) const
 {
 	auto& config = *components.Get<RendererManagerComponent>();
 
@@ -166,7 +179,7 @@ CameraSystem::CameraSystem()
 	Subscribe(wz::EventType::window_resize);
 }
 
-void CameraSystem::OnEvent(const Wizzy::Event& e, ecs::ComponentGroup& components) const
+void CameraSystem::OnEvent(const Wizzy::Event& e, Wizzy::ComponentGroup& components) const
 {
 	auto& transform = *components.Get<TransformComponent>();
 	auto& camera = *components.Get<CameraComponent>();
@@ -177,9 +190,14 @@ void CameraSystem::OnEvent(const Wizzy::Event& e, ecs::ComponentGroup& component
 		{
 			auto& window = wz::Application::Get().GetWindow();
 			camera.projection = glm::ortho<float>(0, window.GetWidth(), 0, window.GetHeight(), -1, 1);
-			//camera.hRenderTarget = WZ_NULL_RESOURCE_HANDLE;
 
-			if (!mainRenderTarget) mainRenderTarget = camera.renderTarget;
+			//camera.hRenderTarget = wz::ResourceManagement::AddResource(wz::RenderTarget::Create(1600, 900), "testing/main.rt", wz::RenderTarget::GetTemplateProps());
+			camera.hRenderTarget = (wz::RenderTarget::Handle)wz::ResourceManagement::HandleOf("testing/main.rt");
+
+			if (!wz::ResourceManagement::IsLoaded(hMainRenderTarget) && wz::ResourceManagement::IsLoaded(camera.hRenderTarget))
+			{
+				hMainRenderTarget = camera.hRenderTarget;
+			}
 			return;
 		}
 		case wz::EventType::app_frame_begin:
@@ -230,14 +248,35 @@ void CameraSystem::OnEvent(const Wizzy::Event& e, ecs::ComponentGroup& component
 		}
 		case wz::EventType::app_render:
 		{
-			wz::Renderer2D::Begin(camera.hShader, camera.projection * camera.transform, camera.renderTarget);
+			try
+			{
+				wz::Renderer2D::Begin(camera.hShader, camera.projection * camera.transform, camera.hRenderTarget);
+				camera.rendererReady = true;
+			}
+			catch (const wz::RendererException e)
+			{
+				WZ_CORE_WARN("Error when calling Renderer Begin() on camera:");
+				WZ_CORE_WARN("{0}", e.GetMessage());
+				camera.rendererReady = false;
+			}
 			return;
 		}
 		case wz::EventType::app_frame_end:
 		{
-			wz::Renderer2D::End(camera.renderTarget);
+			if (camera.rendererReady)
+			{
+				try
+				{
+					wz::Renderer2D::End(camera.hRenderTarget);
+				}
+				catch (const wz::RendererException e)
+				{
+					WZ_CORE_WARN("Error when calling renderer end on camera:");
+					WZ_CORE_WARN("{0}", e.GetMessage());
+				}
+			}
 
-			if (mainRenderTarget == camera.renderTarget)
+			if (hMainRenderTarget == camera.hRenderTarget)
 			{
 				ImGui::Begin("Game", NULL, ImGuiWindowFlags_MenuBar);
 
@@ -251,8 +290,12 @@ void CameraSystem::OnEvent(const Wizzy::Event& e, ecs::ComponentGroup& component
 				float a = ImGui::GetWindowSize().x / ImGui::GetWindowSize().y;
 				float ySize = ImGui::GetWindowSize().y - menuBarHeight;
 
-				ImGui::Image((ImTextureID)mainRenderTarget->GetTextureId(), { ySize * a, ySize }, { 0, 1 }, { 1, 0 });
-
+				wz::RenderTarget* mainRenderTarget = NULL;
+				if (wz::ResourceManagement::TryGet(hMainRenderTarget, mainRenderTarget))
+				{
+					ImGui::Image((ImTextureID)mainRenderTarget->GetTextureId(), { ySize * a, ySize }, { 0, 1 }, { 1, 0 });
+				}
+				
 				ImGui::End();
 			}
 			return;

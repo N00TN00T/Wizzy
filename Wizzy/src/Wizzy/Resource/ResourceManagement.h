@@ -94,7 +94,7 @@ namespace Wizzy
 		template <typename T>
 		static T& Get(typename T::Handle handle);
 		template <typename T>
-		static bool TryGet(typename T::Handle handle, T* outResource);
+		static bool TryGet(typename T::Handle handle, T*& outResource);
 
 		// Returns true if handle is registered correctly
 		static bool IsValid(Resource::Handle handle);
@@ -134,7 +134,7 @@ namespace Wizzy
 		static uId s_idCounter;
 	};
 
-#if WZ_VERSION_SUM(WZ_VERSION_MAJOR, WZ_VERSION_MINOR, WZ_VERSION_PATCH) <= WZ_VERSION_SUM(0, 1, 0)
+#if WZ_VERSION_SUM(WZ_VERSION_MAJOR, WZ_VERSION_MINOR, WZ_VERSION_PATCH) <= WZ_VERSION_SUM(0, 1, 1)
 
 	template<typename T>
 	inline typename T::Handle ResourceManagement::AddToResourceDir(const string& file, string resPath, const PropertyLibrary& props)
@@ -182,7 +182,11 @@ namespace Wizzy
 		auto handle = Register<T>(resPath, props);
 
 		auto& info = s_resourceInfo[handle];
-		s_resource[info.resourceIndex] = resource;
+		static std::mutex mutex;
+		{
+			std::lock_guard<std::mutex> lock(mutex);
+			s_resource[info.resourceIndex] = resource;
+		}
 		
 		info.source = serialized;
 
@@ -239,13 +243,14 @@ namespace Wizzy
 	}
 
 	template<typename T>
-	inline bool ResourceManagement::TryGet(typename T::Handle handle, T* outResource)
+	inline bool ResourceManagement::TryGet(typename T::Handle handle, T*& outResource)
 	{
 		if (IsValid(handle) && IsLoaded(handle))
 		{
-			outResource = s_resource[s_resourceInfo[handle].resourceIndex];
+			outResource = (T*)s_resource[s_resourceInfo[handle].resourceIndex];
 			return true;
 		}
+		outResource = NULL;
 		return false;
 	}
 
@@ -317,9 +322,13 @@ namespace Wizzy
 			s_resource.push_back(nullptr);
 		}
 		WZ_CORE_ASSERT(s_handles.emplace(handle).second, "Handle already exists, make sure to load resource list before adding new resources");
-		s_resourceInfo[handle] = info;
-
-		s_idCounter = std::max(s_idCounter, id);
+		
+		static std::mutex mutex;
+		{
+			std::lock_guard<std::mutex> lock(mutex);
+			s_resourceInfo[handle] = info;
+			s_idCounter = std::max(s_idCounter, id);
+		}
 
 		WZ_CORE_INFO("Successfully registered a resource:");
 		Log::SetExtra(false);

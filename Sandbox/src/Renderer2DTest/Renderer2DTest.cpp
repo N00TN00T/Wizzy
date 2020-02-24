@@ -3,11 +3,15 @@
 #include "Renderer2DTest.h"
 
 
-
+#define LOAD 1
 
 
 void Renderer2DTest::Init()
 {
+	wz::Log::SetCoreLogLevel(LOG_LEVEL_TRACE);
+#if LOAD
+	m_clientEcs.Load("test.ecs");
+#else
 	m_clientEcs.CreateEntity<ResourceManagerComponent>();
 	RendererManagerComponent rmc;
 	m_clientEcs.CreateEntity(rmc);
@@ -25,6 +29,8 @@ void Renderer2DTest::Init()
 		m_clientEcs.CreateEntity(tc, trc);
 	}
 
+#endif
+
 	m_clientSystems.AddSystem<ResourceManager>();
 	m_clientSystems.AddSystem<RendererManager>();
 	m_clientSystems.AddSystem<CameraSystem>();
@@ -34,4 +40,5 @@ void Renderer2DTest::Init()
 
 void Renderer2DTest::Shutdown()
 {
+	m_clientEcs.Save("test.ecs");
 }

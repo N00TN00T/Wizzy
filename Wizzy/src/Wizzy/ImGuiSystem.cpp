@@ -23,7 +23,7 @@ namespace Wizzy {
 		Shutdown();
 	}
 	void ImGuiSystem::OnEvent(const Event& event,
-							ecs::ComponentGroup& components) const {
+							Wizzy::ComponentGroup& components) const {
 
 		switch (event.GetEventType()) {
 			case EventType::app_frame_begin:

@@ -36,6 +36,11 @@ namespace Wizzy {
                 return other.id == id;
             }
 
+            /*bool operator==(const uId& other) const
+            {
+                return other == id;
+            }*/
+
             uId id; 
 
             struct hash
@@ -45,6 +50,7 @@ namespace Wizzy {
                     return h.id;
                 }
             };
+
         };
 
         template <typename T>

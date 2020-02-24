@@ -1,0 +1,1 @@
+output.value = 7

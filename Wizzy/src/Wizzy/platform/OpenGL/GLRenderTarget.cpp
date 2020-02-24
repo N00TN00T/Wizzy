@@ -134,22 +134,28 @@ namespace Wizzy {
     ResData GLRenderTarget::Serialize() const
     {
         WZ_CORE_TRACE("Serializing GL RenderTarget");
-        byte* data = NULL;
+        byte* data = (byte*)malloc(m_width * (size_t)m_height * 4ULL);
         ResData serialized;
 
         this->Bind();
         WZ_CORE_TRACE("Reading pixels");
+        GL_CALL(glPixelStorei(GL_UNPACK_ALIGNMENT, 1));
         GL_CALL(glReadPixels(0, 0, m_width, m_height, GL_RGBA, GL_UNSIGNED_BYTE, data));
 
-        serialized.resize((size_t)m_width * (size_t)m_height);
+        serialized.resize((size_t)m_width * (size_t)m_height * 4ULL + sizeof(m_width) + sizeof(m_height));
 
         WZ_CORE_TRACE("Copying memory");
         int32 w = m_width;
         int32 h = m_height;
-        memcpy(&w, &serialized[0], sizeof(int32));
-        memcpy(&h, &serialized[0] + 4, sizeof(int32));
 
-        memcpy(&serialized[0] + 8, data, (size_t)m_width * (size_t)m_height);
+        u64 idx = 0;
+        memcpy(&serialized[idx], &w, sizeof(w));
+        idx += sizeof(w);
+        memcpy(&serialized[idx], &h, sizeof(h));
+        idx += sizeof(h);
+
+        memcpy(&serialized[idx] + 8, data, (size_t)m_width * (size_t)m_height);
+        idx += m_width * (size_t)m_height * 4ULL;
 
         this->Unbind();
 

@@ -1,6 +1,6 @@
 #pragma once
 
-namespace ecs {
+namespace Wizzy {
 
 	typedef void* EntityHandle;
 	typedef std::vector<byte> ComponentMem;

@@ -5,11 +5,15 @@
 - Font rendering
 
 # Large tasks
-##Misc
+## Misc
 - Refactor renderer2D to use manually allocated RAM for the buffer and upload to VRAM (glBufferSubData) instead of mapping the buffer
 - Resource Manifest
-##Editor
+## Editor
 - Editor Project System
 - Editor Resource Management GUI
 - Editor full ImGui customization
+<<<<<<< Updated upstream:TODO.md
 - Sound :(
+=======
+- Audio :(
+>>>>>>> Stashed changes:TODO.txt

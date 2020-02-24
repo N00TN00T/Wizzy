@@ -1,3 +1,7 @@
 textures/test.shader;class Wizzy::Shader;2
 textures/test.png;class Wizzy::Texture;3
 essential/textures/white.png;class Wizzy::Texture;4
+testing/main.rt;class Wizzy::RenderTarget;5
+testing/node1.lua;class Wizzy::Script;6
+testing/node2.lua;class Wizzy::Script;7
+testing/node3.lua;class Wizzy::Script;8

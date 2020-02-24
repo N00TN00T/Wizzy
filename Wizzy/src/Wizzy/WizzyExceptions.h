@@ -49,6 +49,58 @@ namespace Wizzy
 		string m_function;
 	};
 
+	class RendererException : public Exception
+	{
+	public:
+		RendererException(u32 line, const string& fn) : Exception("", line, fn) {}
+	};
+
+	class RendererInvalidShaderHandleException : public RendererException
+	{
+	public:
+		RendererInvalidShaderHandleException(u32 handleId, u32 line, const string& fn)
+			: RendererException(line, fn), m_handleId(handleId) { }
+
+		inline virtual string GetMessage() const override
+		{
+			return "Shader handle " + std::to_string(m_handleId) + " was invalid or unloaded when used in renderer";
+		}
+	private:
+		u32 m_handleId;
+	};
+
+	class RendererInvalidTextureHandleException : public RendererException
+	{
+	public:
+		RendererInvalidTextureHandleException(u32 handleId, u32 line, const string& fn)
+			: RendererException(line, fn), m_handleId(handleId)
+		{
+		}
+
+		inline virtual string GetMessage() const override
+		{
+			return "Texture handle " + std::to_string(m_handleId) + " was invalid or unloaded when used in renderer";
+		}
+	private:
+		u32 m_handleId;
+	};
+
+	class RendererNotReadyException : public RendererException
+	{
+	public:
+		RendererNotReadyException(u32 handleId, u32 line, const string& fn)
+			: RendererException(line, fn), m_handleId(handleId)
+		{
+		}
+
+		inline virtual string GetMessage() const override
+		{
+			return "Renderer was not ready for RenderTarget with handle " + std::to_string(m_handleId) + ". Make sure you call Renderer::Begin() for a rendertarget before rendering to it.";
+		}
+	private:
+		u32 m_handleId;
+	};
+
 	class ResourceException : public Exception
 	{
 	public:

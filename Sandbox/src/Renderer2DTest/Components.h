@@ -1,10 +1,15 @@
 #pragma once
 
-#define _STRUCT_DECL(tname) struct tname : public ecs::Component<tname>
+#define _STRUCT_DECL(tname) struct tname : public wz::Component<tname>
 
 _STRUCT_DECL(ResourceManagerComponent)
 {
-	string resourceDir = ulib::File::directory_of(GetExecutablePath()) + "/../../../res/";
+	ResourceManagerComponent()
+	{
+		string d = ulib::File::directory_of(GetExecutablePath()) + "/../../../res/";
+		strcpy(resourceDir, d.c_str());
+	}
+	char resourceDir[1024];
 
 	// ResourceManagement validations per seconds
 	float validationRate = 1.f;
@@ -24,8 +29,9 @@ public:
 	float zoom = 0;
 	mat4 transform = mat4(1.f);
 	mat4 projection = mat4(1.f);
-	wz::RenderTargetPtr renderTarget = wz::RenderTargetPtr(wz::RenderTarget::Create(1600, 900));
+	wz::RenderTarget::Handle hRenderTarget = WZ_NULL_RESOURCE_HANDLE;
 	wz::Shader::Handle hShader = WZ_NULL_RESOURCE_HANDLE;
+	bool rendererReady = false;
 };
 
 _STRUCT_DECL(TextureComponent)

@@ -42,7 +42,7 @@ namespace Wizzy
 	u32 ResourceManagement::s_freeIndicesCount = 0;
 	uId ResourceManagement::s_idCounter;
 
-#if WZ_VERSION_SUM(WZ_VERSION_MAJOR, WZ_VERSION_MINOR, WZ_VERSION_PATCH) <= WZ_VERSION_SUM(0, 1, 0)
+#if WZ_VERSION_SUM(WZ_VERSION_MAJOR, WZ_VERSION_MINOR, WZ_VERSION_PATCH) <= WZ_VERSION_SUM(0, 1, 1)
 
 	void ResourceManagement::LoadResourceList(const string& listFile)
 	{
@@ -56,7 +56,6 @@ namespace Wizzy
 
 		std::stringstream s(data);
 		string line;
-
 		while (std::getline(s, line))
 		{
 			if (line.find(';') == string::npos) WZ_THROW(ResourceParseErrorException, listFile);
@@ -112,6 +111,8 @@ namespace Wizzy
 				WZ_CORE_ERROR(e.GetUnhandledMessage());
 			}
 		}
+
+		WZ_CORE_INFO("Successfully loaded Resource List!");
 	}
 
 	void ResourceManagement::WriteResourceList(const string& listFile)
@@ -145,7 +146,7 @@ namespace Wizzy
 		auto& info = s_resourceInfo[handle];
 		
 		WZ_CORE_ASSERT(info.resourceIndex < s_resource.size(), "Resource index " + std::to_string(info.resourceIndex) + "' out of range");
-		auto& pResource = s_resource[info.resourceIndex];
+		auto& pResource = s_resource.at(info.resourceIndex);
 
 		WZ_CORE_ASSERT(pResource == nullptr, "Resource already loaded");
 
@@ -171,7 +172,7 @@ namespace Wizzy
 
 		auto& info = s_resourceInfo[handle];
 
-		Resource* resource = s_resource[info.resourceIndex];
+		Resource* resource = s_resource.at(info.resourceIndex);
 		ResData serialized = resource->Serialize();
 
 		info.source = serialized;

@@ -2,10 +2,10 @@
 
 #include "Wizzy/Ecs/ECSManager.h"
 #include "Wizzy/Instrumentor.h"
+#include "Wizzy/WizzyExceptions.h"
+#include "Wizzy/Utils.h"
 
-
-namespace ecs {
-
+namespace Wizzy {
 	enum SystemOperation {
 		OPERATION_UPDATE, OPERATION_NOTIFY
 	};
@@ -71,7 +71,7 @@ namespace ecs {
 		m_entites.pop_back();
 	}
 
-	std::vector<std::pair<StaticCId, IComponent*>> ECSManager::GetComponents(EntityHandle entity) {
+	std::vector<std::pair<StaticCId, IComponent*>> ECSManager::GetComponents(EntityHandle entity) const {
 		std::vector<std::pair<StaticCId, IComponent*>> _components;
 
 		for (auto& [id, memPool] : m_components) {
@@ -83,7 +83,7 @@ namespace ecs {
 		return _components;
 	}
 
-	void ECSManager::NotifySystems(const SystemLayer& systems, Wizzy::Event& e) {
+	void ECSManager::NotifySystems(const SystemLayer& systems, Wizzy::Event& e) const {
 		WZ_PROFILE_FUNCTION();
         ComponentGroup _toUpdate;
 		for (size_t i = 0; i < systems.SystemCount(); i++) {
@@ -113,7 +113,7 @@ namespace ecs {
 				if (_systemTypes.size() == 1) {
 					const auto& _componentType = _systemTypes[0];
 					const auto& _typeSize = IComponent::StaticInfo(_componentType).size;
-					const auto& _memPool = m_components[_componentType];
+					const auto& _memPool = m_components.at(_componentType);
 					for (size_t j = 0; j < _memPool.size(); j += _typeSize) {
 						_toUpdate.Push((IComponent*)& _memPool[j], _componentType);
 						_system->OnEvent(e, _toUpdate);
@@ -126,7 +126,7 @@ namespace ecs {
 						_systemFlags);
 					StaticCId _lcType = _systemTypes[_lcIndex];
 					const auto& _lcTypeSize = IComponent::StaticInfo(_lcType).size;
-					auto _lcMemPool = m_components[_lcType];
+					auto _lcMemPool = m_components.at(_lcType);
 
 					/* Hint the componentgroup about how many elemets there will be
 						as to allocate all needed memory here instead of allocating
@@ -147,7 +147,7 @@ namespace ecs {
 							const auto& _systemFlag = _systemFlags[k];
 							IComponent* _entityComp = GetComponentInternal(
 								_entity,
-								m_components[_systemType],
+								m_components.at(_systemType),
 								_systemType
 							);
 
@@ -162,7 +162,7 @@ namespace ecs {
 							if (_entityComp)
 								_toUpdate.Push(_entityComp, _systemType);
 						}
-
+						
 						if (_isValid) {
 							_system->OnEvent(e, _toUpdate);
 							_systemUpdates++;
@@ -203,7 +203,7 @@ namespace ecs {
 	}
 	IComponent* ECSManager::GetComponentInternal(Entity * entity,
 											const ComponentMem& memPool,
-											const StaticCId & componentId) {
+											const StaticCId & componentId) const {
 		WZ_PROFILE_FUNCTION();
 		const auto& _entityComps = entity->second;
 
@@ -248,7 +248,7 @@ namespace ecs {
 		_memPool.resize(_srcIndex);
 	}
 	uint32_t ECSManager::FindLeastCommonComponentIndex(const std::vector<StaticCId>& types,
-											const std::vector<System::ComponentFlags>& flags) {
+											const std::vector<System::ComponentFlags>& flags) const {
 		WZ_PROFILE_FUNCTION();
 		size_t _minNumComponents = SIZE_MAX;
 		uint32_t _minIndex = UINT32_MAX;
@@ -258,7 +258,7 @@ namespace ecs {
 				continue;
 			}
 			const size_t& _typeSize = IComponent::StaticInfo(types[i]).size;
-			auto _numComponents = m_components[types[i]].size() / _typeSize;
+			auto _numComponents = m_components.at(types[i]).size() / _typeSize;
 
 			if (_numComponents < _minNumComponents) {
 				_minNumComponents = _numComponents;
@@ -267,5 +267,152 @@ namespace ecs {
 		}
 
 		return _minIndex;
+	}
+
+	void ECSManager::Save(string file)
+	{
+		WZ_CORE_TRACE("Saving ECS System to {0}", file);
+		std::vector<byte> data;
+		u32 dataIndex = 0;
+
+		u32 i = 0;
+		for (auto& e : m_entites)
+		{
+			WZ_CORE_TRACE("(1/2) {0}%", ((double)i / (double)m_entites.size()) * (double)100);
+			data.resize(data.size() + TOKEN_ENTITY.size() + sizeof(size_t) + e->second.size() * (sizeof(StaticCId) + sizeof(MemIndex)) + sizeof(e->first));
+			memcpy(&data[0] + dataIndex, TOKEN_ENTITY.data(), TOKEN_ENTITY.size());
+			dataIndex += TOKEN_ENTITY.size();
+
+			memcpy(&data[0] + dataIndex, &e->first, sizeof(e->first));
+			dataIndex += sizeof(e->first);
+
+			auto sz = e->second.size();
+			memcpy(&data[0] + dataIndex, &sz, sizeof(size_t));
+			dataIndex += sizeof(size_t);
+			for (auto& dataRef : e->second)
+			{
+				memcpy(&data[0] + dataIndex, &dataRef.first, sizeof(dataRef.first));
+				dataIndex += sizeof(dataRef.first);
+				memcpy(&data[0] + dataIndex, &dataRef.second, sizeof(dataRef.second));
+				dataIndex += sizeof(dataRef.second);
+			}
+			i++;
+		}
+
+		i = 0;
+		for (auto& c : m_components)
+		{
+			WZ_CORE_TRACE("(2/2) {0}%", ((double)i / (double)m_components.size()) * (double)100);
+			auto& info = IComponent::StaticInfo(c.first);
+
+			data.resize(data.size() + TOKEN_COMPONENT.size() + c.second.size() + sizeof(StaticCId) + sizeof(size_t));
+
+			memcpy(&data[0] + dataIndex, TOKEN_COMPONENT.data(), TOKEN_COMPONENT.size());
+			dataIndex += TOKEN_COMPONENT.size();
+
+			memcpy(&data[0] + dataIndex, &c.first, sizeof(StaticCId));
+			dataIndex += sizeof(StaticCId);
+
+			size_t sz = c.second.size();
+			memcpy(&data[0] + dataIndex, &sz, sizeof(size_t));
+			dataIndex += sizeof(size_t);
+
+			memcpy(&data[0] + dataIndex, c.second.data(), c.second.size());
+			dataIndex += c.second.size();
+			i++;
+		}
+
+
+		if (!ulib::File::write(file, data, true))
+		{
+			WZ_THROW(Exception, "Failed reading file when saving ECS: " + file);
+		}
+	}
+	void ECSManager::Load(string file)
+	{
+		
+		WZ_CORE_TRACE("Loading Ecs from file {0}", file);
+		std::vector<byte> data;
+		if (!ulib::File::read(file, &data, true))
+		{
+			WZ_THROW(Exception, "Failed reading file when loading ECS: " + file);
+		}
+
+		WZ_CORE_TRACE("Finding entity data...");
+		std::vector<byte> delimiter;
+		delimiter.resize(TOKEN_ENTITY.size());
+		memcpy(&delimiter[0], TOKEN_ENTITY.data(), TOKEN_ENTITY.size());
+
+		auto entitiesData = split_vector(data, delimiter);
+
+		u32 i = 0;
+		for (auto& entityData : entitiesData)
+		{
+			WZ_CORE_TRACE("Processing entity data... (1/2) {0}%", (double)i / (double)entitiesData.size() * (double)100);
+			Entity* entity = new Entity;
+
+			u32 ePtr = 0;
+
+			memcpy(&entity->first, entityData.data() + ePtr, sizeof(entity->first));
+			ePtr += sizeof(entity->first);
+			
+			size_t count;
+			memcpy(&count, entityData.data() + ePtr, sizeof(count));
+			ePtr += sizeof(count);
+
+			entity->second.resize(count);
+
+			for (int i = 0; i < count; i++)
+			{
+				memcpy(&entity->second[i].first, entityData.data() + ePtr, sizeof(entity->second[i].first));
+				ePtr += sizeof(entity->second[i].first);
+				memcpy(&entity->second[i].second, entityData.data() + ePtr, sizeof(entity->second[i].second));
+				ePtr += sizeof(entity->second[i].second);
+			}
+			
+			m_entites.push_back(entity);
+			i++;
+		}
+
+		WZ_CORE_TRACE("Finding component data...");
+		delimiter.resize(TOKEN_COMPONENT.size());
+		memcpy(&delimiter[0], TOKEN_COMPONENT.data(), TOKEN_COMPONENT.size());
+
+		auto componentsData = split_vector(data, delimiter);
+
+		for (int i = 1; i < componentsData.size(); i++)
+		{
+			WZ_CORE_TRACE("Processing component data... (2/2) {0}%", (double)i / (double)componentsData.size() * (double)100);
+			auto& componentData = componentsData[i];
+
+			u32 cPtr = 0;
+
+			StaticCId id;
+			ComponentMem mem;
+			size_t sz;
+
+			memcpy(&id, componentData.data() + cPtr, sizeof(StaticCId));
+			cPtr += sizeof(StaticCId);
+			memcpy(&sz, componentData.data() + cPtr, sizeof(size_t));
+			cPtr += sizeof(size_t);
+
+			mem.resize(sz);
+			memcpy(&mem[0], componentData.data() + cPtr, sz);
+			cPtr += sz;
+
+			m_components[id] = mem;
+		}
+
+		for (auto& e : m_entites)
+		{
+			for (auto& dataRef : e->second)
+			{
+				auto id = dataRef.first;
+				auto idx = dataRef.second;
+
+				auto comp = (IComponent*)&m_components[id][idx];
+				comp->entity = e;
+			}
+		}
 	}
 }

@@ -4,7 +4,7 @@
 #include <Wizzy/PropertyLibrary.h>
 #include <Wizzy/Instrumentor.h>
 
-struct EngineData : public ecs::Component<EngineData>
+struct EngineData : public Wizzy::Component<EngineData>
 {
 
 	string resourcePath;
@@ -20,12 +20,12 @@ struct EngineData : public ecs::Component<EngineData>
 	wz::RenderTargetPtr renderTarget = NULL;
 };
 
-class EngineManagerSystem : public ecs::System
+class EngineManagerSystem : public Wizzy::System
 {
 public:
 	EngineManagerSystem();
 
-	virtual void OnEvent(const wz::Event& e, ecs::ComponentGroup& components) const override;
+	virtual void OnEvent(const wz::Event& e, Wizzy::ComponentGroup& components) const override;
 };
 
 class Sandbox

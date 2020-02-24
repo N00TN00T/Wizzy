@@ -35,4 +35,56 @@ namespace Wizzy {
 		return _ret;
 
 	}
+
+	template <typename T>
+	inline std::vector<std::vector<T>> split_vector(const std::vector<T>& v, const T& delimiter)
+	{
+		std::vector<std::vector<T>> _ret;
+		_ret.push_back(std::vector<T>());
+		int32 vectorIndex = 0;
+
+		for (int i = 0; i < v.size(); i++)
+		{
+			if (v[i] == delimiter)
+			{
+				_ret.push_back(std::vector<T>());
+				vectorIndex++;
+			}
+			else
+			{
+				_ret[vectorIndex].push_back(v[i]);
+			}
+		}
+
+		return _ret;
+
+	}
+
+	template <typename T>
+	inline std::vector<std::vector<T>> split_vector(const std::vector<T>& v, const std::vector<T>& delimiter)
+	{
+		std::vector<std::vector<T>> _ret;
+		_ret.push_back(std::vector<T>());
+		int32 vectorIndex = 0;
+
+		for (int i = 0; i < v.size() - delimiter.size(); i++)
+		{
+			if (memcmp(&v[i], delimiter.data(), delimiter.size()) == 0)
+			{
+				if (_ret[vectorIndex].size() > 0)
+				{
+					_ret.push_back(std::vector<T>());
+					vectorIndex++;
+				}
+				i += delimiter.size() - 1;
+			}
+			else
+			{
+				_ret[vectorIndex].push_back(v[i]);
+			}
+		}
+
+		return _ret;
+
+	}
 }

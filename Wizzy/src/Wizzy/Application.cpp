@@ -72,10 +72,10 @@ namespace Wizzy {
 		m_running = true;
 
 		ImGuiComponent _imguiComponent;
-		ecs::IComponent* _comps[] = {
+		Wizzy::IComponent* _comps[] = {
 			&_imguiComponent
 		};
-		ecs::StaticCId _ids[] = {
+		Wizzy::StaticCId _ids[] = {
 			ImGuiComponent::staticId
 		};
 
