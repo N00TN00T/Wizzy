@@ -15,4 +15,7 @@
 	- ECS System
 
 ## 0.1.1 - ECS Serialization
-- 
+- Implemented Serialization and deserialization of and ECS System
+	- Pointers are not supported. This means only stack-strings are supported in terms of strings.
+- Made the Renderer2D use RenderTarget::Handle instead of RenderTargetPtr
+- Minor fixes & improvements
