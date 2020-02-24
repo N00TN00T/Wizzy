@@ -12,8 +12,4 @@
 - Editor Project System
 - Editor Resource Management GUI
 - Editor full ImGui customization
-<<<<<<< Updated upstream:TODO.md
-- Sound :(
-=======
 - Audio :(
->>>>>>> Stashed changes:TODO.txt
