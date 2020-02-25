@@ -28,7 +28,8 @@ workspace "Wizzy"
     lua = "Wizzy/vendor/lua/src",
     ulib = "Wizzy/vendor/ulib/include",
     assimp = "Wizzy/vendor/assimp/include",
-	luabridge = "Wizzy/vendor/LuaBridge/Source"
+	luabridge = "Wizzy/vendor/LuaBridge/Source",
+	pfd = "Wizzy/vendor/pfd"
   }
 
   include "Wizzy/vendor/glfw/"
@@ -75,7 +76,8 @@ project "Wizzy"
     "%{include_dir.lua}",
     "%{include_dir.ulib}",
     "%{include_dir.assimp}",
-	"%{include_dir.luabridge}"
+	"%{include_dir.luabridge}",
+	"%{include_dir.pfd}"
   }
 
   defines
@@ -216,7 +218,8 @@ project "Sandbox"
     "%{include_dir.lua}",
     "%{include_dir.ulib}",
     "%{include_dir.assimp}",
-	"%{include_dir.luabridge}"
+	"%{include_dir.luabridge}",
+	"%{include_dir.pfd}"
   }
 
   defines

@@ -103,7 +103,7 @@ namespace Wizzy
 
 		std::vector<std::pair<StaticCId, IComponent*>> GetComponents(EntityHandle entity) const;
 
-		void NotifySystems(const SystemLayer& systems, Wizzy::Event& e) const;
+		void NotifySystems(const SystemLayer& systems, const Wizzy::Event& e) const;
 
 		void Save(string file);
 		void Load(string file);

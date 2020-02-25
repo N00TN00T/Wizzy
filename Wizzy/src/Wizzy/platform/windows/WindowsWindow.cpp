@@ -59,6 +59,8 @@ namespace Wizzy {
 		glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
 		m_glfwWindow = glfwCreateWindow(props.width, props.height, props.title.c_str(), nullptr, nullptr);
 
+		glfwGetWindowPos(m_glfwWindow, &m_data.posx, &m_data.posy);
+
 		m_context = new GLContext(m_glfwWindow);
 
 		m_context->Init();
@@ -156,6 +158,14 @@ namespace Wizzy {
 			MouseMovedEvent _event(x, y);
 			_data.eventCallbackFn(_event);
 			});
+
+		glfwSetWindowPosCallback(m_glfwWindow, [](GLFWwindow* w, int32 x, int32 y)
+		{
+			auto& _data = *((WindowData*)glfwGetWindowUserPointer(w));
+
+			_data.posx = x;
+			_data.posy = y;
+		});
 
 		WZ_CORE_INFO("Welcome to Wizzy for Windows!");
 		WZ_CORE_INFO("API version: {0}", APIVersion());

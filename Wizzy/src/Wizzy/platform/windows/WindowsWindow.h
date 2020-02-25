@@ -22,6 +22,9 @@ namespace Wizzy {
 		virtual void SetWidth(u32 width) override;
 		virtual void SetHeight(u32 height) override;
 
+		inline virtual int32 GetPosX() const override { return m_data.posx; }
+		inline virtual int32 GetPosY() const override { return m_data.posy; }
+
 		inline virtual void SetEventCallback(const EventCallbackFn& callbackFn) override { m_data.eventCallbackFn = callbackFn; }
 		virtual void SetVSync(bool enabled) override;
 		virtual bool IsVsync() const override;
@@ -42,6 +45,7 @@ namespace Wizzy {
 			EventCallbackFn eventCallbackFn;
 			u32 width;
 			u32 height;
+			int32 posx, posy;
 			bool vsync;
 			float deltaTime = 1.0f / 60.0f;
 		} m_data;

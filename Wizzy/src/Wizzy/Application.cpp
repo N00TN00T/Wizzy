@@ -38,6 +38,11 @@ namespace Wizzy {
 		m_clientEcs.NotifySystems(m_clientSystems, e);
 		WZ_CORE_TRACE("Notifying engine systems '{0}'", e);
 		m_engineEcs.NotifySystems(m_engineSystems, e);
+
+		for (auto& fn : m_eventCallbacks)
+		{
+			fn(e);
+		}
 	}
 
 	void Application::Run() 
@@ -114,5 +119,9 @@ namespace Wizzy {
 
 		this->Shutdown();
 		WZ_PROFILE_END_SESSION();
+	}
+	void Application::AddEventCallback(const std::function<void(Event & e)>& fn)
+	{
+		m_eventCallbacks.push_back(fn);
 	}
 }

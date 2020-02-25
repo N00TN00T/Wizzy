@@ -27,6 +27,9 @@ namespace Wizzy {
         virtual u32 GetWidth() const = 0;
         virtual u32 GetHeight() const = 0;
 
+        virtual int32 GetPosX() const = 0;
+        virtual int32 GetPosY() const = 0;
+
         virtual void SetWidth(u32 width) = 0;
         virtual void SetHeight(u32 height) = 0;
 

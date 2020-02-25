@@ -64,6 +64,7 @@ namespace Wizzy {
 	inline std::vector<std::vector<T>> split_vector(const std::vector<T>& v, const std::vector<T>& delimiter)
 	{
 		std::vector<std::vector<T>> _ret;
+		if (delimiter.size() > v.size() || v.size() == 0) return _ret;
 		_ret.push_back(std::vector<T>());
 		int32 vectorIndex = 0;
 

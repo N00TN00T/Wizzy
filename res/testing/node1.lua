@@ -1,1 +1,1 @@
-output.value = 5
+output.value = 5§§§§ннн

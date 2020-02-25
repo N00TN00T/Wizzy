@@ -83,7 +83,7 @@ namespace Wizzy {
 		return _components;
 	}
 
-	void ECSManager::NotifySystems(const SystemLayer& systems, Wizzy::Event& e) const {
+	void ECSManager::NotifySystems(const SystemLayer& systems, const Wizzy::Event& e) const {
 		WZ_PROFILE_FUNCTION();
         ComponentGroup _toUpdate;
 		for (size_t i = 0; i < systems.SystemCount(); i++) {

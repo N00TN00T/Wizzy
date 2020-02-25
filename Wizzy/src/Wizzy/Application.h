@@ -35,6 +35,8 @@ namespace Wizzy {
 		virtual void Init() = 0;
 		virtual void Shutdown() = 0;
 
+		void AddEventCallback(const std::function<void(Event & e)>& fn);
+
 	protected:
 		std::shared_ptr<IWindow> m_window;
 		Wizzy::ECSManager m_clientEcs;
@@ -46,6 +48,7 @@ namespace Wizzy {
 		bool m_running;
         bool m_wantRestart = false;
 		ApplicationProps m_props;
+		std::vector<std::function<void(Event & e)>> m_eventCallbacks;
 
 	public:
 		inline static Application& Get() { return *s_instance; }
