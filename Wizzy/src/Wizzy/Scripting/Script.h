@@ -32,11 +32,11 @@ namespace Wizzy {
     class Script
         : public Resource {
     public:
-
+		__HANDLE_DEF;
         Script(const ResData& data, const PropertyLibrary& props);
 
         inline virtual ResData Serialize() const override {
-			return ResData((const byte*)m_sourceCode.data(), (const byte*)m_sourceCode.data() + m_sourceCode.size());
+			return ResData((const byte*)m_sourceCode.data(), (const byte*)m_sourceCode.data() + m_sourceCode.size() - 1);
         }
 
 		static const PropertyLibrary& GetTemplateProps();

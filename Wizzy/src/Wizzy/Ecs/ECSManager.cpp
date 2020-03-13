@@ -276,9 +276,20 @@ namespace Wizzy {
 		return _minIndex;
 	}
 
-	void ECSManager::Save(string file)
+	void ECSManager::Save(string file) const
 	{
 		WZ_CORE_TRACE("Saving ECS System to {0}", file);
+
+		auto data = Save();
+
+		if (!ulib::File::write(file, data, true))
+		{
+			WZ_THROW(Exception, "Failed reading file when saving ECS: " + file);
+		}
+	}
+	std::vector<byte> ECSManager::Save() const
+	{
+		
 		std::vector<byte> data;
 		u32 dataIndex = 0;
 
@@ -329,11 +340,7 @@ namespace Wizzy {
 			i++;
 		}
 
-
-		if (!ulib::File::write(file, data, true))
-		{
-			WZ_THROW(Exception, "Failed reading file when saving ECS: " + file);
-		}
+		return data;
 	}
 	void ECSManager::Load(string file)
 	{
@@ -344,7 +351,10 @@ namespace Wizzy {
 		{
 			WZ_THROW(Exception, "Failed reading file when loading ECS: " + file);
 		}
-
+		Load(data);
+	}
+	void ECSManager::Load(std::vector<byte> data)
+	{
 		WZ_CORE_TRACE("Finding entity data...");
 		std::vector<byte> delimiter;
 		delimiter.resize(TOKEN_ENTITY.size());
@@ -362,7 +372,7 @@ namespace Wizzy {
 
 			memcpy(&entity->first, entityData.data() + ePtr, sizeof(entity->first));
 			ePtr += sizeof(entity->first);
-			
+
 			size_t count;
 			memcpy(&count, entityData.data() + ePtr, sizeof(count));
 			ePtr += sizeof(count);
@@ -376,7 +386,7 @@ namespace Wizzy {
 				memcpy(&entity->second[i].second, entityData.data() + ePtr, sizeof(entity->second[i].second));
 				ePtr += sizeof(entity->second[i].second);
 			}
-			
+
 			m_entites.push_back(entity);
 			i++;
 		}

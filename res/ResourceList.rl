@@ -5,3 +5,6 @@ testing/main.rt;class Wizzy::RenderTarget;5
 testing/node1.lua;class Wizzy::Script;6
 testing/node2.lua;class Wizzy::Script;7
 testing/node3.lua;class Wizzy::Script;8
+testing/testsceneA.sc;class Scene;9
+testing/testsceneB.sc;class Scene;10
+testing/testsceneC.sc;class Scene;11

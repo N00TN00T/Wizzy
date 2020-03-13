@@ -19,7 +19,10 @@ namespace Wizzy {
 
     class Shader : public Resource 
 	{
+		
     public:
+		__HANDLE_DEF;
+
         Shader(const PropertyLibrary& props)
 			: Resource(props) {}
 		virtual

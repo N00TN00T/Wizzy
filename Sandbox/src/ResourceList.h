@@ -1,6 +1,7 @@
 #pragma once
 
 #include <Wizzy.h>
+#include "SceneSystem/Scene.h"
 
 inline void LoadResourceList(const string& file)
 {
@@ -53,6 +54,10 @@ inline void LoadResourceList(const string& file)
 			else if (typeStr == typestr(wz::RenderTarget))
 			{
 				wz::ResourceManagement::Load<wz::RenderTarget>(resPath, id);
+			}
+			else if (typeStr == typestr(Scene))
+			{
+				wz::ResourceManagement::Load<Scene>(resPath, id);
 			}
 			else
 			{

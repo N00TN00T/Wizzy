@@ -105,8 +105,10 @@ namespace Wizzy
 
 		void NotifySystems(const SystemLayer& systems, const Wizzy::Event& e) const;
 
-		void Save(string file);
+		void Save(string file) const;
+		std::vector<byte> Save() const;
 		void Load(string file);
+		void Load(std::vector<byte> data);
 
 	private:
 		std::unordered_map<StaticCId, ComponentMem>		m_components;

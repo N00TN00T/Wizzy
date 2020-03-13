@@ -10,7 +10,7 @@ namespace Wizzy {
 
     class RenderTarget : public Resource {
     public:
-
+        __HANDLE_DEF;
         RenderTarget(const PropertyLibrary& props) : Resource(props) {}
 
         virtual

@@ -260,11 +260,12 @@ namespace Wizzy
 	template<typename T>
 	inline void ResourceManagement::ForEach(std::function<void(const Resource::Handle&)> fn)
 	{
-		for (const auto& _handle : s_handles)
+		for (const auto& hnd : s_handles)
 		{
-			if (typeid(Resource::Handle) == typeid(_handle))
+			WZ_DEBUG("{0}, {1}", typestr(T), GetInfoFor(hnd).type);
+			if (typestr(T) == GetInfoFor(hnd).type)
 			{
-				fn(_handle);
+				fn(hnd);
 			}
 		}
 	}

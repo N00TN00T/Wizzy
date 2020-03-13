@@ -2,6 +2,9 @@
 
 #include "Wizzy/PropertyLibrary.h"
 
+
+#define __HANDLE_DEF struct Handle : public Resource::Handle { using Resource::Handle::Handle; }
+
 namespace Wizzy {
 
     typedef std::vector<byte> ResData;

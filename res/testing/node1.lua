@@ -1,1 +1,0 @@
-output.value = 5§§§§ннн

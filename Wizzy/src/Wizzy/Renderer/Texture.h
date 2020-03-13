@@ -7,6 +7,7 @@ namespace Wizzy {
     class Texture : public Resource 
     {
     public:
+        __HANDLE_DEF;
         Texture(const ResData& data, const PropertyLibrary& flags);
         Texture(byte *rawData, int32 width, int32 height, const PropertyLibrary& flags = *s_templateProps);
         virtual ~Texture();

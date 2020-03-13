@@ -3,12 +3,6 @@
 #include "Wizzy/Resource/ResourceManagement.h"
 #include "Wizzy/Utils.h"
 
-#include "Wizzy/Scripting/Script.h"
-#include "Wizzy/Renderer/Texture.h"
-#include "Wizzy/Renderer/Shader.h"
-#include "Wizzy/Renderer/Material.h"
-#include "Wizzy/Renderer/Model.h"
-#include "Wizzy/Renderer/RenderTarget.h"
 
 #define __CHECK_HANDLE(handle, loaded)\
 {\

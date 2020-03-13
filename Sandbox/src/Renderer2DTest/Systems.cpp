@@ -4,6 +4,7 @@
 
 #include "Systems.h"
 #include "ResourceList.h"
+#include "..\SceneSystem\Systems.h"
 
 wz::RenderTarget::Handle hMainRenderTarget = WZ_NULL_RESOURCE_HANDLE;
 
