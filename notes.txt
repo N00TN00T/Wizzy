@@ -9,3 +9,7 @@ can be used the same way in the editor game and the published game.
 
 For project system, use static class ProjectManagement with api for loading, saving etc 
 and then use the api in ecs.
+
+For the job system for the editor, have an option to mark jobs as multithreaded.
+Job system will be used to queue up any tasks in the editor and wait for them in every frame
+and let the user know with a loading symbol while freezing the interface.

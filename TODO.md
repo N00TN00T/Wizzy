@@ -3,6 +3,7 @@
 # Medium tasks
 - Function overloads in Renderer2D to be able to render to a RenderTarget::Handle instead of a RenderTargetPtr
 - Font rendering
+- Job system for editor
 
 # Large tasks
 ## Misc

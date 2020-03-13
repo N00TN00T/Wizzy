@@ -44,7 +44,7 @@ namespace Wizzy
 
 #if WZ_VERSION_SUM(WZ_VERSION_MAJOR, WZ_VERSION_MINOR, WZ_VERSION_PATCH) <= WZ_VERSION_SUM(0, 1, 1)
 
-	void ResourceManagement::LoadResourceList(const string& listFile)
+	/*void ResourceManagement::LoadResourceList(const string& listFile)
 	{
 		string fullPath = s_resourceDir + listFile;
 
@@ -88,10 +88,6 @@ namespace Wizzy
 				{
 					Load<Material>(resPath, id);
 				}
-				/*else if (typeStr == typestr(Model))
-				{
-					Load<Model>(resPath, id);
-				}*/
 				else if (typeStr == typestr(Texture))
 				{
 					Load<Texture>(resPath, id);
@@ -139,6 +135,7 @@ namespace Wizzy
 			}
 		}
 	}
+	*/
 
 	void ResourceManagement::Load(Resource::Handle handle)
 	{

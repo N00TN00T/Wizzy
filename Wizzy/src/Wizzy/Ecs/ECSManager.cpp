@@ -112,6 +112,7 @@ namespace Wizzy {
 				const auto& _systemFlags = _system->GetFlags();
 				if (_systemTypes.size() == 1) {
 					const auto& _componentType = _systemTypes[0];
+					if (m_components.find(_componentType) == m_components.end()) continue;
 					const auto& _typeSize = IComponent::StaticInfo(_componentType).size;
 					const auto& _memPool = m_components.at(_componentType);
 					for (size_t j = 0; j < _memPool.size(); j += _typeSize) {
@@ -125,6 +126,7 @@ namespace Wizzy {
 					uint32_t _lcIndex = FindLeastCommonComponentIndex(_systemTypes,
 						_systemFlags);
 					StaticCId _lcType = _systemTypes[_lcIndex];
+					if (m_components.find(_lcType) == m_components.end()) continue;
 					const auto& _lcTypeSize = IComponent::StaticInfo(_lcType).size;
 					auto _lcMemPool = m_components.at(_lcType);
 
@@ -144,6 +146,11 @@ namespace Wizzy {
 						Entity* _entity = ToRawType(_ofFirstType->entity);
 						for (size_t k = 0; k < _systemTypes.size(); k++) {
 							const auto& _systemType = _systemTypes[k];
+							if (m_components.find(_systemType) == m_components.end())
+							{
+								_isValid = false;
+								break;
+							}
 							const auto& _systemFlag = _systemFlags[k];
 							IComponent* _entityComp = GetComponentInternal(
 								_entity,
@@ -260,7 +267,7 @@ namespace Wizzy {
 			const size_t& _typeSize = IComponent::StaticInfo(types[i]).size;
 			auto _numComponents = m_components.at(types[i]).size() / _typeSize;
 
-			if (_numComponents < _minNumComponents) {
+			if (_numComponents <= _minNumComponents) {
 				_minNumComponents = _numComponents;
 				_minIndex = i;
 			}

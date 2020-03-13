@@ -1,6 +1,7 @@
 #include "spch.h"
 
 #include "Sandbox.h"
+#include "ResourceList.h"
 
 EngineManagerSystem::EngineManagerSystem()
 {
@@ -27,7 +28,7 @@ void EngineManagerSystem::OnEvent(const wz::Event& e, Wizzy::ComponentGroup& com
 	{
 		if (ulib::File::exists(_testComp.resourcePath + "ResourceList.rl"))
 		{
-			wz::ResourceManagement::LoadResourceList("ResourceList.rl");
+			LoadResourceList("ResourceList.rl");
 		}
 
 		_testComp.hndShader = (wz::Shader::Handle)wz::ResourceManagement::HandleOf("test.shader");
@@ -141,7 +142,7 @@ void EngineManagerSystem::OnEvent(const wz::Event& e, Wizzy::ComponentGroup& com
 	}
 	case wz::EventType::app_shutdown:
 	{
-		wz::ResourceManagement::WriteResourceList("ResourceList.rl");
+		WriteResourceList("ResourceList.rl");
 		return;
 	}
 	}

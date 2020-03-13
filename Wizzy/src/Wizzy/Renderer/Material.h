@@ -12,8 +12,6 @@ namespace Wizzy {
 	};
 
     struct Material : public Resource {
-	public:
-		__HANDLE_DEF;
     public:
         Material(const ResData& data, const PropertyLibrary& props);
         Material(Shader::Handle handle);

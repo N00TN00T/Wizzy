@@ -3,6 +3,7 @@
 #include <Wizzy.h>
 
 #include "Systems.h"
+#include "ResourceList.h"
 
 wz::RenderTarget::Handle hMainRenderTarget = WZ_NULL_RESOURCE_HANDLE;
 
@@ -24,7 +25,7 @@ void ResourceManager::OnEvent(const Wizzy::Event& e, Wizzy::ComponentGroup& comp
 		case wz::EventType::app_init:
 		{
 			wz::ResourceManagement::SetResourceDir(data.resourceDir);
-			wz::ResourceManagement::LoadResourceList("ResourceList.rl");
+			LoadResourceList("ResourceList.rl");
 			return;
 		}
 		case wz::EventType::app_update:
@@ -52,7 +53,7 @@ void ResourceManager::OnEvent(const Wizzy::Event& e, Wizzy::ComponentGroup& comp
 		}
 		case wz::EventType::app_shutdown:
 		{
-			wz::ResourceManagement::WriteResourceList("ResourceList.rl");
+			WriteResourceList("ResourceList.rl");
 		}
 	}
 }

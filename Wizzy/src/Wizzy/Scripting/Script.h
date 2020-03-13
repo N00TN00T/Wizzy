@@ -31,8 +31,6 @@ namespace Wizzy {
 
     class Script
         : public Resource {
-	public:
-		__HANDLE_DEF;
     public:
 
         Script(const ResData& data, const PropertyLibrary& props);

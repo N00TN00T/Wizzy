@@ -19,8 +19,6 @@ namespace Wizzy {
 
     class Shader : public Resource 
 	{
-	public:
-		__HANDLE_DEF;
     public:
         Shader(const PropertyLibrary& props)
 			: Resource(props) {}

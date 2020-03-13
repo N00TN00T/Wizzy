@@ -64,8 +64,8 @@ namespace Wizzy
 	class ResourceManagement
 	{
 	public:
-		static void LoadResourceList(const string& listFile);
-		static void WriteResourceList(const string& listFile);
+		/*static void LoadResourceList(const string& listFile);
+		static void WriteResourceList(const string& listFile);*/
 		// Add file to resource directory and register it to a handle. Will NOT load the resource.
 		template <typename T>
 		static typename T::Handle  AddToResourceDir(const string& file, string resPath, const PropertyLibrary& props);
@@ -106,11 +106,14 @@ namespace Wizzy
 		// Returns the handle for either resPath or name
 		static Resource::Handle HandleOf(const string& str);
 
+		inline static const std::set<Resource::Handle>& GetHandles() { return s_handles; }
+
 		template <typename T>
 		static void ForEach(std::function<void(const Resource::Handle&)> fn);
 		static void ForEach(std::function<void(const Resource::Handle&)> fn);
 
 		static void SetResourceDir(const string& dir);
+		inline static const string& GetResourceDir() { return s_resourceDir; }
 
 		// Finds errors and throws exceptions for them
 		static void Validate(bool checkSources = false);

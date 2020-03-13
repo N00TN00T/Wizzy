@@ -4,8 +4,9 @@
 #define RENDERER2D	    1
 #define NODESCRIPTING   2
 #define PROJECTSYSTEM   3
+#define SCENESYSTEM     4
 
-#define SELECTION	PROJECTSYSTEM
+#define SELECTION	SCENESYSTEM
 
 #if SELECTION == SANDBOX
 #include "Sandbox.h"
@@ -30,5 +31,11 @@ Wizzy::Application* CreateApplication()
 Wizzy::Application* CreateApplication()
 {
     return new ProjectSystem();
+}
+#elif SELECTION == SCENESYSTEM
+#include "SceneSystem/SceneSystem.h"
+Wizzy::Application* CreateApplication()
+{
+    return new SceneSystem();
 }
 #endif
