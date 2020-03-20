@@ -3,7 +3,6 @@
 #include <glad/glad.h>
 
 #include "Wizzy/WizzyExceptions.h"
-#include "Wizzy/Renderer/RenderTarget.h"
 #include "Wizzy/platform/OpenGL/GLRenderTarget.h"
 #include "Wizzy/platform/OpenGL/GLErrorHandling.h"
 
@@ -32,12 +31,12 @@ namespace Wizzy {
         Init((byte*)&data[0] + 8);
     }
     GLRenderTarget::~GLRenderTarget() {
-        WZ_CORE_TRACE("Destructing GL RenderTarget");
-        GL_CALL(glDeleteFramebuffers(1, &m_frameBufferId));
-        WZ_CORE_TRACE("Destructed framebuffer, destructing renderbuffer");
-        GL_CALL(glDeleteRenderbuffers(1, &m_renderBufferId));
         WZ_CORE_TRACE("Destructed renderbuffer, destructing texture");
         GL_CALL(glDeleteTextures(1, &m_textureId));
+        WZ_CORE_TRACE("Destructed framebuffer, destructing renderbuffer");
+        GL_CALL(glDeleteRenderbuffers(1, &m_renderBufferId));
+        WZ_CORE_TRACE("Destructing GL RenderTarget");
+        GL_CALL(glDeleteFramebuffers(1, &m_frameBufferId));
     }
 
     void GLRenderTarget::Bind() const {
@@ -45,6 +44,17 @@ namespace Wizzy {
     }
     void GLRenderTarget::Unbind() const {
         GL_CALL(glBindFramebuffer(GL_FRAMEBUFFER, 0));
+    }
+
+    void GLRenderTarget::BindTexture(u32 location) const
+    {
+        GL_CALL(glActiveTexture(GL_TEXTURE0 + location));
+        GL_CALL(glBindTexture(GL_TEXTURE_2D, m_textureId));
+    }
+
+    void GLRenderTarget::UnbindTexture() const
+    {
+        GL_CALL(glBindTexture(GL_TEXTURE_2D, 0));
     }
 
     void GLRenderTarget::SetSize(u32 width, u32 height) {
@@ -129,7 +139,7 @@ namespace Wizzy {
 
         this->Unbind();
 
-        WZ_CORE_INFO("Successfully intitialized GL RenderTarget. Width: {0}, Height: {1}, FBO: {2}, RBO: {3}, textureId: {4}", m_width, m_height, m_frameBufferId, m_renderBufferId, m_textureId);
+        WZ_CORE_INFO("GL Render Target initialized (Width: {0}, Height: {1}, FBO: {2}, RBO: {3}, textureId: {4})", m_width, m_height, m_frameBufferId, m_renderBufferId, m_textureId);
     }
     ResData GLRenderTarget::Serialize() const
     {
@@ -158,6 +168,8 @@ namespace Wizzy {
         idx += m_width * (size_t)m_height * 4ULL;
 
         this->Unbind();
+
+        free(data);
 
         return serialized;
     }

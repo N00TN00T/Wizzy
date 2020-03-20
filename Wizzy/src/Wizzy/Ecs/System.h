@@ -7,7 +7,7 @@ namespace Wizzy {
 	class System {
 	public:
 		enum ComponentFlags {
-			FLAG_NONE = 0, FLAG_OPTIONAL = 1,
+			FLAG_NONE = 0, FLAG_OPTIONAL = 1, FLAG_OPTIONAL_MIN_1 = 2
 		};
 		virtual void OnEvent(const Wizzy::Event& e,
 							 ComponentGroup& components) const = 0;

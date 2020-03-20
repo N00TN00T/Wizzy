@@ -13,6 +13,7 @@ namespace Wizzy {
     int32 GL_CullModeToAPICullMode(CullMode mode);
     int32 GL_RenderModeToAPIRenderMode(RenderMode mode);
     int32 GL_MaxTextureSlot();
+    int32 GL_TextureChannelsToAPIFormat(u8 channels);
     string GL_GetVersion();
 
     string GL_GetVendor();

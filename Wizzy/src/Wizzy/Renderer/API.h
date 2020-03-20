@@ -146,9 +146,9 @@ namespace Wizzy {
     int32 CullModeToAPICullMode(CullMode mode);
     int32 RenderModeToAPIRenderMode(RenderMode mode);
     int32 MaxTextureSlot();
+    int32 TextureChannelsToAPIFormat(u8 channels);
 
     string APIVersion();
 
     string APIVendor();
-
 }

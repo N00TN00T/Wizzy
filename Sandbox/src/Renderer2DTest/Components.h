@@ -1,8 +1,8 @@
 #pragma once
 
-#define _STRUCT_DECL(tname) struct tname : public wz::Component<tname>
+#define _COMP_DECL(tname) struct tname : public wz::Component<tname>
 
-_STRUCT_DECL(ResourceManagerComponent)
+_COMP_DECL(ResourceManagerComponent)
 {
 	ResourceManagerComponent()
 	{
@@ -17,13 +17,13 @@ _STRUCT_DECL(ResourceManagerComponent)
 	float timeSinceValidate = 0.f;
 };
 
-_STRUCT_DECL(RendererManagerComponent)
+_COMP_DECL(RendererManagerComponent)
 {
 	u32 cameraIndex = 0;
 	
 };
 
-_STRUCT_DECL(CameraComponent)
+_COMP_DECL(CameraComponent)
 {
 public:
 	float zoom = 0;
@@ -34,15 +34,25 @@ public:
 	bool rendererReady = false;
 };
 
-_STRUCT_DECL(TextureComponent)
+_COMP_DECL(TextureComponent)
 {
 	wz::Texture::Handle hTexture = WZ_NULL_RESOURCE_HANDLE;
 	wz::Color color;
 };
 
-_STRUCT_DECL(TransformComponent)
+_COMP_DECL(TransformComponent)
 {
 	vec2 position = vec2(0.f);
 	vec2 scale = vec2(1.f);
 	float rotation = 0;
+};
+
+_COMP_DECL(LabelComponent)
+{
+	LabelComponent()
+	{
+		hndFont = 12;
+	}
+	char text[128] = "Hi, I am text!";
+	wz::Font::Handle hndFont = 12;
 };

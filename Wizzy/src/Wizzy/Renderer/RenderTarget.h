@@ -21,6 +21,9 @@ namespace Wizzy {
         virtual
         void Unbind() const = 0;
 
+        virtual void BindTexture(u32 location) const = 0;
+        virtual void UnbindTexture() const = 0;
+
         virtual
         u32 GetTextureId() const = 0;
         virtual

@@ -31,7 +31,7 @@ namespace Wizzy
 		Exception() {}
 		Exception(const string& message, int32 line, const string& function);
 
-		inline virtual string GetMessage() const { return m_message; }
+		inline virtual string GetMessage() const { return m_message + "(" + std::to_string(m_line) + ")"; }
 		inline virtual const int32 GetLine() const { return m_line; }
 		inline virtual string GetFunction() const { return m_function; }
 
@@ -88,17 +88,15 @@ namespace Wizzy
 	class RendererNotReadyException : public RendererException
 	{
 	public:
-		RendererNotReadyException(u32 handleId, u32 line, const string& fn)
-			: RendererException(line, fn), m_handleId(handleId)
+		RendererNotReadyException(u32 line, const string& fn)
+			: RendererException(line, fn)
 		{
 		}
 
 		inline virtual string GetMessage() const override
 		{
-			return "Renderer was not ready for RenderTarget with handle " + std::to_string(m_handleId) + ". Make sure you call Renderer::Begin() for a rendertarget before rendering to it.";
+			return "Renderer was not ready for RenderTarget, call Begin() on the rendertarget first";
 		}
-	private:
-		u32 m_handleId;
 	};
 
 	class ResourceException : public Exception

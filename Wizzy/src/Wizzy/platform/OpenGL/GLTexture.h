@@ -6,7 +6,7 @@ namespace Wizzy {
     public:
         GLTexture(const ResData& data, const PropertyLibrary& flags);
         GLTexture(byte *rawData, int32 width, int32 height,
-                const PropertyLibrary& props = PropertyLibrary());
+                int32 channels, const PropertyLibrary& props = PropertyLibrary());
         ~GLTexture();
 
         virtual
@@ -14,14 +14,12 @@ namespace Wizzy {
         virtual
         void Unbind() const override;
 
-        inline virtual
-        u32 GetId() const override { return m_textureId; }
+        virtual void AddSubTexture(byte* data, int32 width, int32 height, int32 posX, int32 posY, int32 channels) override;
+
+        virtual ResData Serialize() const override;
 
     private:
-        void Init();
-
-    private:
-        u32                 m_textureId = WZ_TEXTURE_ID_INVALID;
+        void Init(byte* data);
 
     public:
     };

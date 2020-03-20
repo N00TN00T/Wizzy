@@ -4,16 +4,17 @@
 
 namespace Wizzy {
 
+    class RenderTarget;
+
     class Texture : public Resource 
     {
     public:
         __HANDLE_DEF;
         Texture(const ResData& data, const PropertyLibrary& flags);
-        Texture(byte *rawData, int32 width, int32 height, const PropertyLibrary& flags = *s_templateProps);
+        Texture(byte *rawData, int32 width, int32 height, int32 channels, const PropertyLibrary& flags = *s_templateProps);
         virtual ~Texture();
 
-        virtual
-            ResData Serialize() const override;
+        
         static const PropertyLibrary& GetTemplateProps();
 
         virtual
@@ -28,20 +29,19 @@ namespace Wizzy {
         inline
         int32 GetChannels() const { return m_channels; }
 
-        virtual
-        u32 GetId() const = 0;
+        virtual void AddSubTexture(byte* data, int32 width, int32 height, int32 posX, int32 posY, int32 channels) = 0;
+
+        inline u32 GetId() const { return m_textureId; }
 
         static
         Resource* Create(const ResData& data, const PropertyLibrary& props);
         static
-        Texture* Create(byte *rawData, int32 width, int32 height, const PropertyLibrary& props = *s_templateProps);
+        Texture* Create(byte *rawData, int32 width, int32 height, int32 channels, const PropertyLibrary& props = *s_templateProps);
 
     protected:
-        byte*               m_data;
         int32               m_width, m_height, m_channels;
-
+        u32                 m_textureId = WZ_TEXTURE_ID_INVALID;
     private:
         static PropertyLibrary* s_templateProps;
-
     };
 }

@@ -29,7 +29,8 @@ workspace "Wizzy"
     ulib = "Wizzy/vendor/ulib/include",
     assimp = "Wizzy/vendor/assimp/include",
 	luabridge = "Wizzy/vendor/LuaBridge/Source",
-	pfd = "Wizzy/vendor/pfd"
+	pfd = "Wizzy/vendor/pfd",
+	ft = "Wizzy/vendor/freetype/windows/include"
   }
 
   include "Wizzy/vendor/glfw/"
@@ -77,13 +78,15 @@ project "Wizzy"
     "%{include_dir.ulib}",
     "%{include_dir.assimp}",
 	"%{include_dir.luabridge}",
-	"%{include_dir.pfd}"
+	"%{include_dir.pfd}",
+	"%{include_dir.ft}"
   }
 
   defines
   {
     "WZ_EXPORT",
-    "WZ_USE_OPENGL"
+    "WZ_USE_OPENGL",
+	"FREETYPE_STATIC"
   }
 
   filter "action:codelite"
@@ -219,14 +222,16 @@ project "Sandbox"
     "%{include_dir.ulib}",
     "%{include_dir.assimp}",
 	"%{include_dir.luabridge}",
-	"%{include_dir.pfd}"
+	"%{include_dir.pfd}",
+	"%{include_dir.ft}"
   }
 
   defines
   {
       "WZ_USE_OPENGL",
       "ULIB_NO_INCLUDE",
-      "WZ_EXPORT"
+      "WZ_EXPORT",
+	  "FREETYPE_STATIC"
   }
 
   links
@@ -299,7 +304,8 @@ project "Sandbox"
     {
         "opengl32.lib",
         "glu32.lib",
-		"Wizzy/vendor/assimp/windows/lib/assimp-vc140-mt"
+		"Wizzy/vendor/assimp/windows/lib/assimp-vc140-mt",
+		"%{wks.location}/Wizzy/vendor/freetype/windows/lib/freetype.lib"
     }
 
     -- Windows-specific files

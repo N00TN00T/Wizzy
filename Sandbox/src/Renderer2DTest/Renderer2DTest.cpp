@@ -3,12 +3,12 @@
 #include "Renderer2DTest.h"
 
 
-#define LOAD 1
+#define LOAD 0
 
 
 void Renderer2DTest::Init()
 {
-	wz::Log::SetCoreLogLevel(LOG_LEVEL_TRACE);
+	wz::Log::SetCoreLogLevel(LOG_LEVEL_DEBUG);
 #if LOAD
 	m_clientEcs.Load("test.ecs");
 #else
@@ -20,14 +20,24 @@ void Renderer2DTest::Init()
 	cc.hShader = 2ULL;
 	m_clientEcs.CreateEntity(cc, TransformComponent());
 	
-	for (int i = 0; i < 30000; i++)
+	for (int i = 0; i < 300; i++)
 	{
 		TextureComponent tc;
 		TransformComponent trc;
-		tc.hTexture = 3;
+
+		if (rand() % 2 == 1)
+		{
+			tc.hTexture = 3;
+		}
+		else
+		{
+			tc.hTexture = WZ_NULL_RESOURCE_HANDLE;
+		}
 		trc.position = { rand() % 10000 - 5000, rand() % 10000 - 5000 };
 		m_clientEcs.CreateEntity(tc, trc);
 	}
+
+	m_clientEcs.CreateEntity<TransformComponent, LabelComponent>();
 
 #endif
 

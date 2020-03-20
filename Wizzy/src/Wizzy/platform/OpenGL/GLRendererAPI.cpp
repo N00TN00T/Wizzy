@@ -5,6 +5,7 @@
 #include "Wizzy/platform/OpenGL/GLErrorHandling.h"
 #include "Wizzy/platform/OpenGL/GLRendererAPI.h"
 #include "Wizzy/platform/OpenGL/GLAPI.h"
+#include "Wizzy/platform/OpenGL/GLRenderTarget.h"
 
 namespace Wizzy {
     void GLRendererAPI::SetClearColor(float r, float g, float b, float a) {
@@ -15,9 +16,7 @@ namespace Wizzy {
     }
 
     void GLRendererAPI::DrawIndexed(const VertexArrayPtr& va, u32 indexCount, RenderMode mode) {
-        GL_CALL(glDrawElements(GL_RenderModeToAPIRenderMode(mode),
-                                indexCount,
-                                GL_UNSIGNED_INT, nullptr));
+        GL_CALL(glDrawElements(GL_RenderModeToAPIRenderMode(mode), indexCount, GL_UNSIGNED_INT, nullptr));
     }
 
     void GLRendererAPI::SetViewport(const Viewport& vp) {

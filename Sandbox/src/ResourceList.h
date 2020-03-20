@@ -55,6 +55,10 @@ inline void LoadResourceList(const string& file)
 			{
 				wz::ResourceManagement::Load<wz::RenderTarget>(resPath, id);
 			}
+			else if (typeStr == typestr(wz::Font))
+			{
+				wz::ResourceManagement::Load<wz::Font>(resPath, id);
+			}
 			else if (typeStr == typestr(Scene))
 			{
 				wz::ResourceManagement::Load<Scene>(resPath, id);
@@ -81,6 +85,7 @@ inline void WriteResourceList(const string& file)
 	for (auto handle : wz::ResourceManagement::GetHandles())
 	{
 		auto& info = wz::ResourceManagement::GetInfoFor(handle);
+		if (info.runtime) continue;
 
 		list += info.resPath + ";" + info.type + ";" + std::to_string(handle.id) + "\n";
 	}
@@ -92,6 +97,8 @@ inline void WriteResourceList(const string& file)
 
 	for (auto& hnd : wz::ResourceManagement::GetHandles())
 	{
+		auto& info = wz::ResourceManagement::GetInfoFor(hnd);
+		if (info.runtime) continue;
 		if (wz::ResourceManagement::IsValid(hnd) && wz::ResourceManagement::IsLoaded(hnd))
 		{
 			wz::ResourceManagement::Save(hnd);

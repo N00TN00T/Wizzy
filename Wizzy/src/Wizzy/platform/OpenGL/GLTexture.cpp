@@ -2,24 +2,41 @@
 
 #include <glad/glad.h>
 
+#define STB_IMAGE_IMPLEMENTATION
+#include <stb_image.h>
+#define STB_IMAGE_WRITE_IMPLEMENTATION
+#include <stb_image_write.h>
+
 #include "Wizzy/Renderer/Texture.h"
 #include "Wizzy/platform/OpenGL/GLTexture.h"
 #include "Wizzy/platform/OpenGL/GLErrorHandling.h"
 #include "Wizzy/platform/OpenGL/GLAPI.h"
+#include "Wizzy/WizzyExceptions.h"
 
 #define DEFAULT_WRAP_MODE       (GL_REPEAT)
 #define DEFAULT_MIN_FILTER_MODE (GL_LINEAR_MIPMAP_LINEAR)
 #define DEFAULT_MAG_FILTER_MODE (GL_LINEAR)
 
 namespace Wizzy {
-    GLTexture::GLTexture(const ResData& data, const PropertyLibrary& flags)
-        : Texture(data, flags) {
-        Init();
+    GLTexture::GLTexture(const ResData& encoded, const PropertyLibrary& flags)
+        : Texture(encoded, flags) {
+        stbi_set_flip_vertically_on_load(true);
+        auto decoded = stbi_load_from_memory(encoded.data(), encoded.size(), &m_width, &m_height, &m_channels, 0);
+        if (decoded)
+        {
+            Init(decoded);
+            stbi_image_free(decoded);
+        }
+        else
+        {
+            WZ_THROW(Exception, "Failed loading texture: '" + string(stbi_failure_reason()) + "'");
+            return;
+        }
     }
 
-    GLTexture::GLTexture(byte *rawData, int32 width, int32 height, const PropertyLibrary& props)
-        : Texture(rawData, width, height, props) {
-        Init();
+    GLTexture::GLTexture(byte *rawData, int32 width, int32 height, int32 channels, const PropertyLibrary& props)
+        : Texture(rawData, width, height, channels, props) {
+        Init(rawData);
     }
 
     GLTexture::~GLTexture() {
@@ -36,7 +53,41 @@ namespace Wizzy {
         GL_CALL(glBindTexture(GL_TEXTURE_2D, 0));
     }
 
-    void GLTexture::Init() {
+	void GLTexture::AddSubTexture(byte* data, int32 width, int32 height, int32 posX, int32 posY, int32 channels)
+	{
+        GLenum fmt = GL_RGBA;
+        switch (channels)
+        {
+        case 1: fmt = GL_RED; break;
+        case 2: fmt = GL_RG; break;
+        case 3: fmt = GL_RGB; break;
+        case 4: fmt = GL_RGBA; break;
+        }
+        this->Bind(1);
+        GL_CALL(glTexSubImage2D(GL_TEXTURE_2D, 0, posX, posY, width, height, fmt, GL_UNSIGNED_BYTE, data));
+        this->Unbind();
+	}
+
+    ResData GLTexture::Serialize() const
+    {
+        byte* pixels = (byte*)malloc((int64)m_width * (int64)m_height * (int64)m_channels);
+
+        glBindTexture(GL_TEXTURE_2D, m_textureId);
+        glGetTexImage(GL_TEXTURE_2D, 0, GL_TextureChannelsToAPIFormat(m_channels), GL_UNSIGNED_BYTE, pixels);
+        glBindTexture(GL_TEXTURE_2D, 0);
+
+        int32 len;
+        stbi_flip_vertically_on_write(true);
+        byte* serializedBytes = stbi_write_png_to_mem(pixels, 0, m_width, m_height, m_channels, &len);
+        ResData data(serializedBytes, serializedBytes + len);
+
+        delete serializedBytes;
+        free(pixels);
+
+        return data;
+    }
+
+	void GLTexture::Init(byte* data) {
 		WZ_CORE_TRACE("Initializing GL Texture...");
 
         GL_CALL(glGenTextures(1, &m_textureId));
@@ -102,18 +153,13 @@ namespace Wizzy {
                                 GL_TEXTURE_MAG_FILTER,
                                 _magFilterMode));
 
-        GLenum _internalFormat = GL_RGB;
+        GL_CALL(glPixelStorei(GL_UNPACK_ALIGNMENT, 1));
 
-        switch (m_channels) {
-            case 1: _internalFormat = GL_RED; break;
-            case 2: _internalFormat = GL_RG; break;
-            case 3: _internalFormat = GL_RGB; break;
-            case 4: _internalFormat = GL_RGBA; break;
-        }
+        GLenum fmt = GL_TextureChannelsToAPIFormat(m_channels);
 
         WZ_CORE_TRACE("Creating GL tex2d depending on given image type in flags");
-        GL_CALL(glTexImage2D(GL_TEXTURE_2D, 0, _internalFormat, m_width, m_height,
-                             0, GL_RGBA, GL_UNSIGNED_BYTE, m_data));
+        GL_CALL(glTexImage2D(GL_TEXTURE_2D, 0, fmt, m_width, m_height,
+                             0, fmt, GL_UNSIGNED_BYTE, data));
 
         WZ_CORE_TRACE("Generating mitmaps");
         
@@ -123,6 +169,6 @@ namespace Wizzy {
             GL_CALL(glGenerateMipmap(GL_TEXTURE_2D));
         }
 
-        WZ_CORE_INFO("Successfully Initialized GL Texture and assigned id '{0}'", m_textureId);
+        WZ_CORE_INFO("Successfully Initialized GL Texture (w: {0}, h: {1}, c:{2}) and assigned id '{3}'", m_width, m_height, m_channels, m_textureId);
     }
 }

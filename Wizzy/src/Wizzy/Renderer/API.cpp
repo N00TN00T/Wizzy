@@ -53,6 +53,13 @@ namespace Wizzy {
         return 0;
     }
 
+    int32 TextureChannelsToAPIFormat(u8 channels)
+    {
+        CREATE_BY_API(GL_TextureChannelsToAPIFormat(channels));
+
+        return 0;
+    }
+
     string APIVersion() {
 
         CREATE_BY_API(GL_GetVersion());

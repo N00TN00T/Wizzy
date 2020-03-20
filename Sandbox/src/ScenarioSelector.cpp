@@ -6,7 +6,7 @@
 #define PROJECTSYSTEM   3
 #define SCENESYSTEM     4
 
-#define SELECTION	SCENESYSTEM
+#define SELECTION	RENDERER2D
 
 #if SELECTION == SANDBOX
 #include "Sandbox.h"

@@ -70,7 +70,7 @@ void EngineManagerSystem::OnEvent(const wz::Event& e, Wizzy::ComponentGroup& com
 			_testComp.timeSinceValidate = 0.f;
 			try
 			{
-				wz::ResourceManagement::Validate(false);
+				//wz::ResourceManagement::Validate(false);
 			}
 			catch (const wz::ResourceFileMissingException & e)
 			{
@@ -90,7 +90,7 @@ void EngineManagerSystem::OnEvent(const wz::Event& e, Wizzy::ComponentGroup& com
 				wz::Log::SetExtra(true);
 			}
 
-			wz::ResourceManagement::Validate(true);
+			//wz::ResourceManagement::Validate(true);
 		}
 
 		if (wz::Input::GetKey(WZ_KEY_R))

@@ -45,6 +45,7 @@ namespace Wizzy
 		ResourceCreateFn	createFn;
 		ResData				source;
 		string				type;
+		bool				runtime = false;
 
 		inline string name() const 
 		{ 
@@ -69,6 +70,9 @@ namespace Wizzy
 		// Add file to resource directory and register it to a handle. Will NOT load the resource.
 		template <typename T>
 		static typename T::Handle  AddToResourceDir(const string& file, string resPath, const PropertyLibrary& props);
+
+		template <typename T>
+		static typename T::Handle AddRuntimeResource(T* resource, const PropertyLibrary& props = PropertyLibrary());
 
 		// Add a resource already in memory and register to a handle
 		template <typename T>
@@ -124,7 +128,7 @@ namespace Wizzy
 		template <typename T>
 		static typename T::Handle Register(string resPath, const PropertyLibrary& props);
 		template <typename T>
-		static typename T::Handle RegisterWithId(string resPath, uId id, const ResData& fileData, const PropertyLibrary& props);
+		static typename T::Handle RegisterWithId(string resPath, uId id, const ResData& fileData, const PropertyLibrary& props, bool runtime = false);
 
 		static string UniquenizePathName(const string& path);
 
@@ -161,6 +165,14 @@ namespace Wizzy
 		WZ_CORE_TRACE("Copied file to resource dir, now registering it...");
 		
 		return Register<T>(resPath, props);
+	}
+
+	template<typename T>
+	inline typename T::Handle ResourceManagement::AddRuntimeResource(T* resource, const PropertyLibrary& props)
+	{
+		auto hnd = RegisterWithId<T>("runtime/", ++s_idCounter, ResData(), props, true);
+		s_resource[GetInfoFor(hnd).resourceIndex] = resource;
+		return hnd;
 	}
 
 	template<typename T>
@@ -290,7 +302,7 @@ namespace Wizzy
 	}
 
 	template<typename T>
-	inline typename T::Handle ResourceManagement::RegisterWithId(string resPath, uId id, const ResData& fileData, const PropertyLibrary& props)
+	inline typename T::Handle ResourceManagement::RegisterWithId(string resPath, uId id, const ResData& fileData, const PropertyLibrary& props, bool runtime)
 	{
 		WZ_CORE_TRACE("Creating a handle with ID {0}", id);
 
@@ -303,7 +315,8 @@ namespace Wizzy
 			props,
 			T::Create,
 			fileData,
-			typestr(T)
+			typestr(T),
+			runtime
 		};
 
 		info.props.SetProperty("SourceFile", resPath);
@@ -331,10 +344,17 @@ namespace Wizzy
 		{
 			std::lock_guard<std::mutex> lock(mutex);
 			s_resourceInfo[handle] = info;
-			s_idCounter = std::max(s_idCounter, id);
+			s_idCounter = std::max(s_idCounter, id + 1);
 		}
 
-		WZ_CORE_INFO("Successfully registered a resource:");
+		if (info.runtime)
+		{
+			WZ_CORE_INFO("Registered resource (RUNTIME):");
+		}
+		else
+		{
+			WZ_CORE_INFO("Registered resource:");
+		}
 		Log::SetExtra(false);
 		WZ_CORE_INFO("    Type:    {0}", typestr(T));
 		WZ_CORE_INFO("    Respath: {0}", resPath);

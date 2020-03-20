@@ -110,6 +110,20 @@ namespace Wizzy {
         GL_CALL(glGetIntegerv(GL_MAX_TEXTURE_IMAGE_UNITS, &c));
         return c - 1;
     }
+    int32 GL_TextureChannelsToAPIFormat(u8 channels)
+    {
+        WZ_CORE_ASSERT(channels > 0 && channels <= 4, "Invalid channel count");
+
+        switch (channels)
+        {
+        case 1: return GL_RED;
+        case 2: return GL_RG;
+        case 3: return GL_RGB;
+        case 4: return GL_RGBA;
+        }
+
+        return 0;
+    }
     string GL_GetVersion() {
       string _glVersion = reinterpret_cast< char const* >(glGetString(GL_VERSION));
       string _glslVersion = reinterpret_cast< char const* >(glGetString(GL_SHADING_LANGUAGE_VERSION));

@@ -159,7 +159,8 @@ namespace Wizzy {
 							);
 
 							if (!_entityComp &&
-								(_systemFlag & System::FLAG_OPTIONAL) == 0) {
+								!(_systemFlag & System::FLAG_OPTIONAL) &&
+								!(_systemFlag & System::FLAG_OPTIONAL_MIN_1)) {
 								/* Entity does not have a component of a system
 									component type AND that component is not optional*/
 								_isValid = false;
@@ -261,7 +262,7 @@ namespace Wizzy {
 		uint32_t _minIndex = UINT32_MAX;
 
 		for (uint32_t i = 0; i < static_cast<uint32_t>(types.size()); i++) {
-			if ((flags[i] & System::FLAG_OPTIONAL) != 0) {
+			if ((flags[i] & System::FLAG_OPTIONAL) || (flags[i] & System::FLAG_OPTIONAL_MIN_1)) {
 				continue;
 			}
 			const size_t& _typeSize = IComponent::StaticInfo(types[i]).size;

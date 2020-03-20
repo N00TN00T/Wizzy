@@ -118,6 +118,9 @@ namespace Wizzy {
 		DISPATCH_EVENT_LOCAL(AppShutdownEvent, 0);
 
 		this->Shutdown();
+
+		WZ_CORE_INFO("WIZZY APPLICATION END");
+
 		WZ_PROFILE_END_SESSION();
 	}
 	void Application::AddEventCallback(const std::function<void(Event & e)>& fn)

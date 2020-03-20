@@ -1,12 +1,14 @@
 #pragma once
 
-#include "Renderer.h"
 #include "Wizzy/Rect.h"
+#include "Wizzy/Renderer/Buffers.h"
+#include "Wizzy/Renderer/RenderTarget.h"
+#include "Wizzy/Renderer/Font.h"
 #include "Wizzy/Renderer/Texture.h"
+#include "Wizzy/Renderer/Shader.h"
 
 namespace Wizzy
 {
-    
     enum class RectMode
     {
         Filled,
@@ -32,23 +34,27 @@ namespace Wizzy
         static size_t TEXTURE_SLOTS;
     public:
 
-        static void Begin(const Shader::Handle& hndShader, const mat4& cameraTransform = mat4(1), RenderTarget::Handle hRenderTarget = NULL);
+        static void Begin(Shader::Handle hShader, const mat4& cameraTransform = mat4(1), RenderTarget::Handle renderTarget = NULL);
 
-        static void SubmitImage(Texture::Handle texture,  const glm::vec2& position, const glm::vec2 scale, float rotation, const glm::vec4& color, RenderTarget::Handle hRenderTarget = NULL);
-        static void SubmitImage(Texture::Handle texture,  mat4 transform, const glm::vec4& color, RenderTarget::Handle hRenderTarget = NULL);
+        static void SubmitImage(Texture::Handle hTexture,  const glm::vec2& position, const glm::vec2 scale, float rotation, const glm::vec4& color, RenderTarget::Handle hRenderTarget = WZ_NULL_RESOURCE_HANDLE);
+        static void SubmitImage(Texture::Handle hTexture, mat4 transform, const glm::vec4& color, RenderTarget::Handle hRenderTarget = WZ_NULL_RESOURCE_HANDLE);
 
-        //static void SubmitText(Font::Handle font, const string& text, const glm::vec2& position, const glm::vec2 scale, const glm::vec4& color);
+        static void SubmitImage(RenderTarget::Handle hTexture, const glm::vec2& position, const glm::vec2 scale, float rotation, const glm::vec4& color, RenderTarget::Handle hRenderTarget = WZ_NULL_RESOURCE_HANDLE);
+        static void SubmitImage(RenderTarget::Handle hTexture, mat4 transform, const glm::vec4& color, RenderTarget::Handle hRenderTarget = WZ_NULL_RESOURCE_HANDLE);
 
-        static void SubmitRect(const Rect& rect, const glm::vec4& color, RectMode mode = RectMode::Filled, RenderTarget::Handle hRenderTarget = NULL);
+        static void SubmitText(const string& text, Font* font, const glm::vec2& position, const glm::vec2 scale, float rotation, const glm::vec4& color, RenderTarget::Handle hRenderTarget = WZ_NULL_RESOURCE_HANDLE);
+        static void SubmitText(const string& text, Font* font, mat4 transform, const glm::vec4& color, RenderTarget::Handle hRenderTarget = WZ_NULL_RESOURCE_HANDLE);
+
+        static void SubmitRect(const Rect& rect, const glm::vec4& color, RectMode mode = RectMode::Filled, RenderTarget::Handle hRenderTarget = WZ_NULL_RESOURCE_HANDLE);
         
-        static void End(RenderTarget::Handle hRenderTarget = NULL);
+        static void End(RenderTarget::Handle hRenderTarget = WZ_NULL_RESOURCE_HANDLE);
 
-        static bool IsReady(RenderTarget::Handle hRenderTarget = NULL);
+        static bool IsReady(RenderTarget::Handle hRenderTarget = WZ_NULL_RESOURCE_HANDLE);
 
     private:
         static void Init(RenderTarget::Handle hRenderTarget);
 
-    
+        static void Submit(u32 slot, const vec2& size, mat4 transform, const glm::vec4& color, RenderTarget::Handle hRenderTarget = WZ_NULL_RESOURCE_HANDLE);
 
     private:
         struct RenderTargetData
@@ -60,15 +66,15 @@ namespace Wizzy
             VertexData* pBufferData;
             std::unordered_map<u32, u32> textureSlots;
             u32 slotCount = 0;
-            Shader::Handle shader;
+            Shader::Handle hShader;
             u32 indexCount = 0;
             u32 submissionCount = 0;
             std::mutex rendererMutex;
-            Texture::Handle hndWhiteTexture = WZ_NULL_RESOURCE_HANDLE;
+            Texture::Handle hWhiteTexture;
             mat4 camTransform;
         };
         
         static RenderTargetData s_windowTargetData;
-        static std::unordered_map<RenderTarget::Handle, RenderTargetData, RenderTarget::Handle::hash> s_renderTargetData;
+        static std::unordered_map<RenderTarget::Handle, RenderTargetData, Resource::Handle::hash> s_renderTargetData;
     };
 }
