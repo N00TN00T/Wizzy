@@ -80,7 +80,7 @@ namespace Wizzy
 
 		// Load a file already in the resource directory and register it to a handle
 		template <typename T>
-		static typename T::Handle Load(const string& resPath, uId id, const PropertyLibrary& defaultProps = PropertyLibrary());
+		static typename T::Handle Load(const string& resPath, uId id = 0, const PropertyLibrary& defaultProps = PropertyLibrary());
 
 		// Load a file associated with given handle
 		static void Load(Resource::Handle handle);
@@ -209,6 +209,8 @@ namespace Wizzy
 	template<typename T>
 	inline typename T::Handle ResourceManagement::Load(const string& resPath, uId id, const PropertyLibrary& props)
 	{
+		if (id == 0) id = ++s_idCounter;
+		
 		// Look for config file and if it exists, try to deserialize to props and send instead
 
 		WZ_CORE_TRACE("Loading a resource already in reasource dir");
