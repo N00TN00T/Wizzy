@@ -3,13 +3,20 @@ Wizzy engine aims to be a cross-platform interactive application engine for crea
 
 ## Building
 Wizzy Engine is currently not as smooth as it could be to use as a dependency for your project, but it's definitely possible. In its current state, it's recommended that you simply create a client project to be part of the Wizzy workspace. This will let you easily link to all dependencies and Wizzy while also being able to pull updates and rebuild them without issues. It would look like something like this:
-`git clone https://github.com/N00TN00T/Wizzy`
-`cd Wizzy`
-`git submodule update --init`
-`cd ..`
-`mkdir MyProject`
+
+- `git clone https://github.com/N00TN00T/Wizzy`
+
+- `cd Wizzy`
+
+- `git submodule update --init`
+
+- `cd ..`
+
+- `mkdir MyProject`
+
 Then, in MyProject directory, create a pch.h, pch.cpp and MyProject.cpp. Make sure that pch.cpp includes `#include "pch.h"` and that pch.h includes `#include <wzpch.h>`. 
 Here is some example code for MyProject.cpp that simply renders an image of mario and shows how to set things up:
+
 `
 #include "pch.h"
 #include <Wizzy.h>
@@ -146,7 +153,9 @@ wz::Application* CreateApplication()
 }
 `
 
+
 Now, to generate projects and link everything you will need a premake script. Create a file called premake5.lua in the root directory, above Wizzy and MyProject. The script should look something like this (windows):
+
 `
 include "Wizzy/premake5.lua"
 
@@ -249,6 +258,7 @@ project "MyInteractiveProject"
 
 `
 
+
 To invoke the script with premake you can use the premake binary in the repo:
 `Wizzy\vendor\bin\premake\windows\premake5.lua XXXX`
 Replace 'XXXX' with whatever target you want to generate project files. Supported targets are:
@@ -264,5 +274,58 @@ Replace 'XXXX' with whatever target you want to generate project files. Supporte
 -vs2017            Generate Visual Studio 2017 project files
 -vs2019            Generate Visual Studio 2019 project files
 
+Now, in the MyProject directory, create a directory called 'res'. Download this image and put it in the MyProject/res directory renaming it to mario.png:
+
+![Mario](https://www.mariowiki.com/images/thumb/2/2b/Marioptds.png/146px-Marioptds.png)
+
+and create a file called "texture2d.shader" with this code:
+
+
+	#shader vertex
+	
+	#version 330 core
+
+	layout (location = 0) in vec2 v_position;
+	layout (location = 1) in vec2 v_uv;
+	layout (location = 2) in vec4 v_color;
+	layout (location = 3) in float v_location;
+
+	out vec2 uv;
+
+	out vec4 color;
+
+	out float location;
+
+	uniform mat4 u_camTransform;
+
+	void main() {
+    		uv = v_uv;
+
+		location = v_location;
+
+		color = v_color;
+
+    		gl_Position = u_camTransform * vec4(v_position, 0.0, 1.0);
+	}
+
+
+	#shader fragment
+
+	#version 330 core
+
+	out vec4 fragColor;
+
+	in vec2 uv;
+	in vec4 color;
+	in float location;
+
+	uniform sampler2D u_textures[32];
+
+	void main() {
+    		fragColor = texture(u_textures[int(round(location))], uv) * color;
+	}
+
+
 As you build the project (from the Wizzy workspace) and run, you should get this result:
-<blockquote class="imgur-embed-pub" lang="en" data-id="a/ZvejSRo"  ><a href="//imgur.com/a/ZvejSRo">wizzy-mario</a></blockquote><script async src="//s.imgur.com/min/embed.js" charset="utf-8"></script>
+
+![Wizzy Mario](https://github.com/N00TN00T/Wizzy/repo-assets/wizzy-mario.png)
