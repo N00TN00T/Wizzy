@@ -141,8 +141,6 @@ namespace Wizzy
 		static uId s_idCounter;
 	};
 
-#if WZ_VERSION_SUM(WZ_VERSION_MAJOR, WZ_VERSION_MINOR, WZ_VERSION_PATCH) <= WZ_VERSION_SUM(0, 1, 1)
-
 	template<typename T>
 	inline typename T::Handle ResourceManagement::AddToResourceDir(const string& file, string resPath, const PropertyLibrary& props)
 	{
@@ -363,10 +361,6 @@ namespace Wizzy
 
 		return handle;
 	}
-
-/* #elif WZ_VERSION_SUM(WZ_VERSION_MAJOR, WZ_VERSION_MINOR, WZ_VERSION_PATCH) <= WZ_VERSION_SUM(0, 1, 1) */
-
-#endif
 	
 }
 

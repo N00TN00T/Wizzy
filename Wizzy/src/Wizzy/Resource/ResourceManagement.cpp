@@ -36,7 +36,6 @@ namespace Wizzy
 	u32 ResourceManagement::s_freeIndicesCount = 0;
 	uId ResourceManagement::s_idCounter;
 
-#if WZ_VERSION_SUM(WZ_VERSION_MAJOR, WZ_VERSION_MINOR, WZ_VERSION_PATCH) <= WZ_VERSION_SUM(0, 1, 1)
 
 	/*void ResourceManagement::LoadResourceList(const string& listFile)
 	{
@@ -432,9 +431,5 @@ namespace Wizzy
 			return hndMatch;
 		}
 	}
-
-	/* #elif WZ_VERSION_SUM(WZ_VERSION_MAJOR, WZ_VERSION_MINOR, WZ_VERSION_PATCH) <= WZ_VERSION_SUM(0, 1, 1) */
-
-#endif
 
 }
