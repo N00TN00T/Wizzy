@@ -40,7 +40,7 @@ Replace 'XXXX' with whatever target you want to generate project files. Supporte
 
 Now, in the root directory, create a directory called 'res'. There are two resources you need to put in there that are used by the app:
 
-1. This Image:<br>![Mario](https://charlie-malmqvist.com/Wizzy/Examples/MarioApp/mario.png)
+1. [This Image](https://charlie-malmqvist.com/Wizzy/Examples/MarioApp/mario.png)
 2. [A basic 2D shader](https://charlie-malmqvist.com/Wizzy/Examples/MarioApp/texture2d.shader)
 
 As you build the project (from the Wizzy workspace) and run, you should get this result:
