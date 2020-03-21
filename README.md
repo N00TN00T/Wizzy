@@ -45,4 +45,4 @@ Now, in the root directory, create a directory called 'res'. You will need two r
 
 As you build the project (from the Wizzy workspace) and run, you should get this result:
 
-![Wizzy Mario](https://github.com/N00TN00T/Wizzy/repo-assets/wizzy-mario.png)
+![Wizzy Mario](https://charlie-malmqvist.com/Wizzy/Examples/MarioApp/wizzy-mario.gif)
