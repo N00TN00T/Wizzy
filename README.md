@@ -26,19 +26,19 @@ Now, to generate projects and link everything you will need a premake script. Cr
 To invoke the script with premake you can use the premake binary in the repo:
 `Wizzy\vendor\bin\premake\windows\premake5.lua XXXX`
 Replace 'XXXX' with whatever target you want to generate project files. Supported targets are:
--codelite          Generate CodeLite project files
--gmake             Generate GNU makefiles for POSIX, MinGW, and Cygwin
--gmake2            Generate GNU makefiles for POSIX, MinGW, and Cygwin
--vs2005            Generate Visual Studio 2005 project files
--vs2008            Generate Visual Studio 2008 project files
--vs2010            Generate Visual Studio 2010 project files
--vs2012            Generate Visual Studio 2012 project files
--vs2013            Generate Visual Studio 2013 project files
--vs2015            Generate Visual Studio 2015 project files
--vs2017            Generate Visual Studio 2017 project files
--vs2019            Generate Visual Studio 2019 project files
+- codelite:          Generate CodeLite project files
+- gmake:             Generate GNU makefiles for POSIX, MinGW, and Cygwin
+- gmake2:            Generate GNU makefiles for POSIX, MinGW, and Cygwin
+- vs2005:            Generate Visual Studio 2005 project files
+- vs2008:            Generate Visual Studio 2008 project files
+- vs2010:            Generate Visual Studio 2010 project files
+- vs2012:            Generate Visual Studio 2012 project files
+- vs2013:            Generate Visual Studio 2013 project files
+- vs2015:            Generate Visual Studio 2015 project files
+- vs2017:            Generate Visual Studio 2017 project files
+- vs2019:            Generate Visual Studio 2019 project files
 
-Now, in the root directory, create a directory called 'res'. You will need two resources for this app:
+Now, in the root directory, create a directory called 'res'. There are two resources you need to put in there that are used by the app:
 
 1. This Image:<br>![Mario](https://charlie-malmqvist.com/Wizzy/Examples/MarioApp/mario.png)
 2. [A basic 2D shader](https://charlie-malmqvist.com/Wizzy/Examples/MarioApp/texture2d.shader)
