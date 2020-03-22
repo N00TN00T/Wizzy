@@ -13,7 +13,7 @@
 - Editor Project System GUI
 - Editor Resource Management GUI
 - Editor full ImGui customization
-- Audio :(
+- Editor window system
 ## Rendering
 - Refactor renderer2D to use manually allocated RAM for the buffer and upload to 
   VRAM (glBufferSubData) instead of mapping the buffer
@@ -27,6 +27,7 @@
 - Create a tutorial video on how to create a project linking wizzy
 	- Show how to link by making a premake script and dynamically build wizzy
 	- Show how to build binaries and link (without premake script)
+- Audio :(
 
 # Wishful thinking tasks
 - Implement Vulkan rendering
