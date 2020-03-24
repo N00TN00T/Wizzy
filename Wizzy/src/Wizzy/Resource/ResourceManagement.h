@@ -2,6 +2,7 @@
 
 #include "Wizzy/WizzyExceptions.h"
 #include "Wizzy/Resource/Resource.h"
+#include "Wizzy/Events/ResourceEvent.h"
 
 /*
 
@@ -18,7 +19,7 @@ Handles are like pointers, if you lose them you have no way of accessing the mem
 they are associated with.
 
 To load a NEW resource from a file that is NOT in the resource directory
-	1.	Call AddToResourceDir<T>(string file, string resPath, PropertyLibrary props)
+	1.	Call AddToResourceDir<T>(string file, string resPath, PropertyTable props)
 			- 'file' is the file to be copied to the resource directory
 			- 'resPath' is the relative path from the resource directory as root
 			- 'props' is the import configuration
@@ -27,7 +28,7 @@ To load a NEW resource from a file that is NOT in the resource directory
 		- 'handle' is the handle registered and returned from AddToResourceDir()
 
 To load a resource that's already in the resource dir but not yet registered to a handle
-	Call Load(string resPath, uId id, PropertyLibrary defaultProps)
+	Call Load(string resPath, uId id, PropertyTable defaultProps)
 		- 'resPath' is the relative resource directory path to a file that should exist
 		- 'id' is the id to be assigned to the handle
 		- 'defaultProps' is the props to be assigned if there aren't any serialized ones found
@@ -35,17 +36,18 @@ To load a resource that's already in the resource dir but not yet registered to 
 
 namespace Wizzy
 {
-	typedef Resource* (*ResourceCreateFn)(const ResData&, const PropertyLibrary&); //td::function<Resource * (string, const PropertyLibrary&)> ResourceCreateFn;
+	typedef Resource* (*ResourceCreateFn)(const ResData&, const PropertyTable&); //td::function<Resource * (string, const PropertyTable&)> ResourceCreateFn;
 
 	struct ResourceInfo
 	{
 		string				resPath;
 		u32					resourceIndex;
-		PropertyLibrary		props;
+		PropertyTable		props;
 		ResourceCreateFn	createFn;
 		ResData				source;
 		string				type;
 		bool				runtime = false;
+		bool				binary;
 
 		inline string name() const 
 		{ 
@@ -69,18 +71,18 @@ namespace Wizzy
 		static void WriteResourceList(const string& listFile);*/
 		// Add file to resource directory and register it to a handle. Will NOT load the resource.
 		template <typename T>
-		static typename T::Handle  AddToResourceDir(const string& file, string resPath, const PropertyLibrary& props);
+		static typename T::Handle  AddToResourceDir(const string& file, string resPath, const PropertyTable& props);
 
 		template <typename T>
-		static typename T::Handle AddRuntimeResource(T* resource, const PropertyLibrary& props = PropertyLibrary());
+		static typename T::Handle AddRuntimeResource(T* resource, const PropertyTable& props = PropertyTable());
 
 		// Add a resource already in memory and register to a handle
 		template <typename T>
-		static typename T::Handle AddResource(T* resource, const string& resPath, const PropertyLibrary& props);
+		static typename T::Handle AddResource(T* resource, const string& resPath, const PropertyTable& props);
 
 		// Load a file already in the resource directory and register it to a handle
 		template <typename T>
-		static typename T::Handle Load(const string& resPath, uId id = 0, const PropertyLibrary& defaultProps = PropertyLibrary());
+		static typename T::Handle Load(const string& resPath, uId id = 0, const PropertyTable& defaultProps = PropertyTable());
 
 		// Load a file associated with given handle
 		static void Load(Resource::Handle handle);
@@ -90,7 +92,7 @@ namespace Wizzy
 
 		static void Unload(Resource::Handle handle);
 
-		static void Reload(Resource::Handle handle, const PropertyLibrary& props);
+		static void Reload(Resource::Handle handle, const PropertyTable& props);
 		static void Reload(Resource::Handle handle);
 
 		static void Delete(Resource::Handle handle);
@@ -126,11 +128,13 @@ namespace Wizzy
 
 	private:
 		template <typename T>
-		static typename T::Handle Register(string resPath, const PropertyLibrary& props);
+		static typename T::Handle Register(string resPath, const PropertyTable& props);
 		template <typename T>
-		static typename T::Handle RegisterWithId(string resPath, uId id, const ResData& fileData, const PropertyLibrary& props, bool runtime = false);
+		static typename T::Handle RegisterWithId(string resPath, uId id, const ResData& fileData, const PropertyTable& props, bool runtime = false);
 
 		static string UniquenizePathName(const string& path);
+
+		static void DispatchEvent(ResourceEvent& e);
 
 	private:
 		static std::vector<Resource*> s_resource;
@@ -142,7 +146,7 @@ namespace Wizzy
 	};
 
 	template<typename T>
-	inline typename T::Handle ResourceManagement::AddToResourceDir(const string& file, string resPath, const PropertyLibrary& props)
+	inline typename T::Handle ResourceManagement::AddToResourceDir(const string& file, string resPath, const PropertyTable& props)
 	{
 		WZ_CORE_TRACE("Adding resource to directory from '{0}' to respath '{1}'", file, resPath);
 		resPath = UniquenizePathName(resPath);
@@ -166,7 +170,7 @@ namespace Wizzy
 	}
 
 	template<typename T>
-	inline typename T::Handle ResourceManagement::AddRuntimeResource(T* resource, const PropertyLibrary& props)
+	inline typename T::Handle ResourceManagement::AddRuntimeResource(T* resource, const PropertyTable& props)
 	{
 		auto hnd = RegisterWithId<T>("runtime/", ++s_idCounter, ResData(), props, true);
 		s_resource[GetInfoFor(hnd).resourceIndex] = resource;
@@ -174,7 +178,7 @@ namespace Wizzy
 	}
 
 	template<typename T>
-	inline typename T::Handle ResourceManagement::AddResource(T* resource, const string& resPath, const PropertyLibrary& props)
+	inline typename T::Handle ResourceManagement::AddResource(T* resource, const string& resPath, const PropertyTable& props)
 	{
 		WZ_CORE_ASSERT(resource != nullptr, "Cannot add a null resource");
 
@@ -187,7 +191,7 @@ namespace Wizzy
 			resFile = UniquenizePathName(resFile);
 		}
 
-		if (!ulib::File::write(resFile, serialized))
+		if (!ulib::File::write(resFile, serialized, T::IsFileBinary()))
 		{
 			WZ_THROW(ResourceFileAccessException, resFile);
 		}
@@ -207,21 +211,21 @@ namespace Wizzy
 	}
 
 	template<typename T>
-	inline typename T::Handle ResourceManagement::Load(const string& resPath, uId id, const PropertyLibrary& props)
+	inline typename T::Handle ResourceManagement::Load(const string& resPath, uId id, const PropertyTable& props)
 	{
 		if (id == 0) id = ++s_idCounter;
 		
 		// Look for config file and if it exists, try to deserialize to props and send instead
 
 		WZ_CORE_TRACE("Loading a resource already in reasource dir");
-		PropertyLibrary cfgProps = props;
+		PropertyTable cfgProps = props;
 
 		string configFile = s_resourceDir + resPath + ".wz";
 		if (ulib::File::exists(configFile))
 		{
 			WZ_CORE_TRACE("Config file found: {0}", configFile);
 			string cfgData = "";
-			if (!ulib::File::read(configFile, &cfgData, true))
+			if (!ulib::File::read(configFile, &cfgData, T::IsFileBinary()))
 			{
 				WZ_THROW(ResourceFileAccessException, configFile);
 			}
@@ -239,7 +243,7 @@ namespace Wizzy
 		}
 
 		ResData fileData;
-		if (!ulib::File::read(s_resourceDir + resPath, &fileData, true))
+		if (!ulib::File::read(s_resourceDir + resPath, &fileData, T::IsFileBinary()))
 		{
 			WZ_THROW(ResourceFileAccessException, resPath);
 		}
@@ -283,7 +287,7 @@ namespace Wizzy
 	}
 
 	template<typename T>
-	inline typename T::Handle ResourceManagement::Register(string resPath, const PropertyLibrary& props)
+	inline typename T::Handle ResourceManagement::Register(string resPath, const PropertyTable& props)
 	{
 		WZ_CORE_TRACE("Registering a resource of type '{0}' to path '{1}'", typestr(T), resPath);
 
@@ -293,7 +297,7 @@ namespace Wizzy
 		}
 
 		ResData fileData;
-		if (!ulib::File::read(s_resourceDir + resPath, &fileData, true))
+		if (!ulib::File::read(s_resourceDir + resPath, &fileData, T::IsFileBinary()))
 		{
 			WZ_THROW(ResourceFileAccessException, resPath);
 		}
@@ -302,7 +306,7 @@ namespace Wizzy
 	}
 
 	template<typename T>
-	inline typename T::Handle ResourceManagement::RegisterWithId(string resPath, uId id, const ResData& fileData, const PropertyLibrary& props, bool runtime)
+	inline typename T::Handle ResourceManagement::RegisterWithId(string resPath, uId id, const ResData& fileData, const PropertyTable& props, bool runtime)
 	{
 		WZ_CORE_TRACE("Creating a handle with ID {0}", id);
 
@@ -316,7 +320,8 @@ namespace Wizzy
 			T::Create,
 			fileData,
 			typestr(T),
-			runtime
+			runtime,
+			T::IsFileBinary()
 		};
 
 		info.props.SetProperty("SourceFile", resPath);
@@ -346,6 +351,8 @@ namespace Wizzy
 			s_resourceInfo[handle] = info;
 			s_idCounter = std::max(s_idCounter, id + 1);
 		}
+
+		DispatchEvent(ResourceRegisteredEvent(handle));
 
 		if (info.runtime)
 		{

@@ -13,12 +13,19 @@ namespace Wizzy {
     }
 
     void GLContext::Init() {
-        glfwMakeContextCurrent(m_windowHandle);
+        this->MakeCurrent();
 		WZ_CORE_TRACE("Initializing glad...");
 		auto _status = gladLoadGLLoader((GLADloadproc)glfwGetProcAddress);
 		WZ_CORE_ASSERT(_status, "Failed to intitialize glad");
     }
     void GLContext::SwapBuffers() {
         glfwSwapBuffers(m_windowHandle);
+    }
+    void GLContext::MakeCurrent()
+    {
+        if (glfwGetCurrentContext() != m_windowHandle)
+        {
+            glfwMakeContextCurrent(m_windowHandle);
+        }
     }
 }

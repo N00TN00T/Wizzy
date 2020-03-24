@@ -5,6 +5,7 @@
 
 inline void LoadResourceList(const string& file)
 {
+	WZ_CORE_TRACE("Loading resource list from '{0}'", file);
 	string fullPath = wz::ResourceManagement::GetResourceDir() + file;
 
 	string data = "";
@@ -80,6 +81,7 @@ inline void LoadResourceList(const string& file)
 
 inline void WriteResourceList(const string& file)
 {
+	WZ_CORE_TRACE("Writing resource list to '{0}'", file);
 	string list = "";
 
 	for (auto handle : wz::ResourceManagement::GetHandles())

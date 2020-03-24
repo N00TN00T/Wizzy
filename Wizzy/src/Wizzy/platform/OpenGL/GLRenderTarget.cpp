@@ -9,10 +9,10 @@
 namespace Wizzy {
 
     GLRenderTarget::GLRenderTarget(u32 width, u32 height)
-        : m_width(width), m_height(height), RenderTarget(PropertyLibrary()) {
+        : m_width(width), m_height(height), RenderTarget(PropertyTable()) {
         Init();
     }
-    GLRenderTarget::GLRenderTarget(const ResData& data, const PropertyLibrary& props)
+    GLRenderTarget::GLRenderTarget(const ResData& data, const PropertyTable& props)
         : RenderTarget(props)
     {
         if (data.size() < 12)

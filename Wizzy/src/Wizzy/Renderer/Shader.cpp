@@ -7,7 +7,7 @@
 
 namespace Wizzy {
 
-    const PropertyLibrary* Shader::s_templateProps;
+    const PropertyTable* Shader::s_templateProps;
 
     Shader::~Shader() {
         
@@ -42,17 +42,17 @@ namespace Wizzy {
         }
     }
 
-    Resource* Shader::Create(const ResData& data, const PropertyLibrary& props) {
+    Resource* Shader::Create(const ResData& data, const PropertyTable& props) {
 
         CREATE_BY_API(new GLShader(data, props));
 
         return nullptr;
     }
-    const PropertyLibrary& Shader::GetTemplateProps()
+    const PropertyTable& Shader::GetTemplateProps()
     {
         if (!s_templateProps)
         {
-            s_templateProps = new PropertyLibrary;
+            s_templateProps = new PropertyTable;
         }
         return *s_templateProps;
     }

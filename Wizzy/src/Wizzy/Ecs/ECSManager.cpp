@@ -4,6 +4,7 @@
 #include "Wizzy/Instrumentor.h"
 #include "Wizzy/WizzyExceptions.h"
 #include "Wizzy/Utils.h"
+#include "Wizzy/JobSystem/JobSystem.h"
 
 namespace Wizzy {
 	enum SystemOperation {
@@ -85,20 +86,26 @@ namespace Wizzy {
 
 	void ECSManager::NotifySystems(const SystemLayer& systems, const Wizzy::Event& e) const {
 		WZ_PROFILE_FUNCTION();
+		WZ_CORE_TRACE("Notifying systems");
         ComponentGroup _toUpdate;
-		for (size_t i = 0; i < systems.SystemCount(); i++) {
-            uint16_t _systemUpdates = 0;
+
+		for (size_t i = 0; i < systems.SystemCount(); i++)
+		{
+			uint16_t _systemUpdates = 0;
 			auto* _system = systems[i];
 
 			if (!_system->IsSubscribed(e.GetEventType())) continue;
 
-			if (_system->ProcessAll()) {
+			if (_system->ProcessAll())
+			{
 
-				for (const auto& _entity : m_entites) {
+				for (const auto& _entity : m_entites)
+				{
 
 					ComponentGroup _group;
 
-					for (auto [_id, _comp] : GetComponents(_entity)) {
+					for (auto [_id, _comp] : GetComponents(_entity))
+					{
 						_group.Push(_comp, _id);
 					}
 
@@ -107,21 +114,27 @@ namespace Wizzy {
 
 				}
 
-			} else {
+			}
+			else
+			{
 				const auto& _systemTypes = _system->GetTypeIds();
 				const auto& _systemFlags = _system->GetFlags();
-				if (_systemTypes.size() == 1) {
+				if (_systemTypes.size() == 1)
+				{
 					const auto& _componentType = _systemTypes[0];
 					if (m_components.find(_componentType) == m_components.end()) continue;
 					const auto& _typeSize = IComponent::StaticInfo(_componentType).size;
 					const auto& _memPool = m_components.at(_componentType);
-					for (size_t j = 0; j < _memPool.size(); j += _typeSize) {
-						_toUpdate.Push((IComponent*)& _memPool[j], _componentType);
+					for (size_t j = 0; j < _memPool.size(); j += _typeSize)
+					{
+						_toUpdate.Push((IComponent*)&_memPool[j], _componentType);
 						_system->OnEvent(e, _toUpdate);
 						_systemUpdates++;
 						_toUpdate.Clear();
 					}
-				} else {
+				}
+				else
+				{
 					/* _lc = least common */
 					uint32_t _lcIndex = FindLeastCommonComponentIndex(_systemTypes,
 						_systemFlags);
@@ -140,11 +153,13 @@ namespace Wizzy {
 						system types, instead of just iterating through the first
 						typegroup of components as it could be any amount of
 						components. */
-					for (size_t j = 0; j < _lcMemPool.size(); j += _lcTypeSize) {
-						IComponent* _ofFirstType = (IComponent*)& _lcMemPool[j];
+					for (size_t j = 0; j < _lcMemPool.size(); j += _lcTypeSize)
+					{
+						IComponent* _ofFirstType = (IComponent*)&_lcMemPool[j];
 
 						Entity* _entity = ToRawType(_ofFirstType->entity);
-						for (size_t k = 0; k < _systemTypes.size(); k++) {
+						for (size_t k = 0; k < _systemTypes.size(); k++)
+						{
 							const auto& _systemType = _systemTypes[k];
 							if (m_components.find(_systemType) == m_components.end())
 							{
@@ -160,7 +175,8 @@ namespace Wizzy {
 
 							if (!_entityComp &&
 								!(_systemFlag & System::FLAG_OPTIONAL) &&
-								!(_systemFlag & System::FLAG_OPTIONAL_MIN_1)) {
+								!(_systemFlag & System::FLAG_OPTIONAL_MIN_1))
+							{
 								/* Entity does not have a component of a system
 									component type AND that component is not optional*/
 								_isValid = false;
@@ -170,8 +186,9 @@ namespace Wizzy {
 							if (_entityComp)
 								_toUpdate.Push(_entityComp, _systemType);
 						}
-						
-						if (_isValid) {
+
+						if (_isValid)
+						{
 							_system->OnEvent(e, _toUpdate);
 							_systemUpdates++;
 							_toUpdate.Clear();
@@ -181,6 +198,124 @@ namespace Wizzy {
 				WZ_CORE_ASSERT(_systemUpdates != 0, "Unused system '" + typestr(*_system) + "'");
 			}
 		}
+		//JobContext ctx;
+		//WZ_CORE_TRACE("Dispatching jobs");
+		//JobSystem::Dispatch(ctx, systems.SystemCount(), 10, [&](u32 i, u32 groupIndex) 
+		//{
+		//	uint16_t _systemUpdates = 0;
+		//	auto* _system = systems[i];
+
+		//	if (!_system->IsSubscribed(e.GetEventType())) return;
+
+		//	if (_system->ProcessAll())
+		//	{
+
+		//		for (const auto& _entity : m_entites)
+		//		{
+
+		//			ComponentGroup _group;
+
+		//			for (auto [_id, _comp] : GetComponents(_entity))
+		//			{
+		//				_group.Push(_comp, _id);
+		//			}
+
+		//			_systemUpdates++;
+		//			_system->OnEvent(e, _group);
+
+		//		}
+
+		//	}
+		//	else
+		//	{
+		//		const auto& _systemTypes = _system->GetTypeIds();
+		//		const auto& _systemFlags = _system->GetFlags();
+		//		if (_systemTypes.size() == 1)
+		//		{
+		//			const auto& _componentType = _systemTypes[0];
+		//			if (m_components.find(_componentType) == m_components.end()) return;
+		//			const auto& _typeSize = IComponent::StaticInfo(_componentType).size;
+		//			const auto& _memPool = m_components.at(_componentType);
+		//			for (size_t j = 0; j < _memPool.size(); j += _typeSize)
+		//			{
+		//				_toUpdate.Push((IComponent*)&_memPool[j], _componentType);
+		//				_system->OnEvent(e, _toUpdate);
+		//				_systemUpdates++;
+		//				_toUpdate.Clear();
+		//			}
+		//		}
+		//		else
+		//		{
+		//			/* _lc = least common */
+		//			uint32_t _lcIndex = FindLeastCommonComponentIndex(_systemTypes,
+		//				_systemFlags);
+		//			StaticCId _lcType = _systemTypes[_lcIndex];
+		//			if (m_components.find(_lcType) == m_components.end()) return;
+		//			const auto& _lcTypeSize = IComponent::StaticInfo(_lcType).size;
+		//			auto _lcMemPool = m_components.at(_lcType);
+
+		//			/* Hint the componentgroup about how many elemets there will be
+		//				as to allocate all needed memory here instead of allocating
+		//				a small amount for each component push */
+		//			_toUpdate.HintCount(_lcMemPool.size() / _lcTypeSize);
+
+		//			bool _isValid = true;
+		//			/* Iterate through the components of the least common of the
+		//				system types, instead of just iterating through the first
+		//				typegroup of components as it could be any amount of
+		//				components. */
+		//			for (size_t j = 0; j < _lcMemPool.size(); j += _lcTypeSize)
+		//			{
+		//				IComponent* _ofFirstType = (IComponent*)&_lcMemPool[j];
+
+		//				Entity* _entity = ToRawType(_ofFirstType->entity);
+		//				for (size_t k = 0; k < _systemTypes.size(); k++)
+		//				{
+		//					const auto& _systemType = _systemTypes[k];
+		//					if (m_components.find(_systemType) == m_components.end())
+		//					{
+		//						_isValid = false;
+		//						break;
+		//					}
+		//					const auto& _systemFlag = _systemFlags[k];
+		//					IComponent* _entityComp = GetComponentInternal(
+		//						_entity,
+		//						m_components.at(_systemType),
+		//						_systemType
+		//					);
+
+		//					if (!_entityComp &&
+		//						!(_systemFlag & System::FLAG_OPTIONAL) &&
+		//						!(_systemFlag & System::FLAG_OPTIONAL_MIN_1))
+		//					{
+		//						/* Entity does not have a component of a system
+		//							component type AND that component is not optional*/
+		//						_isValid = false;
+		//						break;
+		//					}
+
+		//					if (_entityComp)
+		//						_toUpdate.Push(_entityComp, _systemType);
+		//				}
+
+		//				if (_isValid)
+		//				{
+		//					{
+		//						std::lock_guard<std::mutex> lock(m_updateMutex);
+		//						WZ_CORE_TRACE("Notifying system with matched components");
+		//						_system->OnEvent(e, _toUpdate);
+		//					}
+		//					_systemUpdates++;
+		//					_toUpdate.Clear();
+		//				}
+		//			}
+		//		}
+		//		WZ_CORE_ASSERT(_systemUpdates != 0, "Unused system '" + typestr(*_system) + "'");
+		//	}
+		//});
+		//WZ_CORE_TRACE("Jobs dispatched, waiting");
+		//JobSystem::Wait(ctx);
+		//WZ_CORE_TRACE("Jobs done");
 	}
 	void ECSManager::AddComponentInternal(Entity *entity,
 									const StaticCId & componentId,

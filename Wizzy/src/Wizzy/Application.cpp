@@ -7,6 +7,7 @@
 #include "Wizzy/Events/AppEvent.h"
 #include "Wizzy/ImGuiSystem.h"
 #include "Wizzy/Stopwatch.h"
+#include "Wizzy/JobSystem/JobSystem.h"
 
 #include "Wizzy/Instrumentor.h"
 
@@ -88,7 +89,9 @@ namespace Wizzy {
 
 		m_engineSystems.AddSystem<ImGuiSystem>();
 
+		JobSystem::Init();
 		this->Init();
+
 
 		DISPATCH_EVENT_LOCAL(AppInitEvent);
 		std::future<void> as;

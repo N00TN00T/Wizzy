@@ -12,9 +12,9 @@
 namespace Wizzy
 {
 
-    PropertyLibrary* Texture::s_templateProps;
+    PropertyTable* Texture::s_templateProps;
 
-    Texture::Texture(const ResData& data, const PropertyLibrary& props)
+    Texture::Texture(const ResData& data, const PropertyTable& props)
         : Resource(props)
     {
         /*auto file = props.GetProperty<string>("SourceFile");
@@ -30,7 +30,7 @@ namespace Wizzy
         }*/
     }
 
-    Texture::Texture(byte* rawData, int32 width, int32 height, int32 channels, const PropertyLibrary& flags)
+    Texture::Texture(byte* rawData, int32 width, int32 height, int32 channels, const PropertyTable& flags)
         : Resource(flags),
         m_width(width), m_height(height), m_channels(channels)
     {
@@ -43,11 +43,11 @@ namespace Wizzy
 
     }
 
-    const PropertyLibrary& Texture::GetTemplateProps()
+    const PropertyTable& Texture::GetTemplateProps()
     {
         if (!s_templateProps)
         {
-            s_templateProps = new PropertyLibrary;
+            s_templateProps = new PropertyTable;
             s_templateProps->SetProperty<int32>("WrapMode", (int32)WZ_WRAP_MODE_CLAMP_TO_EDGE);
             s_templateProps->SetProperty<int32>("MinFilterMode", (int32)WZ_MIN_FILTER_MODE_LINEAR_MIPMAP_LINEAR);
             s_templateProps->SetProperty<int32>("MagFilterMode", (int32)WZ_MAG_FILTER_LINEAR);
@@ -55,14 +55,14 @@ namespace Wizzy
         return *s_templateProps;
     }
 
-    Resource* Texture::Create(const ResData& data, const PropertyLibrary& props)
+    Resource* Texture::Create(const ResData& data, const PropertyTable& props)
     {
         CREATE_BY_API(new GLTexture(data, props));
 
         return nullptr;
     }
 
-    Texture* Texture::Create(byte* rawData, int32 width, int32 height, int32 channels, const PropertyLibrary& props)
+    Texture* Texture::Create(byte* rawData, int32 width, int32 height, int32 channels, const PropertyTable& props)
     {
         CREATE_BY_API(new GLTexture(rawData, width, height, channels, props));
 

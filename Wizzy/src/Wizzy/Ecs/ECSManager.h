@@ -113,6 +113,7 @@ namespace Wizzy
 	private:
 		std::unordered_map<StaticCId, ComponentMem>		m_components;
 		std::vector<Entity*>							m_entites;
+		mutable std::mutex								m_updateMutex;
 
 		const string TOKEN_ENTITY = "ENTITY";
 		const string TOKEN_COMPONENT = "COMPONENT";

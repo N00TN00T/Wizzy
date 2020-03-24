@@ -11,7 +11,7 @@ namespace Wizzy {
     class RenderTarget : public Resource {
     public:
         __HANDLE_DEF;
-        RenderTarget(const PropertyLibrary& props) : Resource(props) {}
+        RenderTarget(const PropertyTable& props) : Resource(props) {}
 
         virtual
         ~RenderTarget() {}
@@ -37,9 +37,11 @@ namespace Wizzy {
         static
         RenderTarget* Create(u32 width, u32 height);
 
-        static Resource* Create(const ResData& data, const PropertyLibrary& props);
+        static Resource* Create(const ResData& data, const PropertyTable& props);
 
-        static const PropertyLibrary& GetTemplateProps();
+        static const PropertyTable& GetTemplateProps();
+
+        inline static bool IsFileBinary() { return true; }
     };
 
     typedef std::shared_ptr<RenderTarget> RenderTargetPtr;

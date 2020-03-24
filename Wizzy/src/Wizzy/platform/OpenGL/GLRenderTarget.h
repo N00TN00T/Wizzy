@@ -7,7 +7,7 @@ namespace Wizzy {
         : public RenderTarget {
     public:
         GLRenderTarget(u32 width, u32 height);
-        GLRenderTarget(const ResData& data, const PropertyLibrary& props);
+        GLRenderTarget(const ResData& data, const PropertyTable& props);
         ~GLRenderTarget();
 
         virtual

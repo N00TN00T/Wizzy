@@ -1,5 +1,24 @@
 # CHANGELOG FOR WIZZY
 
+## 0.1.3 - Job System & Scripting
+### Job System
+- A job system that manages worker threads, with one worker for each CPU core. 
+- Splits jobs unto worker threads
+- Can simulate a for loop with the iterations divided unto the worker threads
+### Scripting
+- Script resource - A simple resource implementation that currently only holds the script code
+- Script Context - A lua_State wrapper to abstract operations and avoid the need to use the lua API to do script stuff
+- Deleted ScriptManagement class because it was stupid
+### Misc
+- ResourceManagement now dispatch the following events:
+	- resource_register - Upon registering a new resource file
+	- resource_load - Upon succesfully loading a resource into memory
+	- resource_unload - Upon unloading a resource from memory
+	- resource_delete - Upon deleting a resource file from ResourceManagement
+	- resource_change - Upon ResourceManagement::Validate finding a change in resource file
+- Resource implementations are now forced to define a static IsFileBinary() function so ResourceManagement can decide to read the file in binary or text format
+- Minor fixes, improvements, logs & refactoring
+
 ## 0.1.2 - Project System, Scene System & Runtime Resources
 ### Projects & Scenes
 - Implemented a basic project management system as a client example and for future reference

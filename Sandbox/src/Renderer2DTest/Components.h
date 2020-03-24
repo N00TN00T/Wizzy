@@ -9,12 +9,23 @@ _COMP_DECL(ResourceManagerComponent)
 		string d = ulib::File::directory_of(GetExecutablePath()) + "/../../../res/";
 		strcpy(resourceDir, d.c_str());
 	}
+	ResourceManagerComponent(const ResourceManagerComponent& src)
+	{
+		memcpy(resourceDir, src.resourceDir, sizeof(resourceDir));
+		validationRate = src.validationRate;
+		timeSinceValidate = src.timeSinceValidate;
+		validateContext.counter = src.validateContext.counter.load();
+		loadContext.counter = src.loadContext.counter.load();
+	}
 	char resourceDir[1024];
 
 	// ResourceManagement validations per seconds
 	float validationRate = 1.f;
 
 	float timeSinceValidate = 0.f;
+
+	wz::JobContext validateContext;
+	wz::JobContext loadContext;
 };
 
 _COMP_DECL(RendererManagerComponent)

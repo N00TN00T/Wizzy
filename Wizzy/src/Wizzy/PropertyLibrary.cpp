@@ -13,14 +13,14 @@ namespace Wizzy
 {
 	enum : u8
 	{
-		PROP_FLAG_SLIDER =	1,
-		PROP_FLAG_DRAG =	2,
-		PROP_FLAG_COMBO =	3,
+		PROP_FLAG_SLIDER = 1,
+		PROP_FLAG_DRAG = 2,
+		PROP_FLAG_COMBO = 3,
 
 		PROP_FLAG_COUNT
 	};
 
-	PropertyLibrary::PropertyLibrary(const PropertyLibrary& src)
+	PropertyTable::PropertyTable(const PropertyTable& src)
 	{
 		auto& dst = *this;
 		for (const auto& [name, srcProp] : src.m_properties)
@@ -46,50 +46,69 @@ namespace Wizzy
 		}
 	}
 
-	PropertyLibrary::~PropertyLibrary()
+	PropertyTable::~PropertyTable()
 	{
-		for (auto& [key, prop] : m_properties)
-		{
-			for (auto& [flag, dataPair] : prop.flagData)
-			{
-				auto& data = dataPair.second;
-				free(data);
-				data = nullptr;
-			}
-		}
+		Clear();
+	
 	}
 
-	string PropertyLibrary::ToString(const string& propKey) const
+	void PropertyTable::DeleteProperty(string name)
+	{
+		WZ_CORE_ASSERT(m_properties.find(name) != m_properties.end(), "Tried deleting non-existent property");
+		for (auto& [flag, dataPair] : m_properties[name].flagData)
+		{
+			auto& data = dataPair.second;
+			free(data);
+			data = nullptr;
+		}
+
+		m_properties.erase(name);
+		m_propKeys.erase(std::find(m_propKeys.begin(), m_propKeys.end(), name));
+	}
+
+	void PropertyTable::Clear()
+	{
+		for (int i = m_propKeys.size() - 1; i >= 0; i--)
+		{
+			DeleteProperty(m_propKeys[i]);
+		}
+
+		m_propKeys.clear();
+		m_properties.clear();
+	}
+
+	string PropertyTable::ToString(const string& propKey) const
 	{
 		const auto& property = m_properties.at(propKey);
 		
-		if (property.value.index() == ToTypeIndex<float>())		return std::to_string(std::get<float>(property.value));
-		if (property.value.index() == ToTypeIndex<int32>())		return std::to_string(std::get<int32>(property.value));
-		if (property.value.index() == ToTypeIndex<string>())	return std::get<string>(property.value);
-		if (property.value.index() == ToTypeIndex<bool>())		return std::to_string(std::get<bool>(property.value));
+		if (property.value.index() == ToTypeIndex<float>())			return std::to_string(std::get<float>(property.value));
+		if (property.value.index() == ToTypeIndex<int32>())			return std::to_string(std::get<int32>(property.value));
+		if (property.value.index() == ToTypeIndex<string>())		return std::get<string>(property.value);
+		if (property.value.index() == ToTypeIndex<bool>())			return std::to_string(std::get<bool>(property.value));
+		if (property.value.index() == ToTypeIndex<PropertyTable>())	return std::get<PropertyTable>(property.value).Serialize();
 
 		WZ_THROW(Exception, "Type index out of range");
 		return "";
 	}
 
-	void PropertyLibrary::MakeInputField(const string& key)
+	void PropertyTable::MakeInputField(const string& key)
 	{
 		m_properties[key].flagBits = 0;
 	}
 
-	void PropertyLibrary::MakeSlider(const string& key, const float& min, const float& max)
+	void PropertyTable::MakeSlider(const string& key, const float& min, const float& max)
 	{
 		m_properties[key].flagBits |= BIT(PROP_FLAG_SLIDER);
 		m_properties[key].flagData[PROP_FLAG_SLIDER].first = sizeof(float) * 2;
 		m_properties[key].flagData[PROP_FLAG_SLIDER].second = (void*) new float[2]{ min, max };
 	}
-	void PropertyLibrary::MakeDrag(const string& key, const float& vSpeed)
+	void PropertyTable::MakeDrag(const string& key, const float& vSpeed)
 	{
 		m_properties[key].flagBits |= BIT(PROP_FLAG_DRAG);
 		m_properties[key].flagData[PROP_FLAG_DRAG].first = sizeof(float);
 		m_properties[key].flagData[PROP_FLAG_DRAG].second = new float(vSpeed);
 	}
-	void PropertyLibrary::MakeCombo(const string& key, const std::vector<string>& options)
+	void PropertyTable::MakeCombo(const string& key, const std::vector<string>& options)
 	{
 		/*
 			First 4 bytes is an integer that describes how many options there are
@@ -126,25 +145,29 @@ namespace Wizzy
 		memcpy(m_properties[key].flagData[PROP_FLAG_COMBO].second, bytes.data(), bytes.size());
 
 	}
-	void PropertyLibrary::OnGUI()
+	void PropertyTable::OnGUI()
 	{
-		for (const auto& [key, property] : m_properties)
+		for (const auto& key : m_propKeys)
 		{
-			if (property.value.index() == 0)
+			if (IsProperty<float>(key))
 			{ // decimal
 				DoDecimalGUI(key);
 			}
-			else if (property.value.index() == 1)
+			else if (IsProperty<int32>(key))
 			{ // int
 				DoIntGUI(key);
 			}
-			else if (property.value.index() == 2)
+			else if (IsProperty<string>(key))
 			{ // string
 				DoStringGUI(key);
 			}
-			else if (property.value.index() == 3)
+			else if (IsProperty<bool>(key))
 			{ // bool
 				DoBoolGUI(key);
+			}
+			else if (IsProperty<PropertyTable>(key))
+			{ // bool
+				DoTableGUI(key);
 			}
 		}
 	}
@@ -152,7 +175,7 @@ namespace Wizzy
 	{
 		str.push_back((char)b);
 	}
-	string PropertyLibrary::Serialize()
+	string PropertyTable::Serialize() const
 	{
 		const static byte TYPE_BYTE[4] = 
 		{ 
@@ -213,7 +236,7 @@ namespace Wizzy
 	{
 		return n != 0 && (n & (n - 1)) == 0;
 	}
-	void PropertyLibrary::Deserialize(string data)
+	void PropertyTable::Deserialize(string data)
 	{
 		bool open = false;
 
@@ -227,7 +250,8 @@ namespace Wizzy
 			{ WZ_BYTE_TOKEN_BEGIN_FLOAT,	ToTypeIndex<float>() },
 			{ WZ_BYTE_TOKEN_BEGIN_INT,		ToTypeIndex<int32>() },
 			{ WZ_BYTE_TOKEN_BEGIN_STRING,	ToTypeIndex<string>() },
-			{ WZ_BYTE_TOKEN_BEGIN_BOOL,		ToTypeIndex<bool>() }
+			{ WZ_BYTE_TOKEN_BEGIN_BOOL,		ToTypeIndex<bool>() },
+			{ WZ_BYTE_TOKEN_BEGIN_TABLE,	ToTypeIndex<PropertyTable>()}
 		};
 
 		const static int8 MODE_NONE			= -1;
@@ -354,67 +378,74 @@ namespace Wizzy
 			}
 		}
 	}
-	void PropertyLibrary::DoDecimalGUI(string key)
+	void PropertyTable::DoDecimalGUI(string key)
 	{
 		PropertyFlag flags = m_properties[key].flagBits;
 		auto& property = m_properties[key];
 		void* data = m_properties[key].flagData[PROP_FLAG_SLIDER].second;
+
+		string lbl = key + "###" + std::to_string(reinterpret_cast<uintptr_t>(&GetProperty<float>(key)));
 
 		if (flags & BIT(PROP_FLAG_SLIDER))
 		{
 			float min = ((float*)data)[0];
 			float max = ((float*)data)[1];
 
-			ImGui::SliderFloat(key.c_str(), &GetProperty<float>(key), min, max);
+			
+			ImGui::SliderFloat(lbl.c_str(), &GetProperty<float>(key), min, max);
 
 		}
 		else if (flags & BIT(PROP_FLAG_DRAG))
 		{
 			float stepSpeed = *((float*)data);
-			ImGui::DragFloat(key.c_str(), &GetProperty<float>(key));
+			ImGui::DragFloat(lbl.c_str(), &GetProperty<float>(key));
 
 		}
 		else
 		{
-			ImGui::InputFloat(key.c_str(), &GetProperty<float>(key));
+			ImGui::InputFloat(lbl.c_str(), &GetProperty<float>(key));
 		}
 	}
-	void PropertyLibrary::DoIntGUI(string key)
+	void PropertyTable::DoIntGUI(string key)
 	{
 		PropertyFlag flags = m_properties[key].flagBits;
 		auto& property = m_properties[key];
 		void* data = m_properties[key].flagData[PROP_FLAG_SLIDER].second;
+
+		string lbl = key + "###" + std::to_string(reinterpret_cast<uintptr_t>(&GetProperty<int32>(key)));
 
 		if (flags & BIT(PROP_FLAG_SLIDER))
 		{
 			int32 min = ((int32*)data)[0];
 			int32 max = ((int32*)data)[1];
 
-			ImGui::SliderInt(key.c_str(), &GetProperty<int32>(key), min, max);
+			ImGui::SliderInt(lbl.c_str(), &GetProperty<int32>(key), min, max);
 
 		}
 		else if (flags & BIT(PROP_FLAG_DRAG))
 		{
 			int32 stepSpeed = *((int32*)data);
-			ImGui::DragInt(key.c_str(), &GetProperty<int32>(key));
+			ImGui::DragInt(lbl.c_str(), &GetProperty<int32>(key));
 
 		}
 		else
 		{
-			ImGui::InputInt(key.c_str(), &GetProperty<int32>(key));
+			ImGui::InputInt(lbl.c_str(), &GetProperty<int32>(key));
 		}
 	}
-	void PropertyLibrary::DoStringGUI(string key)
+	void PropertyTable::DoStringGUI(string key)
 	{
 		PropertyFlag flags = m_properties[key].flagBits;
 		auto& property = m_properties[key];
 		void* data = m_properties[key].flagData[PROP_FLAG_SLIDER].second;
 
+		string lbl = key + "###" + std::to_string(reinterpret_cast<uintptr_t>(&GetProperty<string>(key)));
+
 		if (flags & BIT(PROP_FLAG_COMBO))
 		{
 			auto& options = *(std::vector<string>*)data;
 
-			ImGui::BeginCombo(key.c_str(), GetProperty<string>(key).c_str());
+			ImGui::BeginCombo(lbl.c_str(), GetProperty<string>(key).c_str());
 			for (const auto& option : options)
 			{
 				if (ImGui::Selectable(option.c_str(), option == GetProperty<string>(key)))
@@ -427,14 +458,25 @@ namespace Wizzy
 		}
 		else
 		{
-			ImGui::InputInt(key.c_str(), &GetProperty<int32>(key));
+			ImGui::InputText(lbl.c_str(), GetProperty<string>(key).data(), GetProperty<string>(key).size());
 		}
 	}
-	void PropertyLibrary::DoBoolGUI(string key)
+	void PropertyTable::DoBoolGUI(string key)
 	{
-		ImGui::Checkbox(key.c_str(), &GetProperty<bool>(key));
+		string lbl = key + "###" + std::to_string(reinterpret_cast<uintptr_t>(&GetProperty<bool>(key)));
+		ImGui::Checkbox(lbl.c_str(), &GetProperty<bool>(key));
 	}
-	string PropertyLibrary::SerializeSlider(void* data)
+	void PropertyTable::DoTableGUI(string key)
+	{
+		string lbl = key + "###" + std::to_string(reinterpret_cast<uintptr_t>(&GetProperty<PropertyTable>(key)));
+		if (ImGui::TreeNode(lbl.c_str()))
+		{
+			GetProperty<PropertyTable>(key).OnGUI();
+			ImGui::TreePop();
+		}
+		
+	}
+	string PropertyTable::SerializeSlider(void* data)
 	{
 		string serialized = "";
 		byte* bytes = (byte*)data;
@@ -445,7 +487,7 @@ namespace Wizzy
 
 		return serialized;
 	}
-	string PropertyLibrary::SerializeDrag(void* data)
+	string PropertyTable::SerializeDrag(void* data)
 	{
 		string serialized = "";
 
@@ -457,7 +499,7 @@ namespace Wizzy
 
 		return serialized;
 	}
-	string PropertyLibrary::SerializeCombo(void* data)
+	string PropertyTable::SerializeCombo(void* data)
 	{
 		string serialized = "";
 		byte* bytes = (byte*)data;
@@ -486,12 +528,17 @@ namespace Wizzy
 
 		return serialized;
 	}
-	void PropertyLibrary::SetValue(u8 typeIndex, Property& prop, const string& value)
+	void PropertyTable::SetValue(u8 typeIndex, Property& prop, const string& value)
 	{
-		if (typeIndex == ToTypeIndex<float>())			prop.value = std::stof(value);
-		else if (typeIndex == ToTypeIndex<int32>())		prop.value = (int32)std::stoi(value);
-		else if (typeIndex == ToTypeIndex<string>())	prop.value = value;
-		else if (typeIndex == ToTypeIndex<bool>())		prop.value = (bool)std::stoi(value);
+		if (typeIndex == ToTypeIndex<float>())				prop.value = std::stof(value);
+		else if (typeIndex == ToTypeIndex<int32>())			prop.value = (int32)std::stoi(value);
+		else if (typeIndex == ToTypeIndex<string>())		prop.value = value;
+		else if (typeIndex == ToTypeIndex<bool>())			prop.value = (bool)std::stoi(value);
+		else if (typeIndex == ToTypeIndex<PropertyTable>())
+		{
+			prop.value = PropertyTable();
+			std::get<PropertyTable>(prop.value).Deserialize(value);
+		}
 
 		if (typeIndex >= 4)
 		{

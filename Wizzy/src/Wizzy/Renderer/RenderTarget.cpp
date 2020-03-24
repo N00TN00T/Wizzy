@@ -8,13 +8,13 @@ namespace Wizzy {
     RenderTarget* RenderTarget::Create(u32 width, u32 height) {
         CREATE_BY_API(new GLRenderTarget(width, height));
     }
-    Resource* RenderTarget::Create(const ResData& data, const PropertyLibrary& props)
+    Resource* RenderTarget::Create(const ResData& data, const PropertyTable& props)
     {
         CREATE_BY_API(new GLRenderTarget(data, props));
     }
-    const PropertyLibrary& RenderTarget::GetTemplateProps()
+    const PropertyTable& RenderTarget::GetTemplateProps()
     {
-        static PropertyLibrary pl;
+        static PropertyTable pl;
         return pl;
     }
 }

@@ -2,14 +2,14 @@
 
 #include "Scene.h"
 
-Scene::Scene(const wz::ResData& data, const wz::PropertyLibrary& props)
+Scene::Scene(const wz::ResData& data, const wz::PropertyTable& props)
  : wz::Resource(props) 
 {
 	m_ecs.Load(data);
 }
 
 Scene::Scene()
-	: wz::Resource(wz::PropertyLibrary())
+	: wz::Resource(wz::PropertyTable())
 {
 }
 
@@ -18,12 +18,12 @@ wz::ResData Scene::Serialize() const
 	return m_ecs.Save();
 }
 
-wz::Resource* Scene::Create(const wz::ResData& data, const wz::PropertyLibrary& props)
+wz::Resource* Scene::Create(const wz::ResData& data, const wz::PropertyTable& props)
 {
 	return new Scene(data, props);
 }
 
-const wz::PropertyLibrary& Scene::GetTemplateProps()
+const wz::PropertyTable& Scene::GetTemplateProps()
 {
-	return wz::PropertyLibrary();
+	return wz::PropertyTable();
 }

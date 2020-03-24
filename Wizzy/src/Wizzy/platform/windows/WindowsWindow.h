@@ -31,6 +31,8 @@ namespace Wizzy {
 
 		inline virtual void* GetNativeWindow() { return m_glfwWindow; }
 
+		virtual GraphicsContext& GetContext() override;
+
 		inline virtual float GetDeltaTime() const override {
 			return m_data.deltaTime;
 		}

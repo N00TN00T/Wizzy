@@ -18,7 +18,7 @@
 #define DEFAULT_MAG_FILTER_MODE (GL_LINEAR)
 
 namespace Wizzy {
-    GLTexture::GLTexture(const ResData& encoded, const PropertyLibrary& flags)
+    GLTexture::GLTexture(const ResData& encoded, const PropertyTable& flags)
         : Texture(encoded, flags) {
         stbi_set_flip_vertically_on_load(true);
         auto decoded = stbi_load_from_memory(encoded.data(), encoded.size(), &m_width, &m_height, &m_channels, 0);
@@ -34,7 +34,7 @@ namespace Wizzy {
         }
     }
 
-    GLTexture::GLTexture(byte *rawData, int32 width, int32 height, int32 channels, const PropertyLibrary& props)
+    GLTexture::GLTexture(byte *rawData, int32 width, int32 height, int32 channels, const PropertyTable& props)
         : Texture(rawData, width, height, channels, props) {
         Init(rawData);
     }

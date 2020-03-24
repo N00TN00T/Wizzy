@@ -8,13 +8,13 @@
 #include "Wizzy/WizzyExceptions.h"
 
 namespace Wizzy {
-    Material::Material(const ResData& data, const PropertyLibrary& props)
+    Material::Material(const ResData& data, const PropertyTable& props)
         : Resource(props), m_hShader(WZ_NULL_RESOURCE_HANDLE) 
     {
 		
     }
     Material::Material(Shader::Handle shaderHandle)
-        : Resource(PropertyLibrary()),
+        : Resource(PropertyTable()),
 		  m_hShader(shaderHandle) {
 		
 		
@@ -77,8 +77,8 @@ namespace Wizzy {
 
 		return ResData((byte*)_serialized.data(), ((byte*)_serialized.data()) + _serialized.size());
     }
-    const PropertyLibrary& Material::GetTemplateProps()
+    const PropertyTable& Material::GetTemplateProps()
     {
-        return PropertyLibrary();
+        return PropertyTable();
     }
 }

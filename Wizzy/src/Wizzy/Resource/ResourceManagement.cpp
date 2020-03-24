@@ -2,6 +2,7 @@
 
 #include "Wizzy/Resource/ResourceManagement.h"
 #include "Wizzy/Utils.h"
+#include "Wizzy/Application.h"
 
 
 #define __CHECK_HANDLE(handle, loaded)\
@@ -134,6 +135,7 @@ namespace Wizzy
 	{
 		__CHECK_HANDLE(handle, false);
 		auto& info = s_resourceInfo[handle];
+		WZ_CORE_TRACE("Loading resource '{0}'", info.resPath);
 		
 		WZ_CORE_ASSERT(info.resourceIndex < s_resource.size(), "Resource index " + std::to_string(info.resourceIndex) + "' out of range");
 
@@ -146,6 +148,8 @@ namespace Wizzy
 			info.props.SetProperty("SourceFile", s_resourceDir + info.resPath);
 			pResource = info.createFn(info.source, info.props);
 			s_resource[info.resourceIndex] = pResource;
+			DispatchEvent(ResourceLoadedEvent(handle));
+			WZ_CORE_INFO("Resource '{0}' loaded", info.resPath);
 		}
 		catch (const Exception& e)
 		{
@@ -193,7 +197,7 @@ namespace Wizzy
 		try
 		{
 			// Take the props in the resource and apply the ones in info
-			PropertyLibrary& resourceProps = resource->GetProps();
+			PropertyTable& resourceProps = resource->GetProps();
 			resourceProps.Deserialize(info.props.Serialize());
 
 			string cfgFile = file + ".wz";
@@ -211,7 +215,7 @@ namespace Wizzy
 
 		try
 		{
-			if (!ulib::File::write(file, serialized, true))
+			if (!ulib::File::write(file, serialized, info.binary))
 			{
 				WZ_THROW(ResourceFileAccessException, file);
 			}
@@ -223,7 +227,8 @@ namespace Wizzy
 			WZ_CORE_WARN("Source file was not saved");
 		}
 
-		WZ_CORE_TRACE("Saved resource '{0}'", info.name());
+		DispatchEvent(ResourceSavedEvent(handle));
+		WZ_CORE_INFO("Saved resource '{0}'", info.name());
 	}
 
 	void ResourceManagement::Unload(Resource::Handle handle)
@@ -236,9 +241,12 @@ namespace Wizzy
 
 		delete s_resource[info.resourceIndex];
 		s_resource[info.resourceIndex] = nullptr;
+
+		DispatchEvent(ResourceUnloadedEvent(handle));
+		WZ_CORE_INFO("Unloaded resource '{0}'", info.resPath);
 	}
 
-	void ResourceManagement::Reload(Resource::Handle handle, const PropertyLibrary& props)
+	void ResourceManagement::Reload(Resource::Handle handle, const PropertyTable& props)
 	{
 		__CHECK_HANDLE(handle, true);
 
@@ -272,12 +280,17 @@ namespace Wizzy
 			Unload(handle);
 		}
 
+		DispatchEvent(ResourceDeletedEvent(handle));
+
 		delete s_resource[info.resourceIndex];
 		s_resource[info.resourceIndex] = nullptr;
 		s_freeIndicesCount++;
 
 		s_handles.erase(handle);
+		string resPath = s_resourceInfo[handle].resPath;
 		s_resourceInfo.erase(handle);
+
+		WZ_CORE_INFO("Deleted resource '{0}'", resPath);
 	}
 
 	void ResourceManagement::SetResourceDir(const string& dir)
@@ -326,16 +339,16 @@ namespace Wizzy
 			if (checkSources && IsLoaded(handle))
 			{
 				ResData fileData;
-				if (!ulib::File::read(fullPath, &fileData, true))
+				if (!ulib::File::read(fullPath, &fileData, info.binary))
 				{
 					WZ_THROW(ResourceFileAccessException, info.resPath);
 				}
 
 				if (fileData != info.source)
 				{
-					/*WZ_CORE_WARN("Changed detected, reloading file {0}", info.resPath);
+					WZ_CORE_WARN("Changed detected, reloading file {0}", info.resPath);
 					info.source = fileData;
-					Reload(handle);*/
+					DispatchEvent(ResourceFileChangedEvent(handle));
 				}
 			}
 		}
@@ -367,6 +380,11 @@ namespace Wizzy
 		p = ulib::File::without_extension(p) + "(" + std::to_string(suffix) + ")" + ulib::File::extension_of(p);
 
 		return p;
+	}
+
+	void ResourceManagement::DispatchEvent(ResourceEvent& e)
+	{
+		Application::Get().OnEvent(e);
 	}
 
 	bool ResourceManagement::IsValid(Resource::Handle handle)

@@ -4,9 +4,9 @@ namespace Wizzy {
     class GLTexture
         : public Texture {
     public:
-        GLTexture(const ResData& data, const PropertyLibrary& flags);
+        GLTexture(const ResData& data, const PropertyTable& flags);
         GLTexture(byte *rawData, int32 width, int32 height,
-                int32 channels, const PropertyLibrary& props = PropertyLibrary());
+                int32 channels, const PropertyTable& props = PropertyTable());
         ~GLTexture();
 
         virtual

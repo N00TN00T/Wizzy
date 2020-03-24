@@ -1,12 +1,13 @@
 # Small tasks
-- Add PropertyLibrary as a type in PropertyLibrary (Recursion, oop/table possibilites).
   Should probably rename to 'Table'.
 - Build FreeType 2 binaries for linux
+- Awake function in system that is invoked when entity that use the system is created
 
 # Medium tasks
 - Job system for editor
 - Debug ECS serialization (sometimes just... incorrect data)
 - Figure out how interactive scripting will work
+- Refactor PropertyTable serialization to serialize nested tables properly
 
 # Large tasks
 ## Editor
@@ -14,6 +15,8 @@
 - Editor Resource Management GUI
 - Editor full ImGui customization
 - Editor window system
+- Send opengl calls to a queue and invoke on main thread.
+- Map imgui API to the lua ImGui API
 ## Rendering
 - Refactor renderer2D to use manually allocated RAM for the buffer and upload to 
   VRAM (glBufferSubData) instead of mapping the buffer

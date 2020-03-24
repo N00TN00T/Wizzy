@@ -22,6 +22,8 @@
 #include <variant>
 #include <mutex>
 #include <future>
+#include <condition_variable>
+#include <atomic>
 
 /* std data structures */
 #include <string>

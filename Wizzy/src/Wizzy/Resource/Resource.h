@@ -51,14 +51,14 @@ namespace Wizzy {
         using HandleMap = std::unordered_map<Resource::Handle, T, Resource::Handle::hash>;
 
     public:
-        Resource(const PropertyLibrary& props);
+        Resource(const PropertyTable& props);
         virtual ~Resource() {}
 
-        inline PropertyLibrary& GetProps() { return m_props; }
+        inline PropertyTable& GetProps() { return m_props; }
 
         virtual ResData Serialize() const = 0;
 
     protected:
-        PropertyLibrary m_props;
+        PropertyTable m_props;
     };
 }

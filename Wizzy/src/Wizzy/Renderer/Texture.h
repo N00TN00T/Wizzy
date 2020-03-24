@@ -10,12 +10,12 @@ namespace Wizzy {
     {
     public:
         __HANDLE_DEF;
-        Texture(const ResData& data, const PropertyLibrary& flags);
-        Texture(byte *rawData, int32 width, int32 height, int32 channels, const PropertyLibrary& flags = *s_templateProps);
+        Texture(const ResData& data, const PropertyTable& flags);
+        Texture(byte *rawData, int32 width, int32 height, int32 channels, const PropertyTable& flags = *s_templateProps);
         virtual ~Texture();
 
         
-        static const PropertyLibrary& GetTemplateProps();
+        static const PropertyTable& GetTemplateProps();
 
         virtual
         void Bind(int32 location) const = 0;
@@ -34,14 +34,16 @@ namespace Wizzy {
         inline u32 GetId() const { return m_textureId; }
 
         static
-        Resource* Create(const ResData& data, const PropertyLibrary& props);
+        Resource* Create(const ResData& data, const PropertyTable& props);
         static
-        Texture* Create(byte *rawData, int32 width, int32 height, int32 channels, const PropertyLibrary& props = *s_templateProps);
+        Texture* Create(byte *rawData, int32 width, int32 height, int32 channels, const PropertyTable& props = *s_templateProps);
+        
+        inline static bool IsFileBinary() { return true; }
 
     protected:
         int32               m_width, m_height, m_channels;
         u32                 m_textureId = WZ_TEXTURE_ID_INVALID;
     private:
-        static PropertyLibrary* s_templateProps;
+        static PropertyTable* s_templateProps;
     };
 }

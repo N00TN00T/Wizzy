@@ -1,90 +1,107 @@
 #pragma once
 
 #include "Wizzy/Events/Event.h"
+#include "Wizzy/Resource/Resource.h"
 
-namespace Wizzy {
+namespace Wizzy 
+{
 
-    class ResourceAddEvent
-		: public Event {
-	private:
-		ResourceHandle m_handle;
-        string m_file;
+	class ResourceEvent : public Event
+	{
 	public:
-		inline ResourceAddEvent(const ResourceHandle& handle, const string& file)
-            : m_handle(handle), m_file(file) { }
+		inline const Resource::Handle& GetResourceHandle() const { return m_hResource; }
 
-		inline const ResourceHandle& GetHandle() const { return m_handle; }
-		inline const string& GetFile() const { return m_file; }
-
-		inline virtual string ToString() const override {
-			return GetName() + ": Handle'" + string(m_handle) + "' : File'" + string(m_file) + "'";
+	protected:
+		inline ResourceEvent(Resource::Handle hResource)
+		{
+			m_hResource = hResource;
 		}
 
-		EVENT_CLASS_TYPE(resource_add)
-		EVENT_CLASS_CATEGORY(category_resources)
+		Resource::Handle m_hResource;
 	};
 
-    class ResourceSaveEvent
-		: public Event {
-	private:
-		ResourceHandle m_handle;
-        string m_file;
+	class ResourceRegisteredEvent : public ResourceEvent
+	{
 	public:
-		inline ResourceSaveEvent(const ResourceHandle& handle, const string& file)
-            : m_handle(handle), m_file(file) { }
+		inline ResourceRegisteredEvent(Resource::Handle hResource) : ResourceEvent(hResource) {}
 
-		inline const ResourceHandle& GetHandle() const { return m_handle; }
-		inline const string& GetFile() const { return m_file; }
+		EVENT_CLASS_TYPE(resource_register);
+		EVENT_CLASS_CATEGORY(category_resources);
 
-		inline virtual string ToString() const override {
-			return GetName() + ": Handle'" + string(m_handle) + "' : File'" + string(m_file) + "'";
+		inline virtual string ToString() const override
+		{
+			return GetName() + ": '" + std::to_string(m_hResource.id) + "'";
 		}
-
-		EVENT_CLASS_TYPE(resource_save)
-		EVENT_CLASS_CATEGORY(category_resources)
 	};
 
-    class ResourceDeleteEvent
-		: public Event {
-	private:
-		ResourceHandle m_handle;
-        string m_file;
+	class ResourceLoadedEvent : public ResourceEvent
+	{
 	public:
-		inline ResourceDeleteEvent(const ResourceHandle& handle, const string& file)
-            : m_handle(handle), m_file(file) { }
+		inline ResourceLoadedEvent(Resource::Handle hResource) : ResourceEvent(hResource) {}
 
-		inline const ResourceHandle& GetHandle() const { return m_handle; }
-		inline const string& GetFile() const { return m_file; }
+		EVENT_CLASS_TYPE(resource_load);
+		EVENT_CLASS_CATEGORY(category_resources);
 
-		inline virtual string ToString() const override {
-			return GetName() + ": Handle'" + string(m_handle) + "' : File'" + string(m_file) + "'";
+		inline virtual string ToString() const override
+		{
+			return GetName() + ": '" + std::to_string(m_hResource.id) + "'";
 		}
-
-		EVENT_CLASS_TYPE(resource_delete)
-		EVENT_CLASS_CATEGORY(category_resources)
 	};
 
-    class ResourceRenameEvent
-		: public Event {
-	private:
-        ResourceHandle m_newHandle;
-		ResourceHandle m_oldHandle;
-        string m_file;
+	class ResourceSavedEvent : public ResourceEvent
+	{
 	public:
-		inline ResourceRenameEvent(const ResourceHandle& oldHandle,
-                                   const ResourceHandle& newHandle,
-                                   const string& file)
-            : m_newHandle(newHandle), m_oldHandle(oldHandle), m_file(file) { }
+		inline ResourceSavedEvent(Resource::Handle hResource) : ResourceEvent(hResource) {}
 
-		inline const ResourceHandle& GetOldHandle() const { return m_oldHandle; }
-        inline const ResourceHandle& GetNewHandle() const { return m_newHandle; }
-		inline const string& GetFile() const { return m_file; }
+		EVENT_CLASS_TYPE(resource_save);
+		EVENT_CLASS_CATEGORY(category_resources);
 
-		inline virtual string ToString() const override {
-			return GetName() + ": OldHandle'" + string(m_oldHandle) + "': OldHandle'" + string(m_oldHandle) + "' : File'" + string(m_file) + "'";
+		inline virtual string ToString() const override
+		{
+			return GetName() + ": '" + std::to_string(m_hResource.id) + "'";
 		}
-
-		EVENT_CLASS_TYPE(resource_rename)
-		EVENT_CLASS_CATEGORY(category_resources)
 	};
+
+	class ResourceUnloadedEvent : public ResourceEvent
+	{
+	public:
+		inline ResourceUnloadedEvent(Resource::Handle hResource) : ResourceEvent(hResource) {}
+
+		EVENT_CLASS_TYPE(resource_unload);
+		EVENT_CLASS_CATEGORY(category_resources);
+
+		inline virtual string ToString() const override
+		{
+			return GetName() + ": '" + std::to_string(m_hResource.id) + "'";
+		}
+	};
+
+	class ResourceDeletedEvent : public ResourceEvent
+	{
+	public:
+		inline ResourceDeletedEvent(Resource::Handle hResource) : ResourceEvent(hResource) {}
+
+		EVENT_CLASS_TYPE(resource_delete);
+		EVENT_CLASS_CATEGORY(category_resources);
+
+		inline virtual string ToString() const override
+		{
+			return GetName() + ": '" + std::to_string(m_hResource.id) + "'";
+		}
+	};
+
+	class ResourceFileChangedEvent : public ResourceEvent
+	{
+	public:
+		inline ResourceFileChangedEvent(Resource::Handle hResource) : ResourceEvent(hResource) {}
+
+		EVENT_CLASS_TYPE(resource_file_change);
+		EVENT_CLASS_CATEGORY(category_resources);
+
+		inline virtual string ToString() const override
+		{
+			return GetName() + ": '" + std::to_string(m_hResource.id) + "'";
+		}
+	};
+
 }

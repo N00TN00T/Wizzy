@@ -12,7 +12,7 @@
 namespace Wizzy 
 {
 
-    Font::Font(const ResData& data, const PropertyLibrary& props)
+    Font::Font(const ResData& data, const PropertyTable& props)
         : Resource(props)
     {
 
@@ -191,7 +191,7 @@ namespace Wizzy
             m_cachedStrings.pop();
         }
     }
-    void Font::InitFT(const ResData& data, const PropertyLibrary& props)
+    void Font::InitFT(const ResData& data, const PropertyTable& props)
     {
         WZ_CORE_TRACE("Iniitializing font with freetype");
         FT_Library ft;
@@ -241,7 +241,7 @@ namespace Wizzy
         m_spaceSize = atlasWidth / charCount;
 
         WZ_CORE_TRACE("Creating atlas texture");
-        PropertyLibrary atlasProps = Texture::GetTemplateProps();
+        PropertyTable atlasProps = Texture::GetTemplateProps();
         atlasProps.SetProperty<int32>("MinFilterMode", (int32)WZ_MIN_FILTER_MODE_LINEAR);
         atlasProps.SetProperty<int32>("MagFilterMode", (int32)WZ_MAG_FILTER_LINEAR);
         m_hAtlasTexture = (Texture::Handle)ResourceManagement::AddRuntimeResource<Texture>(Texture::Create(NULL, atlasWidth, atlasHeight, 1, atlasProps), Texture::GetTemplateProps());// new Texture(NULL, atlasWidth, atlasHeight, 1);
@@ -278,7 +278,7 @@ namespace Wizzy
             textPos += glyph->bitmap.width + 2;
         }
     }
-    void Font::InitWZ(const ResData& data, const PropertyLibrary& props)
+    void Font::InitWZ(const ResData& data, const PropertyTable& props)
     {
         WZ_CORE_TRACE("Initializing font with wizzy");
 
@@ -308,7 +308,7 @@ namespace Wizzy
         atlasData.resize(atlasString.size());
         memcpy(&atlasData[0], atlasString.data(), atlasString.size());
 
-        PropertyLibrary atlasProps = Texture::GetTemplateProps();
+        PropertyTable atlasProps = Texture::GetTemplateProps();
         atlasProps.SetProperty<int32>("MinFilterMode", (int32)WZ_MIN_FILTER_MODE_LINEAR);
         m_hAtlasTexture = ResourceManagement::AddRuntimeResource((Texture*)Texture::Create(atlasData, atlasProps), Texture::GetTemplateProps());
         WZ_CORE_ASSERT(ResourceManagement::IsLoaded(m_hAtlasTexture), "Failed creating atlas texture for font");
@@ -396,7 +396,7 @@ namespace Wizzy
         return data;
     }
 
-    Resource* Font::Create(const ResData& data, const PropertyLibrary& props)
+    Resource* Font::Create(const ResData& data, const PropertyTable& props)
     {
         return new Font(data, props);
     }

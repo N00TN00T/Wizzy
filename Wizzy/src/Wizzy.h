@@ -28,9 +28,12 @@
 #include "Wizzy/Renderer/API.h"
 
 #include "Wizzy/Scripting/Script.h"
+#include "Wizzy/Scripting/ScriptContext.h"
 
 #include "Wizzy/Ecs/ECSManager.h"
 
 #include "Wizzy/Rect.h"
+
+#include "Wizzy/JobSystem/JobSystem.h"
 
 namespace wz = ::Wizzy;

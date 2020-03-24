@@ -3,22 +3,17 @@
 namespace Wizzy
 {
 	typedef u8 PropertyFlag;
+	struct Property;
 
-	class PropertyLibrary
+	class PropertyTable
 	{
 	private:
-		struct Property
-		{
-			Property() {}
-			Property(std::variant<float, int32, string, bool> v) : value(v) {}
-			std::variant<float, int32, string, bool> value;
-			PropertyFlag flagBits = 0;
-			std::unordered_map<PropertyFlag, std::pair<size_t, void*>> flagData;
-		};
+		
+		
 	public:
-		PropertyLibrary() {}
-		PropertyLibrary(const PropertyLibrary& src);
-		~PropertyLibrary();
+		PropertyTable() {}
+		PropertyTable(const PropertyTable& src);
+		~PropertyTable();
 
 		template <typename T>
 		inline void SetProperty(const string& key, T value) 
@@ -27,6 +22,7 @@ namespace Wizzy
 			{
 				auto prop = Property(value);
 				m_properties[key] = prop;
+				m_propKeys.push_back(key);
 			}
 			else
 			{
@@ -42,14 +38,25 @@ namespace Wizzy
 			WZ_CORE_ASSERT(value != nullptr, "Type mismatch when getting property. Requested '{0}'", typestr(T)); \
 			return *(T*)(value);
 
-			if (IS_DECIMAL(T)) {
+			if (IS_DECIMAL(T)) 
+			{
 				__TRY_GET(float);
-			} else if (IS_INT(T)) {
+			} 
+			else if (IS_INT(T)) 
+			{
 				__TRY_GET(int32);
-			} else if (IS_BOOL(T)) {
+			} 
+			else if (IS_BOOL(T)) 
+			{
 				__TRY_GET(bool);
-			} else if (IS_STRING(T)) {
+			} 
+			else if (IS_STRING(T)) 
+			{
 				__TRY_GET(string);
+			}
+			else if (typestr(T) == typestr(PropertyTable))
+			{
+				__TRY_GET(PropertyTable);
 			}
 		}
 		template <typename T>
@@ -58,6 +65,10 @@ namespace Wizzy
 			return	m_properties.find(key) != m_properties.end()
 					&& ToTypeIndex<T>() == m_properties.at(key).value.index();
 		}
+
+		void DeleteProperty(string name);
+
+		void Clear();
 
 		string ToString(const string& propKey) const;
 
@@ -68,14 +79,20 @@ namespace Wizzy
 
 		void OnGUI();
 
-		string Serialize();
+		string Serialize() const;
 		void Deserialize(string data);
+
+		inline const std::vector<string>& GetKeys() const
+		{
+			return m_propKeys;
+		}
 
 	private:
 		void DoDecimalGUI(string key);
 		void DoIntGUI(string key);
 		void DoStringGUI(string key);
 		void DoBoolGUI(string key);
+		void DoTableGUI(string key);
 
 		string SerializeSlider(void* data);
 		string SerializeDrag(void* data);
@@ -84,10 +101,11 @@ namespace Wizzy
 		template <typename T>
 		inline u8 ToTypeIndex() const
 		{
-			if (typeid(T) == typeid(float))			return 0;
-			else if(typeid(T) == typeid(int32))		return 1;
-			else if (typeid(T) == typeid(string))	return 2;
-			else if (typeid(T) == typeid(bool))		return 3;
+			if (typeid(T) == typeid(float))					return 0;
+			else if(typeid(T) == typeid(int32))				return 1;
+			else if (typeid(T) == typeid(string))			return 2;
+			else if (typeid(T) == typeid(bool))				return 3;
+			else if (typeid(T) == typeid(PropertyTable))	return 4;
 
 			WZ_CORE_ASSERT(false, "Type '{0}' is not a valid property type", typeid(T).name());
 			return -1;
@@ -96,6 +114,16 @@ namespace Wizzy
 		void SetValue(u8 typeIndex, Property& prop, const string& value);
 
 	private:
+		std::vector<string> m_propKeys;
 		std::unordered_map<string, Property> m_properties;
+	};
+
+	struct Property
+	{
+		Property() {}
+		Property(std::variant<float, int32, string, bool, PropertyTable> v) : value(v) {}
+		std::variant<float, int32, string, bool, PropertyTable> value;
+		PropertyFlag flagBits = 0;
+		std::unordered_map<PropertyFlag, std::pair<size_t, void*>> flagData;
 	};
 }

@@ -69,7 +69,7 @@
 #define WZ_MAKE_VERSION(major, minor, patch) (std::to_string(major) + "." + std::to_string(minor) + "." + std::to_string(patch))
 #define WZ_VERSION_MAJOR 0
 #define WZ_VERSION_MINOR 1
-#define WZ_VERSION_PATCH 2
+#define WZ_VERSION_PATCH 3
 #define WZ_VERSION	WZ_MAKE_VERSION(WZ_VERSION_MAJOR, WZ_VERSION_MINOR, WZ_VERSION_PATCH)
 
 #define WZ_VERSION_SUM(major, minor, patch)		(major * 1000 + minor * 100 + patch)
@@ -118,6 +118,7 @@ WZ_CORE_ASSERT(false, "Invalid renderer API selected"); \
 #define WZ_BYTE_TOKEN_BEGIN_INT					((byte)5)
 #define WZ_BYTE_TOKEN_BEGIN_STRING				((byte)6)
 #define WZ_BYTE_TOKEN_BEGIN_BOOL				((byte)7)
+#define WZ_BYTE_TOKEN_BEGIN_TABLE				((byte)8)
 #define WZ_BYTE_TOKEN_NEXT_ITEM					((byte)21)
 #define WZ_BYTE_TOKEN_FLAG_SEPARATOR			((byte)14)
 #define WZ_BYTE_TOKEN_DATA_SEPARATOR			((byte)12)
@@ -140,14 +141,5 @@ WZ_CORE_ASSERT(false, "Invalid renderer API selected"); \
 #define _MB(x)		(_KB(1000) * x)
 #define _GB(x)		(_MB(1000) * x)
 
-namespace Wizzy {
+#define WZ_MAX_JOBS 256
 
-	enum ScriptEnum {
-		SCRIPT_TYPE_NONE = -1,
-
-		SCRIPT_TYPE_CONFIG,
-		SCRIPT_TYPE_SYSTEM,
-		SCRIPT_TYPE_COMPONENT
-	};
-	
-}

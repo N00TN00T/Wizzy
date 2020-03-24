@@ -54,7 +54,7 @@ void ResourceManager::OnEvent(const Wizzy::Event& e, Wizzy::ComponentGroup& comp
 		}
 		case wz::EventType::app_shutdown:
 		{
-			WriteResourceList("ResourceList.rl");
+			WriteResourceList("ResourceList.rl"); 
 		}
 	}
 }
@@ -82,7 +82,7 @@ void TextureRenderer::OnEvent(const Wizzy::Event& e, Wizzy::ComponentGroup& comp
 		if (components.Has<TextureComponent>())
 		{
 			auto& textureData = *components.Get<TextureComponent>();
-			if (wz::ResourceManagement::IsLoaded(textureData.hTexture))
+			if (wz::ResourceManagement::IsLoaded(textureData.hTexture) && wz::ResourceManagement::IsLoaded(hMainRenderTarget) && wz::Renderer2D::IsReady(hMainRenderTarget))
 			{
 				wz::Renderer2D::SubmitImage
 				(
@@ -96,21 +96,26 @@ void TextureRenderer::OnEvent(const Wizzy::Event& e, Wizzy::ComponentGroup& comp
 			}
 			else
 			{
-				wz::Renderer2D::SubmitRect(wz::Rect(transform.position, 64.f * transform.scale), wz::Color::red, Wizzy::RectMode::Filled, hMainRenderTarget);
+				if (wz::ResourceManagement::IsLoaded(hMainRenderTarget) && wz::Renderer2D::IsReady(hMainRenderTarget))
+				{
+					wz::Renderer2D::SubmitRect(wz::Rect(transform.position, 64.f * transform.scale), wz::Color::red, Wizzy::RectMode::Filled, hMainRenderTarget);
+				}
 			}
 		}
 		if (components.Has<LabelComponent>())
 		{
 			auto& labelData = *components.Get<LabelComponent>();
 
-			WZ_CORE_ASSERT(wz::ResourceManagement::IsLoaded(labelData.hndFont), "Font not loaded");
-			auto& font = wz::ResourceManagement::Get<wz::Font>(labelData.hndFont);
+			if (wz::ResourceManagement::IsLoaded(labelData.hndFont) && wz::ResourceManagement::IsLoaded(hMainRenderTarget) && wz::Renderer2D::IsReady(hMainRenderTarget))
+			{
+				auto& font = wz::ResourceManagement::Get<wz::Font>(labelData.hndFont);
 
-			wz::RenderTarget* t = NULL;
-			wz::ResourceManagement::TryGet<wz::RenderTarget>(hMainRenderTarget, t);
-			/*wz::Renderer2D::SubmitText(labelData.text, &font, { 100, 100 }, vec2(1.f, 1.f), 0, wz::Color::white, t);
-			wz::Renderer2D::SubmitText("awdawdwd", &font, { 100, 500 }, vec2(1.f, 1.f), 0, wz::Color::white, t);
-			wz::Renderer2D::SubmitImage(font.GetAtlasTexture(), { 100, 300 }, vec2(1.f, 1.f), 0, wz::Color::white, t);*/
+				wz::RenderTarget* t = NULL;
+				wz::ResourceManagement::TryGet<wz::RenderTarget>(hMainRenderTarget, t);
+				/*wz::Renderer2D::SubmitText(labelData.text, &font, { 100, 100 }, vec2(1.f, 1.f), 0, wz::Color::white, t);
+				wz::Renderer2D::SubmitText("awdawdwd", &font, { 100, 500 }, vec2(1.f, 1.f), 0, wz::Color::white, t);
+				wz::Renderer2D::SubmitImage(font.GetAtlasTexture(), { 100, 300 }, vec2(1.f, 1.f), 0, wz::Color::white, t);*/
+			}
 		}
 	}
 	catch (const wz::RendererException& e)
@@ -287,13 +292,16 @@ void CameraSystem::OnEvent(const Wizzy::Event& e, Wizzy::ComponentGroup& compone
 		{
 			try
 			{
-				wz::Renderer2D::Begin
-				(
-					camera.hShader,
-					camera.projection * camera.transform, 
-					hMainRenderTarget
-				);
-				camera.rendererReady = true;
+				if (wz::ResourceManagement::IsLoaded(camera.hRenderTarget) && wz::ResourceManagement::IsLoaded(camera.hShader))
+				{
+					wz::Renderer2D::Begin
+					(
+						camera.hShader,
+						camera.projection * camera.transform,
+						camera.hRenderTarget
+					);
+					camera.rendererReady = true;
+				}
 			}
 			catch (const wz::RendererException e)
 			{
@@ -309,7 +317,10 @@ void CameraSystem::OnEvent(const Wizzy::Event& e, Wizzy::ComponentGroup& compone
 			{
 				try
 				{
-					wz::Renderer2D::End(hMainRenderTarget);
+					if (wz::ResourceManagement::IsLoaded(camera.hRenderTarget))
+					{
+						wz::Renderer2D::End(camera.hRenderTarget);
+					}
 				}
 				catch (const wz::RendererException e)
 				{

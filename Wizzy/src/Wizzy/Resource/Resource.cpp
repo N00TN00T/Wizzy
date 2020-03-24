@@ -7,7 +7,7 @@
 
 namespace Wizzy {
 
-    Resource::Resource(const PropertyLibrary& props)
+    Resource::Resource(const PropertyTable& props)
             : m_props(props) {}
 
 }

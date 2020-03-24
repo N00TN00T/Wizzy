@@ -35,7 +35,7 @@ namespace Wizzy
 
 	public:
 		__HANDLE_DEF;
-		Font(const ResData& data, const PropertyLibrary& props);
+		Font(const ResData& data, const PropertyTable& props);
 		~Font();
 
 		// Render the text from the atlas to a texture
@@ -47,11 +47,13 @@ namespace Wizzy
 
 		virtual ResData Serialize() const override;
 
+		inline static bool IsFileBinary() { return true; }
+
 	private:
 		void ValidateCache();
 
-		void InitFT(const ResData& data, const PropertyLibrary& props);
-		void InitWZ(const ResData& data, const PropertyLibrary& props);
+		void InitFT(const ResData& data, const PropertyTable& props);
+		void InitWZ(const ResData& data, const PropertyTable& props);
 
 	private:
 		Texture::Handle m_hAtlasTexture;
@@ -64,13 +66,14 @@ namespace Wizzy
 		const string TOKEN_HEADER =		"FONT";
 		const string TOKEN_ATLAS =		"ATLAS";
 		const string TOKEN_INFO =		"INFO";
-		const string TOKEN_FONTSIZE =	"FONTSIZE";
+		const string TOKEN_FONTSIZE = "FONTSIZE";
+
 
 	public:
-		static Resource* Create(const ResData& data, const PropertyLibrary& props);
-		inline static const PropertyLibrary& GetTemplateProps() 
+		static Resource* Create(const ResData& data, const PropertyTable& props);
+		inline static const PropertyTable& GetTemplateProps() 
 		{ 
-			static PropertyLibrary pl;
+			static PropertyTable pl;
 			pl.SetProperty<int32>("Font size", 100);
 			return pl;
 		}

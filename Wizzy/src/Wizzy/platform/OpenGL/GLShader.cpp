@@ -34,7 +34,7 @@ namespace Wizzy {
 
 	}
 
-    GLShader::GLShader(const ResData& data, const PropertyLibrary& props)
+    GLShader::GLShader(const ResData& data, const PropertyTable& props)
         : Shader(props), m_shaderId(WZ_SHADER_ID_INVALID) {
 
         m_rawSource = string((const char*)data.data(), data.size());
@@ -245,20 +245,28 @@ namespace Wizzy {
         u32 _program;
         u32 _vShader;
         u32 _fShader;
+
+        WZ_CORE_TRACE("Generating shaders & program");
         GL_CALL(_program = glCreateProgram());
 		GL_CALL(_vShader = glCreateShader(GL_VERTEX_SHADER));
 		GL_CALL(_fShader = glCreateShader(GL_FRAGMENT_SHADER));
 
+        WZ_CORE_TRACE("Uploading shader source");
 		const char *_vSource = m_source.vertSource.c_str();
 		const char *_fSource = m_source.fragSource.c_str();
         GL_CALL(glShaderSource(_vShader, 1, &_vSource, NULL));
 		GL_CALL(glShaderSource(_fShader, 1, &_fSource, NULL));
+
+        WZ_CORE_TRACE("Compiling vertex shader");
 		// COMPILE VERTEX SHADER
 		GL_CALL(glCompileShader(_vShader));
 		int32 _vCompileResult;
+        WZ_CORE_TRACE("Compiling fragment shader");
 		GL_CALL(glGetShaderiv(_vShader, GL_COMPILE_STATUS, &_vCompileResult));
 		// COMPILE FRAGMENT SHADER
 		GL_CALL(glCompileShader(_fShader));
+
+        WZ_CORE_TRACE("Checking compilation result");
 		int32 _fCompileResult;
 		GL_CALL(glGetShaderiv(_fShader, GL_COMPILE_STATUS, &_fCompileResult));
         bool _vCompileSuccess = _vCompileResult != GL_FALSE;
@@ -298,10 +306,13 @@ namespace Wizzy {
 			return false;
 		}
 
+        WZ_CORE_TRACE("Compilation successfull, linking shaders into program");
+
         GL_CALL(glAttachShader(_program, _vShader));
         GL_CALL(glAttachShader(_program, _fShader));
         GL_CALL(glLinkProgram(_program));
 
+        WZ_CORE_TRACE("Checking link result");
         int32 _linkResult;
         GL_CALL(glGetProgramiv(_program, GL_LINK_STATUS, &_linkResult));
 
@@ -317,6 +328,8 @@ namespace Wizzy {
 		}
 
         delete _linkLog;
+
+        WZ_CORE_TRACE("Validating program");
 
         GL_CALL(glValidateProgram(_program));
         GL_CALL(glDeleteShader(_vShader));

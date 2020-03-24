@@ -2,6 +2,7 @@
 
 #include "Core.h"
 #include "Events/Event.h"
+#include "Wizzy/Renderer/GraphicsContext.h"
 
 namespace Wizzy {
     struct WindowProps {
@@ -40,6 +41,8 @@ namespace Wizzy {
 		virtual void* GetNativeWindow() = 0;
 
         virtual float GetDeltaTime() const = 0;
+
+        virtual GraphicsContext& GetContext() = 0;
 
         static IWindow *Create(const WindowProps& props = WindowProps());
     };

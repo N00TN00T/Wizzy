@@ -4,7 +4,7 @@ namespace Wizzy {
     class GLShader
         : public Shader {
     public:
-        GLShader(const ResData& data, const PropertyLibrary& props);
+        GLShader(const ResData& data, const PropertyTable& props);
         virtual ~GLShader();
 
         void Bind() const override;

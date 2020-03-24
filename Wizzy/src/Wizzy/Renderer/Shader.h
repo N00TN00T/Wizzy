@@ -23,7 +23,7 @@ namespace Wizzy {
     public:
 		__HANDLE_DEF;
 
-        Shader(const PropertyLibrary& props)
+        Shader(const PropertyTable& props)
 			: Resource(props) {}
 		virtual
 		~Shader();
@@ -75,16 +75,18 @@ namespace Wizzy {
 		inline
 		const std::vector<ShaderField>& GetFields() const { return m_fields; }
 
+		inline static bool IsFileBinary() { return false; }
+
 	protected:
 		std::vector<ShaderField> m_fields;
 
 	public:
 		static
-		Resource* Create(const ResData& data, const PropertyLibrary& props);
+		Resource* Create(const ResData& data, const PropertyTable& props);
 
-		static const PropertyLibrary& GetTemplateProps();
+		static const PropertyTable& GetTemplateProps();
 
 	private:
-		static const PropertyLibrary* s_templateProps;
+		static const PropertyTable* s_templateProps;
 	};
 }

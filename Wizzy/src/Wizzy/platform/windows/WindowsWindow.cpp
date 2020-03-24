@@ -212,6 +212,11 @@ namespace Wizzy {
 		return m_data.vsync;
 	}
 
+	GraphicsContext& WindowsWindow::GetContext()
+	{
+		return *m_context;
+	}
+
 	void WindowsWindow::SetWidth(u32 width) {
 		glfwSetWindowSize(m_glfwWindow, width, m_data.height);
 	}
