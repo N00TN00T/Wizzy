@@ -133,4 +133,21 @@ namespace Wizzy
 		u32 m_id;
 	};
 
+	class ParseErrorException : public Exception
+	{
+	public:
+		ParseErrorException(const string& msg, int32 parseLine, string errorValue, u32 line, const string& fn)
+			: Exception(msg + "( '" + errorValue + "', line " + std::to_string(parseLine) + ")", line, fn)
+		{
+		}
+	};
+
+	class OpenGLErrorException : public Exception
+	{
+	public:
+		OpenGLErrorException(const string& msg, int32 errorCode, u32 line, const string& fn)
+			: Exception("OPENGL ERROR <" + std::to_string(errorCode) + ">: " + msg, line, fn)
+		{
+		}
+	};
 }

@@ -12,7 +12,6 @@ namespace Wizzy
 		
 	public:
 		PropertyTable() {}
-		PropertyTable(const PropertyTable& src);
 		~PropertyTable();
 
 		template <typename T>
@@ -66,18 +65,13 @@ namespace Wizzy
 					&& ToTypeIndex<T>() == m_properties.at(key).value.index();
 		}
 
+		bool ExistsProperty(const string& key);
+
 		void DeleteProperty(string name);
 
 		void Clear();
 
 		string ToString(const string& propKey) const;
-
-		void MakeInputField(const string& key);
-		void MakeSlider(const string& key, const float& min, const float& max);
-		void MakeDrag(const string& key, const float& vSpeed = 1.0);
-		void MakeCombo(const string& key, const std::vector<string>& options);
-
-		void OnGUI();
 
 		string Serialize() const;
 		void Deserialize(string data);
@@ -88,16 +82,6 @@ namespace Wizzy
 		}
 
 	private:
-		void DoDecimalGUI(string key);
-		void DoIntGUI(string key);
-		void DoStringGUI(string key);
-		void DoBoolGUI(string key);
-		void DoTableGUI(string key);
-
-		string SerializeSlider(void* data);
-		string SerializeDrag(void* data);
-		string SerializeCombo(void* data);
-
 		template <typename T>
 		inline u8 ToTypeIndex() const
 		{
@@ -113,6 +97,17 @@ namespace Wizzy
 
 		void SetValue(u8 typeIndex, Property& prop, const string& value);
 
+		string Serialize(int32 indents) const;
+		int32 DeserializeOffset(string data, size_t offset, int32 fieldCount);
+
+		bool IsInteger(const string& value);
+		bool IsNumber(const string& value);
+		bool IsBoolean(const string& value);
+		bool IsString(const string& value);
+		int32 FindAssignToken(const string& line);
+		string EncodeString(string str) const;
+		string ProcessString(string str);
+
 	private:
 		std::vector<string> m_propKeys;
 		std::unordered_map<string, Property> m_properties;
@@ -123,7 +118,5 @@ namespace Wizzy
 		Property() {}
 		Property(std::variant<float, int32, string, bool, PropertyTable> v) : value(v) {}
 		std::variant<float, int32, string, bool, PropertyTable> value;
-		PropertyFlag flagBits = 0;
-		std::unordered_map<PropertyFlag, std::pair<size_t, void*>> flagData;
 	};
 }

@@ -20,11 +20,6 @@ namespace Wizzy
 
 		auto& script = ResourceManagement::Get<Script>(hScript);
 
-		WZ_DEBUG("Doing script:");
-		Log::SetExtra(false);
-		WZ_DEBUG(script.GetScriptCode().c_str());
-		Log::SetExtra(true);
-
 		try
 		{
 			auto result = luaL_dostring(L, script.GetScriptCode().c_str());
@@ -38,7 +33,7 @@ namespace Wizzy
 		}
 		catch (const LuaException & e)
 		{
-			WZ_CORE_ERROR("LUA EXCEPTION THROWN: '{0}'", e.what());
+			WZ_CORE_ERROR("LUA EXCEPTION THROWN: '{0}'", e.GetMessage());
 			return false;
 		}
 		catch (const luabridge::LuaException & e)
@@ -109,6 +104,23 @@ return is;
 		_CHECK_IS(IsTable);
 	}
 
+	bool ScriptContext::InvokeLuaFunction(int32 index, std::vector<int32> stackArgs)
+	{
+		PushCopy(index);
+		int32 offset = 1;
+		for (auto argIdx : stackArgs)
+		{
+			if (argIdx < 0) argIdx -= offset;
+			PushCopy(argIdx);
+			offset++;
+		}
+		bool result = InvokeFromStack(stackArgs.size(), 0);
+
+		Pop(1 + stackArgs.size());
+
+		return result;
+	}
+
 	int32 ScriptContext::GetInteger(int32 index) const
 	{
 		WZ_CORE_ASSERT(lua_isinteger(L, index), "Invalid GetInteger() call");
@@ -139,6 +151,14 @@ return is;
 		return ToWizzyTable(index);
 	}
 
+	bool ScriptContext::InvokeLuaFunction(const string& name, std::vector<int32> stackArgs)
+	{
+		lua_getglobal(L, name.c_str());
+		bool success = InvokeLuaFunction(-1, stackArgs);
+		Pop(1);
+		return success;
+	}
+
 	int32 ScriptContext::GetInteger(const string& key) const
 	{
 		lua_getglobal(L, key.c_str());
@@ -148,25 +168,33 @@ return is;
 	double ScriptContext::GetNumber(const string& key) const
 	{
 		lua_getglobal(L, key.c_str());
-		return GetNumber(-1);
+		auto r = GetNumber(-1);
+		lua_pop(L, 1);
+		return r;
 	}
 
 	bool ScriptContext::GetBoolean(const string& key) const
 	{
 		lua_getglobal(L, key.c_str());
-		return GetBoolean(-1);
+		auto r = GetBoolean(-1);
+		lua_pop(L, 1);
+		return r;
 	}
 
 	string ScriptContext::GetString(const string& key) const
 	{
 		lua_getglobal(L, key.c_str());
-		return GetString(-1);
+		auto r = GetString(-1);
+		lua_pop(L, 1);
+		return r;
 	}
 
 	PropertyTable ScriptContext::GetTable(const string& key)
 	{
 		lua_getglobal(L, key.c_str());
-		return GetTable(-1);
+		auto r = GetTable(-1);
+		lua_pop(L, 1);
+		return r;
 	}
 
 	void ScriptContext::PushFunction(lua_CFunction value)
@@ -216,6 +244,11 @@ return is;
 pushfn(value);\
 lua_setglobal(L, key.c_str());
 
+	void ScriptContext::PushNil()
+	{
+		lua_pushnil(L);
+	}
+
 	void ScriptContext::PushCopy(int32 index)
 	{
 		lua_pushvalue(L, index);
@@ -224,7 +257,6 @@ lua_setglobal(L, key.c_str());
 	void ScriptContext::PushCopy(const string& key)
 	{
 		lua_getglobal(L, key.c_str());
-		PushCopy(-1);
 	}
 
 	void ScriptContext::Pop(int32 index)
@@ -263,31 +295,194 @@ lua_setglobal(L, key.c_str());
 		lua_setglobal(L, key.c_str());
 	}
 
+	void ScriptContext::SetFieldInteger(int32 tableIndex, const string& fieldName, int32 value)
+	{
+		WZ_CORE_ASSERT(lua_istable(L, tableIndex), "Invalid SetFieldXXX() call");
+		lua_pushinteger(L, value);
+		if (tableIndex < 0) tableIndex--;
+		lua_setfield(L, tableIndex, fieldName.c_str());
+	}
+
+	void ScriptContext::SetFieldNumber(int32 tableIndex, const string& fieldName, float value)
+	{
+		WZ_CORE_ASSERT(lua_istable(L, tableIndex), "Invalid SetFieldXXX() call");
+		lua_pushnumber(L, value);
+		if (tableIndex < 0) tableIndex--;
+		lua_setfield(L, tableIndex, fieldName.c_str());
+	}
+
+	void ScriptContext::SetFieldBoolean(int32 tableIndex, const string& fieldName, bool value)
+	{
+		WZ_CORE_ASSERT(lua_istable(L, tableIndex), "Invalid SetFieldXXX() call");
+		lua_pushboolean(L, value);
+		if (tableIndex < 0) tableIndex--;
+		lua_setfield(L, tableIndex, fieldName.c_str());
+	}
+
+	void ScriptContext::SetFieldString(int32 tableIndex, const string& fieldName, const char* value)
+	{
+		WZ_CORE_ASSERT(lua_istable(L, tableIndex), "Invalid SetFieldXXX() call");
+		lua_pushstring(L, value);
+		if (tableIndex < 0) tableIndex--;
+		lua_setfield(L, tableIndex, fieldName.c_str());
+	}
+
+	void ScriptContext::SetFieldSubtable(int32 tableIndex, const string& fieldName, const PropertyTable& table)
+	{
+		WZ_CORE_ASSERT(lua_istable(L, tableIndex), "Invalid SetFieldXXX() call");
+		PushNewTable(table);
+		if (tableIndex < 0) tableIndex--;
+		lua_setfield(L, tableIndex, fieldName.c_str());
+	}
+
+	void ScriptContext::SetFieldSubtable(int32 target, const string& fieldName, const string& luaTable)
+	{
+		WZ_CORE_ASSERT(lua_istable(L, target), "Invalid SetFieldXXX() call");
+		lua_getglobal(L, luaTable.c_str());
+		WZ_CORE_ASSERT(lua_istable(L, -1), "Invalid SetFieldXXX() call");
+		if (target < 0) target--;
+		lua_setfield(L, target, fieldName.c_str());
+	}
+
+	void ScriptContext::SetFieldSubtable(int32 target, const string& fieldName, int32 luaTable)
+	{
+		WZ_CORE_ASSERT(lua_istable(L, target) && lua_istable(L, luaTable), "Invalid SetFieldXXX() call");
+		lua_pushvalue(L, luaTable);
+		if (target < 0) target--;
+		lua_setfield(L, target, fieldName.c_str());
+		lua_remove(L, luaTable);
+	}
+
+	void ScriptContext::SetTableFunction(int32 tableIndex, const string& fnName, lua_CFunction fn)
+	{
+		WZ_CORE_ASSERT(lua_istable(L, tableIndex), "Invalid SetTableFunction() call");
+		lua_pushcfunction(L, fn);
+		if (tableIndex < 0) tableIndex--;
+		lua_setfield(L, tableIndex, fnName.c_str());
+	}
+
+	bool ScriptContext::InvokeTableFunction(int32 tableIndex, const string& fnName)
+	{
+		WZ_CORE_ASSERT(IsTable(tableIndex), "Invalid InvokeTableFunction() call");
+		lua_getfield(L, tableIndex, fnName.c_str());
+		WZ_CORE_ASSERT(IsFunction(tableIndex), "Invalid InvokeTableFunction() call");
+
+		return InvokeLuaFunction(tableIndex);
+	}
+
+	void ScriptContext::MakeTableReference(int32 tableIndex, const string& ref)
+	{
+		lua_pushvalue(L, tableIndex);
+		lua_setglobal(L, ref.c_str());
+		lua_pop(L, -1);
+	}
+
+
+	void ScriptContext::SetFieldInteger(const string& key, const string& fieldName, int32 value)
+	{
+		lua_getglobal(L, key.c_str());
+		SetFieldInteger(-1, fieldName, value);
+		Pop(1);
+	}
+
+	void ScriptContext::SetFieldNumber(const string& key, const string& fieldName, float value)
+	{
+		lua_getglobal(L, key.c_str());
+		SetFieldNumber(-1, fieldName, value);
+		Pop(1);
+	}
+
+	void ScriptContext::SetFieldBoolean(const string& key, const string& fieldName, bool value)
+	{
+		lua_getglobal(L, key.c_str());
+		SetFieldBoolean(-1, fieldName, value);
+		Pop(1);
+	}
+
+	void ScriptContext::SetFieldString(const string& key, const string& fieldName, const char* value)
+	{
+		lua_getglobal(L, key.c_str());
+		SetFieldString(-1, fieldName, value);
+		Pop(1);
+	}
+
+	void ScriptContext::SetFieldSubtable(const string& key, const string& fieldName, const PropertyTable& table)
+	{
+		lua_getglobal(L, key.c_str());
+		SetFieldSubtable(-1, fieldName, table);
+		lua_setglobal(L, key.c_str());
+		Pop(1);
+	}
+
+	void ScriptContext::SetFieldSubtable(const string& target, const string& fieldName, const string& luaTable)
+	{
+		lua_getglobal(L, target.c_str());
+		SetFieldSubtable(-1, fieldName, luaTable);
+		Pop(1);
+	}
+
+	void ScriptContext::SetFieldSubtable(const string& target, const string& fieldName, int32 luaTable)
+	{
+		lua_getglobal(L, target.c_str());
+		if (luaTable < 0)luaTable--;
+		SetFieldSubtable(-1, fieldName, luaTable);
+		Pop(1);
+	}
+
 	void ScriptContext::SetTableFunction(const string& tableKey, const string& fnName, lua_CFunction fn)
 	{
 		lua_getglobal(L, tableKey.c_str());
-		WZ_CORE_ASSERT(lua_istable(L, -1), "Invalid SetTableFunction() call");
-		lua_pushcfunction(L, fn);
-		lua_setfield(L, -2, fnName.c_str());
+		SetTableFunction(-1, fnName, fn);
+		Pop(1);
 	}
 
-	void ScriptContext::InvokeTableFunction(const string& tableKey, const string& fnName)
+	bool ScriptContext::InvokeTableFunction(const string& tableKey, const string& fnName)
 	{
 		lua_getglobal(L, tableKey.c_str());
-		WZ_CORE_ASSERT(IsTable(-1), "Invalid InvokeTableFunction() call");
-		lua_getfield(L, -1, fnName.c_str());
-		WZ_CORE_ASSERT(IsFunction(-1), "Invalid InvokeTableFunction() call");
-
-		InvokeLuaFunction(-1);
+		bool result = InvokeTableFunction(-1, fnName);
+		Pop(1);
+		return result;
 	}
 
 	void ScriptContext::MakeTableReference(const string& src, const string& ref)
 	{
 		WZ_CORE_ASSERT(IsTable(src), "Invalid MakeTableReference() call");
 		lua_getglobal(L, src.c_str());
-		lua_pushvalue(L, -1);
-		lua_setglobal(L, ref.c_str());
-		lua_pop(L, -1);
+		MakeTableReference(-1, ref);
+		Pop(1);
+	}
+
+	void ScriptContext::CreateMetaTable(const string& metaTable)
+	{
+		luaL_newmetatable(L, metaTable.c_str());
+		lua_pop(L, 1);
+	}
+
+	void ScriptContext::SetMetaMethod(const string& metaTable, ScriptOperator op, lua_CFunction fn)
+	{
+		luaL_getmetatable(L, metaTable.c_str());
+		WZ_CORE_ASSERT(!lua_isnil(L, -1), "Invalid SetMetaMethod() call");
+		lua_pushcfunction(L, fn);
+		string ops = OperatorString(op);
+		WZ_CORE_DEBUG(ops);
+		lua_setfield(L, -2, ops.c_str());
+		lua_pop(L, 1);
+	}
+
+	void ScriptContext::SetMetaTable(int32 tableIndex, const string& metaTable)
+	{
+		WZ_CORE_ASSERT(lua_istable(L, tableIndex), "Invalid SetMetaTable() call");
+		luaL_getmetatable(L, metaTable.c_str());
+		if (tableIndex < 0) tableIndex--;
+		WZ_CORE_ASSERT(lua_istable(L, -1), "Invalid SetMetaTable() call");
+		lua_setmetatable(L, tableIndex);
+	}
+
+	void ScriptContext::SetMetaTable(const string& table, const string& metaTable)
+	{
+		lua_getglobal(L, table.c_str());
+		SetMetaTable(-1, metaTable);
+		Pop(1);
 	}
 
 	void ScriptContext::SetNil(const string& key)
@@ -370,8 +565,53 @@ lua_setglobal(L, key.c_str());
 		return table;
 	}
 
-	/*luabridge::LuaRef ScriptContext::Get(string key)
+	string ScriptContext::OperatorString(ScriptOperator op)
 	{
-		return luabridge::getGlobal(L, key.c_str());
-	}*/
+		const static std::unordered_map<ScriptOperator, string> opStr = 
+		{
+			{ script_operator_index,	"__index"		},
+			{ script_operator_newindex,	"__newindex"	},
+			{ script_operator_mode,		"__mode"		},
+			{ script_operator_call,		"__call"		},
+			{ script_operator_metatable,"__metatable"	},
+			{ script_operator_tostring,	"__tostring"	},
+			{ script_operator_len,		"__len"			},
+			{ script_operator_pairs,	"__pairs"		},
+			{ script_operator_ipairs,	"__ipairs"		},
+			{ script_operator_gc,		"__gc"			},
+			{ script_operator_unm,		"__unm"			},
+			{ script_operator_add,		"__add"			},
+			{ script_operator_sub,		"__sub"			},
+			{ script_operator_mul,		"__mul"			},
+			{ script_operator_div,		"__div"			},
+			{ script_operator_idiv,		"__idiv"		},
+			{ script_operator_mod,		"__mod"			},
+			{ script_operator_pow,		"__pow"			},
+			{ script_operator_concat,	"__concat"		},
+			{ script_operator_band,		"__band"		},
+			{ script_operator_bor,		"__bor"			},
+			{ script_operator_bxor,		"__bxor"		},
+			{ script_operator_bnot,		"__bnot"		},
+			{ script_operator_shl,		"__shl"			},
+			{ script_operator_shr,		"__shr"			},
+			{ script_operator_eq,		"__eg"			},
+			{ script_operator_lt,		"__lt"			},
+			{ script_operator_le,		"__le"			}
+		};
+
+		WZ_CORE_ASSERT(opStr.find(op) != opStr.end(), "String not specified for script operator");
+
+		return opStr.at(op);
+	}
+	bool ScriptContext::InvokeFromStack(int32 narg, int32 nret)
+	{
+		auto result = lua_pcall(L, narg, nret, 0);
+		if (result != LUA_OK)
+		{
+			string msg = lua_isstring(L, -1) ? lua_tostring(L, -1) : "N/A";
+			WZ_CORE_ERROR("Lua function error {0}: {1}", result, msg);
+			return false;
+		}
+		return true;
+	}
 }

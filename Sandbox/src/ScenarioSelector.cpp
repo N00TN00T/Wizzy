@@ -8,7 +8,7 @@
 #define JOBSYSTEM       5
 #define SCRIPTING       6
 
-#define SELECTION	SCRIPTING
+#define SELECTION	RENDERER2D
 
 #if SELECTION == SANDBOX
 #include "Sandbox.h"

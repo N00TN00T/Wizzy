@@ -1,5 +1,23 @@
 # CHANGELOG FOR WIZZY
 
+## 0.1.4 - Better serialization & scripting improvements
+### PropertyTable
+- Revamped the PropertyTable serialization/deserialization to something much simpler and readable (text format)
+- Removed anything GUI related from PropertyTable and instead added a function that expose all keys in a table
+### ScriptContext
+- Made the ScriptContext class more complete with necessary features
+	- Pushing values to the stack
+	- Creating/setting metatables and setting their metaeents
+	- Getting/Setting/Invoking from stack values
+	- Field setting/getting (for tables on stack)
+### ResourceManagement
+- Implemented a file watcher that detects changes in resource files in Validate()
+### ECS
+- Added the Clear() function to ECSManager which clears it and frees all allocated memory
+### Misc
+- Added some more exceptions
+- Minor fixes & improvements
+
 ## 0.1.3 - Job System & Scripting
 ### Job System
 - A job system that manages worker threads, with one worker for each CPU core. 

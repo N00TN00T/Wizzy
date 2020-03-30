@@ -110,6 +110,8 @@ namespace Wizzy
 		void Load(string file);
 		void Load(std::vector<byte> data);
 
+		void Clear();
+
 	private:
 		std::unordered_map<StaticCId, ComponentMem>		m_components;
 		std::vector<Entity*>							m_entites;

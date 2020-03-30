@@ -1,12 +1,14 @@
 #pragma once
 
 #include "Wizzy/Application.h"
+#include "Wizzy/WizzyExceptions.h"
 
 #define GL_CALL(glAction)  \
 ::Wizzy::__GL_Error_Handling::__GL_Clear_Error_Log();\
 glAction;\
 {if (auto _err = glGetError())\
-	WZ_CORE_ASSERT(false, "<GL Error> (" + std::to_string(_err) + "): " + ::Wizzy::__GL_Error_Handling::__GL_Error_To_String(_err)); }
+	throw ::Wizzy::OpenGLErrorException(::Wizzy::__GL_Error_Handling::__GL_Error_To_String(_err), _err, __LINE__, __FUNCTION__); }
+
 
 namespace Wizzy {
 	namespace __GL_Error_Handling {

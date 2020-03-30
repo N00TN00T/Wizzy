@@ -18,7 +18,7 @@ namespace Wizzy {
         {
             Handle() : id(WZ_NULL_RESOURCE_HANDLE) {}
             Handle(uId id) : id(id) {}
-            Handle(const Handle&) = default;
+            Handle(const Handle& src) { this->id = src.id; }
             operator uId&() { return id; }
 
             friend bool operator >(const Handle& a, const Handle& b)

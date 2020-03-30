@@ -253,13 +253,39 @@ namespace Wizzy
 		auto& resourceInfo = s_resourceInfo[handle];
 		resourceInfo.props = props;
 
-		Unload(handle);
-		Load(handle);
+		Reload(handle);
 	}
 
 	void ResourceManagement::Reload(Resource::Handle handle)
 	{
 		__CHECK_HANDLE(handle, true);
+
+		auto& info = s_resourceInfo[handle];
+
+		ResData currentSource;
+		if (!ulib::File::read(s_resourceDir + info.resPath, &currentSource, info.binary))
+		{
+			WZ_THROW(ResourceFileAccessException, info.resPath);
+		}
+
+		info.source = currentSource;
+
+		string meta;
+		if (!ulib::File::read(s_resourceDir + info.resPath + ".wz", &meta))
+		{
+			WZ_THROW(ResourceFileAccessException, info.resPath + ".w");
+		}
+
+		info.props.Clear();
+		
+		try
+		{
+			info.props.Deserialize(meta);
+		}
+		catch (const ParseErrorException& e)
+		{
+			WZ_CORE_ERROR("Reload(): Failed loading new import properties for {0}, using currently loaded properties instead", info.name());
+		}
 
 		Unload(handle);
 		Load(handle);
@@ -336,18 +362,14 @@ namespace Wizzy
 				WZ_THROW(ResourceFileMissingException, info.resPath, handle.id, info.name());
 			}
 
-			if (checkSources && IsLoaded(handle))
+			if (IsLoaded(handle))
 			{
-				ResData fileData;
-				if (!ulib::File::read(fullPath, &fileData, info.binary))
+				auto lastWriteTime = std::filesystem::last_write_time(s_resourceDir + info.resPath);
+				
+				if (lastWriteTime > info.lastWrite)
 				{
-					WZ_THROW(ResourceFileAccessException, info.resPath);
-				}
-
-				if (fileData != info.source)
-				{
-					WZ_CORE_WARN("Changed detected, reloading file {0}", info.resPath);
-					info.source = fileData;
+					info.lastWrite = lastWriteTime;
+					WZ_CORE_WARN("Changed detectedfor file {0}", info.resPath);
 					DispatchEvent(ResourceFileChangedEvent(handle));
 				}
 			}
@@ -414,6 +436,15 @@ namespace Wizzy
 		return IsValid(handle) && s_resource[s_resourceInfo[handle].resourceIndex] != nullptr;
 	}
 
+	bool ResourceManagement::IsFileRegistered(const string& resFile)
+	{
+		for (auto& [h, info] : s_resourceInfo)
+		{
+			if (info.resPath == resFile) return true;
+		}
+		return false;
+	}
+
 	Resource::Handle ResourceManagement::HandleOf(const string& str)
 	{
 		if (ulib::File::exists(s_resourceDir + str))
@@ -447,6 +478,20 @@ namespace Wizzy
 			}
 
 			return hndMatch;
+		}
+	}
+
+	string ResourceManagement::NameOf(const Resource::Handle& hnd)
+	{
+		if (IsValid(hnd)) return GetInfoFor(hnd).name();
+		else return "N/A";
+	}
+
+	void ResourceManagement::ForEach(std::function<void(const Resource::Handle&)> fn)
+	{
+		for (const auto& hnd : s_handles)
+		{
+			fn(hnd);
 		}
 	}
 

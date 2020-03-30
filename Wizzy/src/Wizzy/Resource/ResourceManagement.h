@@ -48,6 +48,7 @@ namespace Wizzy
 		string				type;
 		bool				runtime = false;
 		bool				binary;
+		std::filesystem::file_time_type lastWrite;
 
 		inline string name() const 
 		{ 
@@ -109,8 +110,15 @@ namespace Wizzy
 		// Returns true if handle is valid an associated resource is loaded
 		static bool IsLoaded(Resource::Handle handle);
 
+		static bool IsFileRegistered(const string& resFile);
+
+		template <typename T>
+		inline static bool Is(Resource::Handle hnd);
+
 		// Returns the handle for either resPath or name
 		static Resource::Handle HandleOf(const string& str);
+		
+		static string NameOf(const Resource::Handle& hnd);
 
 		inline static const std::set<Resource::Handle>& GetHandles() { return s_handles; }
 
@@ -279,7 +287,7 @@ namespace Wizzy
 		for (const auto& hnd : s_handles)
 		{
 			WZ_DEBUG("{0}, {1}", typestr(T), GetInfoFor(hnd).type);
-			if (typestr(T) == GetInfoFor(hnd).type)
+			if (typestr(T) == GetInfoFor(hnd).type || typestr(T) == typestr(Resource))
 			{
 				fn(hnd);
 			}
@@ -321,7 +329,8 @@ namespace Wizzy
 			fileData,
 			typestr(T),
 			runtime,
-			T::IsFileBinary()
+			T::IsFileBinary(),
+			std::filesystem::file_time_type::clock::now()
 		};
 
 		info.props.SetProperty("SourceFile", resPath);
@@ -369,6 +378,12 @@ namespace Wizzy
 		Log::SetExtra(true);
 
 		return handle;
+	}
+
+	template <typename T>
+	inline static bool ResourceManagement::Is(Resource::Handle hnd)
+	{
+		return IsValid(hnd) && typestr(T) == GetInfoFor(hnd).type;
 	}
 	
 }

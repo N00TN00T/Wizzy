@@ -51,6 +51,8 @@
 #include <lua.hpp>
 #include <LuaBridge/LuaBridge.h>
 
+#include <portable-file-dialogs.h>
+
 /* wizzy headers */
 
 #include "Wizzy/Core.h"

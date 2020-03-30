@@ -568,4 +568,24 @@ namespace Wizzy {
 			}
 		}
 	}
+
+	void ECSManager::Clear()
+	{
+		for (auto e : m_entites)
+		{
+			auto components = e->second;
+
+			for (auto dataRef : components)
+			{
+				auto id = dataRef.first;
+				auto memIndex = dataRef.second;
+
+				delete (IComponent*)(&m_components[id][memIndex]);
+			}
+
+			delete e;
+		}
+		m_entites.clear();
+		m_components.clear();
+	}
 }
