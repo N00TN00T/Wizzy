@@ -106,9 +106,7 @@ namespace Wizzy {
 		}
 
 		inline bool Has(const StaticCId& type) {
-			bool _has = m_componentHash[type] != nullptr;
-			if (!_has) m_componentHash.erase(type);
-			return _has;
+			return m_componentHash.find(type) != m_componentHash.end();
 		}
 
 		template <typename TComponent>

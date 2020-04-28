@@ -57,7 +57,7 @@ namespace Wizzy
         }
     }
 
-    RenderTarget::Handle Font::Render(const string& text, Shader::Handle hShader)
+    RenderTarget::Handle Font::Render(const string& text, const Shader::Handle& hShader)
     {
         WZ_CORE_ASSERT(ResourceManagement::IsLoaded(hShader), "Shader not loaded in font render");
         if (m_cache.find(text) != m_cache.end() && ResourceManagement::IsLoaded(m_cache[text].hTexture))
@@ -69,8 +69,12 @@ namespace Wizzy
         { // Text has no cached texture, create new texture
             WZ_CORE_TRACE("Rendering text to rendertarget");
             glm::vec2 textureSize = MeasureString(text);
-            RenderTarget::Handle hNewTexture = ResourceManagement::AddRuntimeResource<RenderTarget>(RenderTarget::Create(textureSize.x, textureSize.y), RenderTarget::GetTemplateProps());
-            WZ_CORE_ASSERT(ResourceManagement::IsLoaded(hNewTexture), "Failed creating runtime rendertarget texture for font render");
+            RenderTarget::Handle hNewTexture = ResourceManagement::AddRuntimeResource
+            (
+                (RenderTarget*)RenderTarget::Create(textureSize.x, textureSize.y), RenderTarget::GetTemplateProps()
+            );
+            WZ_CORE_ASSERT(ResourceManagement::IsLoaded(hNewTexture), 
+            "Failed creating runtime rendertarget texture for font render");
 
             ValidateCache();
 
@@ -79,7 +83,28 @@ namespace Wizzy
             m_cachedStrings.push(text);
 
             auto& newTexture = ResourceManagement::Get<RenderTarget>(hNewTexture);
-            Renderer2D::Begin(hShader, glm::ortho<float>(0, newTexture.GetWidth(), 0.f, newTexture.GetHeight()), hNewTexture);
+
+            size_t maxCharTextureSize = m_fontSize 
+                                        * m_fontSize 
+                                        * sizeof(Renderer2D::VertexData) 
+                                        * 4.f;
+            size_t budget = maxCharTextureSize * text.size();
+            Renderer2D::Pipeline pipeline(budget);
+            pipeline.hRenderTarget = hNewTexture;
+            pipeline.hShader = hShader;
+            pipeline.camTransform = glm::ortho<float>
+                                    (
+                                        0, 
+                                        newTexture.GetWidth(), 
+                                        0.f, 
+                                        newTexture.GetHeight()
+                                    );
+
+            Renderer2D::Pipeline charPipeline(maxCharTextureSize);
+            charPipeline.hShader = hShader;
+
+            
+            Renderer2D::Begin(&pipeline);
             std::vector<RenderTarget::Handle> toDelete;
             glm::vec2 penPos(0, textureSize.y - m_fontSize);
             for (auto c : text)
@@ -101,24 +126,56 @@ namespace Wizzy
                     continue;
                 }
 
-                RenderTarget::Handle hCharTexture = ResourceManagement::AddRuntimeResource<RenderTarget>(RenderTarget::Create(info.width, info.height), RenderTarget::GetTemplateProps());
-                WZ_CORE_ASSERT(ResourceManagement::IsLoaded(hCharTexture), "Failed creating rendertarget texture for char font rendering");
+                auto hCharTexture = ResourceManagement::AddRuntimeResource
+                (
+                    (RenderTarget*)RenderTarget::Create(info.width, info.height), RenderTarget::GetTemplateProps()
+                );
+                WZ_CORE_ASSERT(ResourceManagement::IsLoaded(hCharTexture), 
+                    "Failed creating rendertarget texture for char font rendering");
                 toDelete.push_back(hCharTexture);
 
                 auto& charTexture = ResourceManagement::Get<RenderTarget>(hCharTexture);
+
+                charPipeline.camTransform = glm::ortho<float>
+                                            (
+                                                0, 
+                                                charTexture.GetWidth(), 
+                                                0.f, 
+                                                charTexture.GetHeight()
+                                            );
+
+                charPipeline.hRenderTarget = hCharTexture;
+                
                 // Submit & draw character on char texture
-                Renderer2D::Begin(hShader, glm::ortho<float>(0, charTexture.GetWidth(), 0.f, charTexture.GetHeight()), hCharTexture);
+                Renderer2D::Begin(&charPipeline);
                 auto& atlasTexture = ResourceManagement::Get<Texture>(m_hAtlasTexture);
-                Renderer2D::SubmitImage(m_hAtlasTexture, { -(info.xOffset * atlasTexture.GetWidth()), 0 }, vec2(1.f), 0, Color::white, hCharTexture);
-                Renderer2D::End(hCharTexture);
+                Renderer2D::SubmitTexture
+                (
+                    &charPipeline, 
+                    m_hAtlasTexture, 
+                    { -(info.xOffset * atlasTexture.GetWidth()), 0 }, 
+                    vec2(1.f), 
+                    0, 
+                    Color::white
+                );
+                Renderer2D::End(&charPipeline);
 
                 // Draw the char texture on the final texture
-                Renderer2D::SubmitImage(hCharTexture, { penPos.x + info.bitmapLeft, penPos.y - (info.height - info.bitmapTop) }, vec2(1.f), 0, Color::white, hNewTexture);
+                Renderer2D::SubmitRenderTarget
+                (
+                    &pipeline,
+                    hCharTexture, 
+                    { penPos.x + info.bitmapLeft, penPos.y - (info.height - info.bitmapTop) }, 
+                    vec2(1.f), 
+                    0, 
+                    Color::white, 
+                    Rect()
+                );
 
                 penPos.x += info.advanceX;
             }
 
-            Renderer2D::End(hNewTexture);
+            Renderer2D::End(&pipeline);
 
             for (auto r : toDelete)
             {
@@ -213,7 +270,7 @@ namespace Wizzy
             std::cout << "Failed loading font face\n";
             abort();
         }
-        m_fontSize = props.IsProperty<int32>("Font size") ? props.GetProperty<int32>("Font size") : GetTemplateProps().GetProperty<int32>("Font size");
+        m_fontSize = props.Is<int32>("Font size") ? props.Get<int32>("Font size") : GetTemplateProps().Get<int32>("Font size");
         FT_Set_Pixel_Sizes(face, 0, m_fontSize);
 
         int32 rowWidth = 0;
@@ -242,9 +299,9 @@ namespace Wizzy
 
         WZ_CORE_TRACE("Creating atlas texture");
         PropertyTable atlasProps = Texture::GetTemplateProps();
-        atlasProps.SetProperty<int32>("MinFilterMode", (int32)WZ_MIN_FILTER_MODE_LINEAR);
-        atlasProps.SetProperty<int32>("MagFilterMode", (int32)WZ_MAG_FILTER_LINEAR);
-        m_hAtlasTexture = (Texture::Handle)ResourceManagement::AddRuntimeResource<Texture>(Texture::Create(NULL, atlasWidth, atlasHeight, 1, atlasProps), Texture::GetTemplateProps());// new Texture(NULL, atlasWidth, atlasHeight, 1);
+        atlasProps.Set<int32>("MinFilterMode", (int32)WZ_MIN_FILTER_MODE_LINEAR);
+        atlasProps.Set<int32>("MagFilterMode", (int32)WZ_MAG_FILTER_LINEAR);
+        m_hAtlasTexture = ResourceManagement::AddRuntimeResource<Texture>(Texture::Create(NULL, atlasWidth, atlasHeight, 1, atlasProps), Texture::GetTemplateProps());// new Texture(NULL, atlasWidth, atlasHeight, 1);
         WZ_CORE_ASSERT(ResourceManagement::IsLoaded(m_hAtlasTexture), "Failed creating atlas texture for font");
         int32 textPos = 0;
 
@@ -309,8 +366,11 @@ namespace Wizzy
         memcpy(&atlasData[0], atlasString.data(), atlasString.size());
 
         PropertyTable atlasProps = Texture::GetTemplateProps();
-        atlasProps.SetProperty<int32>("MinFilterMode", (int32)WZ_MIN_FILTER_MODE_LINEAR);
-        m_hAtlasTexture = ResourceManagement::AddRuntimeResource((Texture*)Texture::Create(atlasData, atlasProps), Texture::GetTemplateProps());
+        atlasProps.Set<int32>("MinFilterMode", (int32)WZ_MIN_FILTER_MODE_LINEAR);
+        m_hAtlasTexture = ResourceManagement::AddRuntimeResource
+        (
+            (Texture*)Texture::Create(atlasData, atlasProps), Texture::GetTemplateProps()
+        );
         WZ_CORE_ASSERT(ResourceManagement::IsLoaded(m_hAtlasTexture), "Failed creating atlas texture for font");
 
         u32 infoCount = 0;

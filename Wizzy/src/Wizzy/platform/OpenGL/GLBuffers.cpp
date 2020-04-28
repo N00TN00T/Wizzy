@@ -32,7 +32,7 @@ namespace Wizzy
     void GLVertexBuffer::SetData(void* data, size_t size)
     {
         this->Bind();
-        GL_CALL(glBufferData(GL_ARRAY_BUFFER, size, data, GL_STATIC_DRAW));
+        glBufferSubData(GL_ARRAY_BUFFER, 0, size, data);
         this->Unbind();
     }
 

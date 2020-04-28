@@ -7,16 +7,14 @@
 #include "Wizzy/JobSystem/JobSystem.h"
 
 namespace Wizzy {
-	enum SystemOperation {
-		OPERATION_UPDATE, OPERATION_NOTIFY
-	};
+	
 
 	ECSManager::ECSManager() {
 
 	}
 	ECSManager::~ECSManager() {
 
-		for (const auto& _entity : m_entites) {
+		for (const auto& _entity : m_entities) {
 			delete _entity;
 		}
 
@@ -46,9 +44,9 @@ namespace Wizzy {
 			AddComponentInternal(_newEntity, ids[i], components[i]);
 		}
 
-		_newEntity->first = m_entites.size();
+		_newEntity->first = m_entities.size();
 
-		m_entites.push_back(_newEntity);
+		m_entities.push_back(_newEntity);
 
 		return _handle;
 	}
@@ -65,11 +63,11 @@ namespace Wizzy {
 		/* Move the last entity to overwrite the
 			entity being removed					*/
 		const auto& _destIndex = ToEntityMemIndex(handle);
-		const auto& _srcIndex = m_entites.size() - 1;
-		delete m_entites[_destIndex];
-		m_entites[_destIndex] = m_entites[_srcIndex];
-		m_entites[_destIndex]->first = _destIndex;
-		m_entites.pop_back();
+		const auto& _srcIndex = m_entities.size() - 1;
+		delete m_entities[_destIndex];
+		m_entities[_destIndex] = m_entities[_srcIndex];
+		m_entities[_destIndex]->first = _destIndex;
+		m_entities.pop_back();
 	}
 
 	std::vector<std::pair<StaticCId, IComponent*>> ECSManager::GetComponents(EntityHandle entity) const {
@@ -89,17 +87,26 @@ namespace Wizzy {
 		WZ_CORE_TRACE("Notifying systems");
         ComponentGroup _toUpdate;
 
-		for (size_t i = 0; i < systems.SystemCount(); i++)
+		for (auto _system : systems.GetSystems())
 		{
+			if (!systems.Enabled(_system)) continue;
 			uint16_t _systemUpdates = 0;
-			auto* _system = systems[i];
+			const auto& _systemTypes = _system->GetTypeIds();
+			const auto& _systemFlags = _system->GetFlags();
+
+			bool cnt = false;
+			for (int i = 0; i < _systemTypes.size(); i++)
+			{
+				if (m_components.find(_systemTypes[i]) == m_components.end() && !(_systemFlags[i] & System::component_flag_optional)) cnt = true;
+			}
+			if (cnt) continue;
 
 			if (!_system->IsSubscribed(e.GetEventType())) continue;
 
 			if (_system->ProcessAll())
 			{
 
-				for (const auto& _entity : m_entites)
+				for (const auto& _entity : m_entities)
 				{
 
 					ComponentGroup _group;
@@ -117,8 +124,8 @@ namespace Wizzy {
 			}
 			else
 			{
-				const auto& _systemTypes = _system->GetTypeIds();
-				const auto& _systemFlags = _system->GetFlags();
+				
+
 				if (_systemTypes.size() == 1)
 				{
 					const auto& _componentType = _systemTypes[0];
@@ -142,12 +149,10 @@ namespace Wizzy {
 					if (m_components.find(_lcType) == m_components.end()) continue;
 					const auto& _lcTypeSize = IComponent::StaticInfo(_lcType).size;
 					auto _lcMemPool = m_components.at(_lcType);
-
 					/* Hint the componentgroup about how many elemets there will be
 						as to allocate all needed memory here instead of allocating
 						a small amount for each component push */
-					_toUpdate.HintCount(_lcMemPool.size() / _lcTypeSize);
-
+					_toUpdate.HintCount((u32)(_lcMemPool.size() / _lcTypeSize));
 					bool _isValid = true;
 					/* Iterate through the components of the least common of the
 						system types, instead of just iterating through the first
@@ -155,27 +160,26 @@ namespace Wizzy {
 						components. */
 					for (size_t j = 0; j < _lcMemPool.size(); j += _lcTypeSize)
 					{
+						
 						IComponent* _ofFirstType = (IComponent*)&_lcMemPool[j];
-
 						Entity* _entity = ToRawType(_ofFirstType->entity);
 						for (size_t k = 0; k < _systemTypes.size(); k++)
 						{
 							const auto& _systemType = _systemTypes[k];
-							if (m_components.find(_systemType) == m_components.end())
-							{
-								_isValid = false;
-								break;
-							}
 							const auto& _systemFlag = _systemFlags[k];
-							IComponent* _entityComp = GetComponentInternal(
-								_entity,
-								m_components.at(_systemType),
-								_systemType
-							);
+							IComponent*  _entityComp = NULL;
+							if (m_components.find(_systemType) != m_components.end())
+							{
+								_entityComp = GetComponentInternal(
+									_entity,
+									m_components.at(_systemType),
+									_systemType
+								);
+							}
 
 							if (!_entityComp &&
-								!(_systemFlag & System::FLAG_OPTIONAL) &&
-								!(_systemFlag & System::FLAG_OPTIONAL_MIN_1))
+								!(_systemFlag & System::component_flag_optional) &&
+								!(_systemFlag & System::flag_optional_min_1))
 							{
 								/* Entity does not have a component of a system
 									component type AND that component is not optional*/
@@ -195,7 +199,7 @@ namespace Wizzy {
 						}
 					}
 				}
-				WZ_CORE_ASSERT(_systemUpdates != 0, "Unused system '" + typestr(*_system) + "'");
+				
 			}
 		}
 		//JobContext ctx;
@@ -397,181 +401,153 @@ namespace Wizzy {
 		uint32_t _minIndex = UINT32_MAX;
 
 		for (uint32_t i = 0; i < static_cast<uint32_t>(types.size()); i++) {
-			if ((flags[i] & System::FLAG_OPTIONAL) || (flags[i] & System::FLAG_OPTIONAL_MIN_1)) {
+			if ((flags[i] & System::component_flag_optional) || (flags[i] & System::flag_optional_min_1)) {
 				continue;
 			}
 			const size_t& _typeSize = IComponent::StaticInfo(types[i]).size;
-			auto _numComponents = m_components.at(types[i]).size() / _typeSize;
+			
+			if (m_components.find(types[i]) != m_components.end())
+			{
+				auto _numComponents = m_components.at(types[i]).size() / _typeSize;
 
-			if (_numComponents <= _minNumComponents) {
-				_minNumComponents = _numComponents;
-				_minIndex = i;
+				if (_numComponents <= _minNumComponents)
+				{
+					_minNumComponents = _numComponents;
+					_minIndex = i;
+				}
 			}
 		}
 
 		return _minIndex;
 	}
 
-	void ECSManager::Save(string file) const
+	PropertyTable ECSManager::Serialize() const
 	{
-		WZ_CORE_TRACE("Saving ECS System to {0}", file);
+		PropertyTable table;
 
-		auto data = Save();
+		PropertyTable entities;
 
-		if (!ulib::File::write(file, data, true))
+		for (int i = 0; i < m_entities.size(); i++)
 		{
-			WZ_THROW(Exception, "Failed reading file when saving ECS: " + file);
-		}
-	}
-	std::vector<byte> ECSManager::Save() const
-	{
-		
-		std::vector<byte> data;
-		u32 dataIndex = 0;
+			PropertyTable entity;
 
-		u32 i = 0;
-		for (auto& e : m_entites)
-		{
-			WZ_CORE_TRACE("(1/2) {0}%", ((double)i / (double)m_entites.size()) * (double)100);
-			data.resize(data.size() + TOKEN_ENTITY.size() + sizeof(size_t) + e->second.size() * (sizeof(StaticCId) + sizeof(MemIndex)) + sizeof(e->first));
-			memcpy(&data[0] + dataIndex, TOKEN_ENTITY.data(), TOKEN_ENTITY.size());
-			dataIndex += TOKEN_ENTITY.size();
-
-			memcpy(&data[0] + dataIndex, &e->first, sizeof(e->first));
-			dataIndex += sizeof(e->first);
-
-			auto sz = e->second.size();
-			memcpy(&data[0] + dataIndex, &sz, sizeof(size_t));
-			dataIndex += sizeof(size_t);
-			for (auto& dataRef : e->second)
+			for (auto& componentRef : m_entities[i]->second)
 			{
-				memcpy(&data[0] + dataIndex, &dataRef.first, sizeof(dataRef.first));
-				dataIndex += sizeof(dataRef.first);
-				memcpy(&data[0] + dataIndex, &dataRef.second, sizeof(dataRef.second));
-				dataIndex += sizeof(dataRef.second);
-			}
-			i++;
-		}
+				auto& id = componentRef.first;
+				auto& index = componentRef.second;
 
-		i = 0;
-		for (auto& c : m_components)
-		{
-			WZ_CORE_TRACE("(2/2) {0}%", ((double)i / (double)m_components.size()) * (double)100);
-			auto& info = IComponent::StaticInfo(c.first);
-
-			data.resize(data.size() + TOKEN_COMPONENT.size() + c.second.size() + sizeof(StaticCId) + sizeof(size_t));
-
-			memcpy(&data[0] + dataIndex, TOKEN_COMPONENT.data(), TOKEN_COMPONENT.size());
-			dataIndex += TOKEN_COMPONENT.size();
-
-			memcpy(&data[0] + dataIndex, &c.first, sizeof(StaticCId));
-			dataIndex += sizeof(StaticCId);
-
-			size_t sz = c.second.size();
-			memcpy(&data[0] + dataIndex, &sz, sizeof(size_t));
-			dataIndex += sizeof(size_t);
-
-			memcpy(&data[0] + dataIndex, c.second.data(), c.second.size());
-			dataIndex += c.second.size();
-			i++;
-		}
-
-		return data;
-	}
-	void ECSManager::Load(string file)
-	{
-		
-		WZ_CORE_TRACE("Loading Ecs from file {0}", file);
-		std::vector<byte> data;
-		if (!ulib::File::read(file, &data, true))
-		{
-			WZ_THROW(Exception, "Failed reading file when loading ECS: " + file);
-		}
-		Load(data);
-	}
-	void ECSManager::Load(std::vector<byte> data)
-	{
-		WZ_CORE_TRACE("Finding entity data...");
-		std::vector<byte> delimiter;
-		delimiter.resize(TOKEN_ENTITY.size());
-		memcpy(&delimiter[0], TOKEN_ENTITY.data(), TOKEN_ENTITY.size());
-
-		auto entitiesData = split_vector(data, delimiter);
-
-		u32 i = 0;
-		for (auto& entityData : entitiesData)
-		{
-			WZ_CORE_TRACE("Processing entity data... (1/2) {0}%", (double)i / (double)entitiesData.size() * (double)100);
-			Entity* entity = new Entity;
-
-			u32 ePtr = 0;
-
-			memcpy(&entity->first, entityData.data() + ePtr, sizeof(entity->first));
-			ePtr += sizeof(entity->first);
-
-			size_t count;
-			memcpy(&count, entityData.data() + ePtr, sizeof(count));
-			ePtr += sizeof(count);
-
-			entity->second.resize(count);
-
-			for (int i = 0; i < count; i++)
-			{
-				memcpy(&entity->second[i].first, entityData.data() + ePtr, sizeof(entity->second[i].first));
-				ePtr += sizeof(entity->second[i].first);
-				memcpy(&entity->second[i].second, entityData.data() + ePtr, sizeof(entity->second[i].second));
-				ePtr += sizeof(entity->second[i].second);
+				entity.Set<int32>(std::to_string(id), index);
 			}
 
-			m_entites.push_back(entity);
-			i++;
+			entities.Set(std::to_string(i), entity);
 		}
 
-		WZ_CORE_TRACE("Finding component data...");
-		delimiter.resize(TOKEN_COMPONENT.size());
-		memcpy(&delimiter[0], TOKEN_COMPONENT.data(), TOKEN_COMPONENT.size());
+		table.Set<PropertyTable>("entities", entities);
 
-		auto componentsData = split_vector(data, delimiter);
-
-		for (int i = 1; i < componentsData.size(); i++)
+		PropertyTable components;
+		for (const auto& [compId, dataPool] : m_components)
 		{
-			WZ_CORE_TRACE("Processing component data... (2/2) {0}%", (double)i / (double)componentsData.size() * (double)100);
-			auto& componentData = componentsData[i];
+			string dataStr = "";
 
-			u32 cPtr = 0;
-
-			StaticCId id;
-			ComponentMem mem;
-			size_t sz;
-
-			memcpy(&id, componentData.data() + cPtr, sizeof(StaticCId));
-			cPtr += sizeof(StaticCId);
-			memcpy(&sz, componentData.data() + cPtr, sizeof(size_t));
-			cPtr += sizeof(size_t);
-
-			mem.resize(sz);
-			memcpy(&mem[0], componentData.data() + cPtr, sz);
-			cPtr += sz;
-
-			m_components[id] = mem;
-		}
-
-		for (auto& e : m_entites)
-		{
-			for (auto& dataRef : e->second)
+			for (byte b : dataPool)
 			{
-				auto id = dataRef.first;
-				auto idx = dataRef.second;
+				dataStr += std::to_string(b) + " ";
+			}
 
-				auto comp = (IComponent*)&m_components[id][idx];
-				comp->entity = e;
+			if (dataStr.length() > 0)
+			{
+				dataStr.pop_back();
+				components.Set(std::to_string(compId), dataStr);
+			}
+		}
+
+		table.Set("components", components);
+
+		return table;
+	}
+	void ECSManager::Deserialize(const PropertyTable& table)
+	{
+		// Process entities (Component references)
+		if (table.Is<PropertyTable>("entities"))
+		{
+			WZ_CORE_TRACE("Found entities prop");
+			PropertyTable entities = table.Get<PropertyTable>("entities");
+
+			for (const auto& entityKey : entities.GetKeys())
+			{
+				WZ_CORE_TRACE("Processing entity of index {0}", entityKey);
+				if (!entities.Is<PropertyTable>(entityKey)) continue;
+				PropertyTable entity = entities.Get<PropertyTable>(entityKey);
+
+				EntityDataRef compRefs;
+				for (const auto& compKey : entity.GetKeys())
+				{
+					WZ_CORE_TRACE("Processing component of id {0}", compKey);
+					if (!entity.Is<int32>(compKey)) continue;
+					int32 id = -1;
+					std::istringstream(compKey) >> id;
+
+					if (id == -1) continue;
+
+					int32 index = entity.Get<int32>(compKey);
+
+					WZ_CORE_TRACE("Founnd comp reference of type {0} at index {1}", id, index);
+					compRefs.push_back({ id, index });
+				}
+
+				WZ_CORE_TRACE("Creating entity {0}", m_entities.size());
+				m_entities.push_back(new Entity(m_entities.size(), compRefs));
+			}
+		}
+
+		// Processs components
+		if (table.Is<PropertyTable>("components"))
+		{
+			WZ_CORE_TRACE("Found components prop");
+			PropertyTable components = table.Get<PropertyTable>("components");
+
+			for (const string& k : components.GetKeys())
+			{
+				if (!components.Is<string>(k)) continue;
+				int32 id = -1;
+				string bytesStr = components.Get<string>(k);
+				std::istringstream (k) >> id;
+				WZ_CORE_TRACE("Processing data pool for component type {0}", id);
+				if (id != -1)
+				{
+					ComponentMem dataPool;
+					std::stringstream ss(bytesStr);
+					string byteStr;
+					while (std::getline(ss, byteStr, ' '))
+					{
+						int32 b = -1;
+						std::istringstream(byteStr) >> b;
+						if (b != -1)
+						{
+							dataPool.push_back(b);
+						}
+					}
+					m_components[id] = dataPool;
+				}
+			}
+		}
+
+		// Set component entity handles
+		for (auto& entityEntry : m_entities)
+		{
+			for (auto& ref : entityEntry->second)
+			{
+				const auto& id = ref.first;
+				const auto& index = ref.second;
+
+				((IComponent*)&m_components[id][index])->entity = entityEntry;
 			}
 		}
 	}
 
 	void ECSManager::Clear()
 	{
-		for (auto e : m_entites)
+		for (auto e : m_entities)
 		{
 			auto components = e->second;
 
@@ -585,7 +561,7 @@ namespace Wizzy {
 
 			delete e;
 		}
-		m_entites.clear();
+		m_entities.clear();
 		m_components.clear();
 	}
 }

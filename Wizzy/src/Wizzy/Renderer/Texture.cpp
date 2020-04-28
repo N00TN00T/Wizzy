@@ -48,9 +48,9 @@ namespace Wizzy
         if (!s_templateProps)
         {
             s_templateProps = new PropertyTable;
-            s_templateProps->SetProperty<int32>("WrapMode", (int32)WZ_WRAP_MODE_CLAMP_TO_EDGE);
-            s_templateProps->SetProperty<int32>("MinFilterMode", (int32)WZ_MIN_FILTER_MODE_LINEAR_MIPMAP_LINEAR);
-            s_templateProps->SetProperty<int32>("MagFilterMode", (int32)WZ_MAG_FILTER_LINEAR);
+            s_templateProps->Set<int32>("WrapMode", (int32)WZ_WRAP_MODE_CLAMP_TO_EDGE);
+            s_templateProps->Set<int32>("MinFilterMode", (int32)WZ_MIN_FILTER_MODE_LINEAR_MIPMAP_LINEAR);
+            s_templateProps->Set<int32>("MagFilterMode", (int32)WZ_MAG_FILTER_LINEAR);
         }
         return *s_templateProps;
     }

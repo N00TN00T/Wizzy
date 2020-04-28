@@ -115,6 +115,8 @@
 #define LUA_FLOAT_DOUBLE	2
 #define LUA_FLOAT_LONGDOUBLE	3
 
+#define LUA_32BITS
+
 #if defined(LUA_32BITS)		/* { */
 /*
 ** 32-bit integers and 'float'

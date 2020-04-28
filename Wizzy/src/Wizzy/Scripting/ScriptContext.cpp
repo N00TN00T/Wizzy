@@ -104,7 +104,7 @@ return is;
 		_CHECK_IS(IsTable);
 	}
 
-	bool ScriptContext::InvokeLuaFunction(int32 index, std::vector<int32> stackArgs)
+	bool ScriptContext::InvokeLuaFunctionStackArgs(int32 index, std::vector<int32> stackArgs, int32 nret)
 	{
 		PushCopy(index);
 		int32 offset = 1;
@@ -114,9 +114,8 @@ return is;
 			PushCopy(argIdx);
 			offset++;
 		}
-		bool result = InvokeFromStack(stackArgs.size(), 0);
-
-		Pop(1 + stackArgs.size());
+		bool result = InvokeFromStack(stackArgs.size(), nret);
+		Pop(stackArgs.size());
 
 		return result;
 	}
@@ -127,7 +126,7 @@ return is;
 		return lua_tointeger(L, index);
 	}
 
-	double ScriptContext::GetNumber(int32 index) const
+	float ScriptContext::GetNumber(int32 index) const
 	{
 		WZ_CORE_ASSERT(lua_isnumber(L, index), "Invalid GetNumber() call");
 		return lua_tonumber(L, index);
@@ -151,10 +150,10 @@ return is;
 		return ToWizzyTable(index);
 	}
 
-	bool ScriptContext::InvokeLuaFunction(const string& name, std::vector<int32> stackArgs)
+	bool ScriptContext::InvokeLuaFunctionStackArgs(const string& name, std::vector<int32> stackArgs, int32 nret)
 	{
 		lua_getglobal(L, name.c_str());
-		bool success = InvokeLuaFunction(-1, stackArgs);
+		bool success = InvokeLuaFunctionStackArgs(-1, stackArgs, nret);
 		Pop(1);
 		return success;
 	}
@@ -165,7 +164,7 @@ return is;
 		return GetInteger(-1);
 	}
 
-	double ScriptContext::GetNumber(const string& key) const
+	float ScriptContext::GetNumber(const string& key) const
 	{
 		lua_getglobal(L, key.c_str());
 		auto r = GetNumber(-1);
@@ -230,11 +229,11 @@ return is;
 
 		for (const auto& propKey : props)
 		{
-			if (table.IsProperty<float>(propKey))			lua_pushnumber(L, table.GetProperty<float>(propKey));
-			if (table.IsProperty<int32>(propKey))			lua_pushinteger(L, table.GetProperty<int32>(propKey));
-			if (table.IsProperty<bool>(propKey))			lua_pushboolean(L, table.GetProperty<bool>(propKey));
-			if (table.IsProperty<string>(propKey))			lua_pushstring(L, table.GetProperty<string>(propKey).c_str());
-			if (table.IsProperty<PropertyTable>(propKey))	PushNewTable(table.GetProperty<PropertyTable>(propKey));
+			if (table.Is<float>(propKey))			lua_pushnumber(L, table.Get<float>(propKey));
+			if (table.Is<int32>(propKey))			lua_pushinteger(L, table.Get<int32>(propKey));
+			if (table.Is<bool>(propKey))			lua_pushboolean(L, table.Get<bool>(propKey));
+			if (table.Is<string>(propKey))			lua_pushstring(L, table.Get<string>(propKey).c_str());
+			if (table.Is<PropertyTable>(propKey))	PushNewTable(table.Get<PropertyTable>(propKey));
 			lua_setfield(L, -2, propKey.c_str());
 		}
 	}
@@ -367,14 +366,13 @@ lua_setglobal(L, key.c_str());
 		lua_getfield(L, tableIndex, fnName.c_str());
 		WZ_CORE_ASSERT(IsFunction(tableIndex), "Invalid InvokeTableFunction() call");
 
-		return InvokeLuaFunction(tableIndex);
+		return InvokeLuaFunctionStackArgs(tableIndex);
 	}
 
 	void ScriptContext::MakeTableReference(int32 tableIndex, const string& ref)
 	{
 		lua_pushvalue(L, tableIndex);
 		lua_setglobal(L, ref.c_str());
-		lua_pop(L, -1);
 	}
 
 
@@ -448,8 +446,109 @@ lua_setglobal(L, key.c_str());
 	{
 		WZ_CORE_ASSERT(IsTable(src), "Invalid MakeTableReference() call");
 		lua_getglobal(L, src.c_str());
-		MakeTableReference(-1, ref);
+		lua_setglobal(L, ref.c_str());
+	}
+
+	bool ScriptContext::IsFieldInteger(int32 table, const string& field)
+	{
+		WZ_CORE_ASSERT(lua_istable(L, table), "Invalid IsFieldXXXX call");
+		lua_getfield(L, table, field.c_str());
+		bool is = lua_isinteger(L, -1);
+		lua_pop(L, 1);
+		return is;
+	}
+
+	bool ScriptContext::IsFieldNumber(int32 table, const string& field)
+	{
+		WZ_CORE_ASSERT(lua_istable(L, table), "Invalid IsFieldXXXX call");
+		lua_getfield(L, table, field.c_str());
+		bool is = lua_isnumber(L, -1);
+		lua_pop(L, 1);
+		return is;
+	}
+
+	bool ScriptContext::IsFieldBoolean(int32 table, const string& field)
+	{
+		WZ_CORE_ASSERT(lua_istable(L, table), "Invalid IsFieldXXXX call");
+		lua_getfield(L, table, field.c_str());
+		bool is = lua_isboolean(L, -1);
+		lua_pop(L, 1);
+		return is;
+	}
+
+	bool ScriptContext::IsFieldString(int32 table, const string& field)
+	{
+		WZ_CORE_ASSERT(lua_istable(L, table), "Invalid IsFieldXXXX call");
+		lua_getfield(L, table, field.c_str());
+		bool is = lua_isstring(L, -1);
+		lua_pop(L, 1);
+		return is;
+	}
+
+	bool ScriptContext::IsFieldTable(int32 table, const string& field)
+	{
+		WZ_CORE_ASSERT(lua_istable(L, table), "Invalid IsFieldXXXX call");
+		lua_getfield(L, table, field.c_str());
+		bool is = lua_istable(L, -1);
+		lua_pop(L, 1);
+		return is;
+	}
+
+	bool ScriptContext::IsFieldFunction(int32 table, const string& field)
+	{
+		WZ_CORE_ASSERT(lua_istable(L, table), "Invalid IsFieldXXXX call");
+		lua_getfield(L, table, field.c_str());
+		bool is = lua_isfunction(L, -1);
+		lua_pop(L, 1);
+		return is;
+	}
+
+	bool ScriptContext::IsFieldInteger(const string& table, const string& field)
+	{
+		lua_getglobal(L, table.c_str());
+		bool is = IsFieldInteger(-1, field);
 		Pop(1);
+		return is;
+	}
+
+	bool ScriptContext::IsFieldNumber(const string& table, const string& field)
+	{
+		lua_getglobal(L, table.c_str());
+		bool is = IsFieldNumber(-1, field);
+		Pop(1);
+		return is;
+	}
+
+	bool ScriptContext::IsFieldBoolean(const string& table, const string& field)
+	{
+		lua_getglobal(L, table.c_str());
+		bool is = IsFieldBoolean(-1, field);
+		Pop(1);
+		return is;
+	}
+
+	bool ScriptContext::IsFieldString(const string& table, const string& field)
+	{
+		lua_getglobal(L, table.c_str());
+		bool is = IsFieldString(-1, field);
+		Pop(1);
+		return is;
+	}
+
+	bool ScriptContext::IsFieldTable(const string& table, const string& field)
+	{
+		lua_getglobal(L, table.c_str());
+		bool is = IsFieldTable(-1, field);
+		Pop(1);
+		return is;
+	}
+
+	bool ScriptContext::IsFieldFunction(const string& table, const string& field)
+	{
+		lua_getglobal(L, table.c_str());
+		bool is = IsFieldFunction(-1, field);
+		Pop(1);
+		return is;
 	}
 
 	void ScriptContext::CreateMetaTable(const string& metaTable)
@@ -464,7 +563,6 @@ lua_setglobal(L, key.c_str());
 		WZ_CORE_ASSERT(!lua_isnil(L, -1), "Invalid SetMetaMethod() call");
 		lua_pushcfunction(L, fn);
 		string ops = OperatorString(op);
-		WZ_CORE_DEBUG(ops);
 		lua_setfield(L, -2, ops.c_str());
 		lua_pop(L, 1);
 	}
@@ -508,6 +606,11 @@ lua_setglobal(L, key.c_str());
 	{
 		return lua_gettop(L);
 	}
+
+	size_t ScriptContext::GetMemoryUsage()
+	{
+		return lua_gc(L, LUA_GCCOUNT, 0);
+	}
 	
 
 	string ScriptContext::TypeStrToScriptTypeName(const string& typeStr)
@@ -534,28 +637,28 @@ lua_setglobal(L, key.c_str());
 
 			if (lua_isinteger(L, -2))
 			{
-				table.SetProperty<int32>(key, lua_tointeger(L, -2));
+				table.Set<int32>(key, lua_tointeger(L, -2));
 			}
 			else if (lua_isnumber(L, -2))
 			{
-				table.SetProperty<float>(key, lua_tonumber(L, -2));
+				table.Set<float>(key, lua_tonumber(L, -2));
 			}
 			else if (lua_isboolean(L, -2))
 			{
-				table.SetProperty<bool>(key, lua_toboolean(L, -2));
+				table.Set<bool>(key, lua_toboolean(L, -2));
 			}
 			else if (lua_isstring(L, -2))
 			{
-				table.SetProperty<string>(key, lua_tostring(L, -2));
+				table.Set<string>(key, lua_tostring(L, -2));
 			}
 			else if (lua_istable(L, -2))
 			{
-				table.SetProperty<PropertyTable>(key, ToWizzyTable(-2));
+				table.Set<PropertyTable>(key, ToWizzyTable(-2));
 			}
 			else if (lua_isuserdata(L, -2))
 			{
 				lua_getuservalue(L, -2);
-				table.SetProperty<PropertyTable>(key, ToWizzyTable(-1));
+				table.Set<PropertyTable>(key, ToWizzyTable(-1));
 				lua_pop(L, -1);
 			}
 

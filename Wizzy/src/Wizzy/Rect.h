@@ -26,6 +26,8 @@ namespace Wizzy
 		inline float Left() const { return x; }
 		inline float Right() const { return x + w; }
 
+		inline bool IsValid() const { return w != 0 && h != 0; }
+
 		inline bool Intersects(const Rect& other)
 		{
 			bool xIntersect = (this->Left() > other.Left() && this->Left() < other.Right()) ||

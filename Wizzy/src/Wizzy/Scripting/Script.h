@@ -12,7 +12,7 @@ namespace Wizzy
         Script(const ResData& data, const PropertyTable& props);
 
         inline virtual ResData Serialize() const override {
-			return ResData((const byte*)m_sourceCode.data(), (const byte*)m_sourceCode.data() + m_sourceCode.size() - 1);
+			return ResData((const byte*)m_sourceCode.data(), (const byte*)m_sourceCode.data() + m_sourceCode.length());
         }
 
 		static const PropertyTable& GetTemplateProps();

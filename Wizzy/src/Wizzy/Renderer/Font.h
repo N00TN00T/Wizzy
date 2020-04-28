@@ -39,7 +39,7 @@ namespace Wizzy
 		~Font();
 
 		// Render the text from the atlas to a texture
-		RenderTarget::Handle Render(const string& text, Shader::Handle shader);
+		RenderTarget::Handle Render(const string& text, const Shader::Handle& shader);
 
 		glm::vec2 MeasureString(const string& str);
 
@@ -74,7 +74,7 @@ namespace Wizzy
 		inline static const PropertyTable& GetTemplateProps() 
 		{ 
 			static PropertyTable pl;
-			pl.SetProperty<int32>("Font size", 100);
+			pl.Set<int32>("Font size", 100);
 			return pl;
 		}
 	};

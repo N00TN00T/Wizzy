@@ -5,6 +5,7 @@
 #include "Wizzy/WizzyExceptions.h"
 #include "Wizzy/platform/OpenGL/GLRenderTarget.h"
 #include "Wizzy/platform/OpenGL/GLErrorHandling.h"
+#include "Wizzy/ImageImporter.h"
 
 namespace Wizzy {
 
@@ -12,23 +13,24 @@ namespace Wizzy {
         : m_width(width), m_height(height), RenderTarget(PropertyTable()) {
         Init();
     }
-    GLRenderTarget::GLRenderTarget(const ResData& data, const PropertyTable& props)
+    GLRenderTarget::GLRenderTarget(const ResData& encoded, const PropertyTable& props)
         : RenderTarget(props)
     {
-        if (data.size() < 12)
+        int32 c;
+        Image::set_vertical_flip_on_load(true);
+        auto decoded = Image::decode_image(encoded.data(), encoded.size(), m_width, m_height, c, 4);
+        if (decoded)
         {
-            WZ_THROW(Exception, "Failed loading rendertarget from data; not enough bytes (need at least 12)");
+            Init(decoded);
+            Image::free_image(decoded);
+        }
+        else
+        {
+            WZ_THROW(Exception, "Failed loading render target: '" + string(Image::get_failure_reason()) + "'");
+            return;
         }
 
-        memcpy(&m_width, &data[0], 4);
-        memcpy(&m_height, &data[0] + 4, 4);
-
-        if (data.size() - 8 < m_width * m_height * 4ULL)
-        {
-            WZ_THROW(Exception, "Render target file data corrupt (not enough data for width/height)");
-        }
-
-        Init((byte*)&data[0] + 8);
+        Init((byte*)&decoded[0]);
     }
     GLRenderTarget::~GLRenderTarget() {
         WZ_CORE_TRACE("Destructed renderbuffer, destructing texture");
@@ -145,31 +147,21 @@ namespace Wizzy {
     {
         WZ_CORE_TRACE("Serializing GL RenderTarget");
         byte* data = (byte*)malloc(m_width * (size_t)m_height * 4ULL);
-        ResData serialized;
 
         this->Bind();
         WZ_CORE_TRACE("Reading pixels");
         GL_CALL(glPixelStorei(GL_UNPACK_ALIGNMENT, 1));
         GL_CALL(glReadPixels(0, 0, m_width, m_height, GL_RGBA, GL_UNSIGNED_BYTE, data));
 
-        serialized.resize((size_t)m_width * (size_t)m_height * 4ULL + sizeof(m_width) + sizeof(m_height));
+        int32 len;
+        Image::set_vertical_flip_on_write(true);
+        byte* serializedBytes = Image::encode_png(data, m_width, m_height, 4, len);
+        ResData serialized(serializedBytes, serializedBytes + len);
 
-        WZ_CORE_TRACE("Copying memory");
-        int32 w = m_width;
-        int32 h = m_height;
-
-        u64 idx = 0;
-        memcpy(&serialized[idx], &w, sizeof(w));
-        idx += sizeof(w);
-        memcpy(&serialized[idx], &h, sizeof(h));
-        idx += sizeof(h);
-
-        memcpy(&serialized[idx] + 8, data, (size_t)m_width * (size_t)m_height);
-        idx += m_width * (size_t)m_height * 4ULL;
+        delete serializedBytes;
+        free(data);
 
         this->Unbind();
-
-        free(data);
 
         return serialized;
     }

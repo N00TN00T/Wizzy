@@ -173,10 +173,10 @@ namespace Wizzy
 		bool Is(const string& key);
 
 		template <typename ...TArg>
-		bool InvokeLuaFunction(int32 index, TArg... args);
-		bool InvokeLuaFunction(int32 index, std::vector<int32> stackArgs = std::vector<int32>());
+		bool InvokeLuaFunction(int32 index, TArg... args, int32 nret = 0);
+		bool InvokeLuaFunctionStackArgs(int32 index, std::vector<int32> stackArgs = std::vector<int32>(), int32 nret = 0);
 		int32 GetInteger(int32 index) const;
-		double GetNumber(int32 index) const;
+		float GetNumber(int32 index) const;
 		bool GetBoolean(int32 index) const;
 		string GetString(int32 index) const;
 		PropertyTable GetTable(int32 index);
@@ -184,10 +184,10 @@ namespace Wizzy
 		T Get(int32 index);
 
 		template <typename ...TArg>
-		bool InvokeLuaFunction(const string& name, TArg... args);
-		bool InvokeLuaFunction(const string& name, std::vector<int32> stackArgs = std::vector<int32>());
+		bool InvokeLuaFunction(const string& name, TArg... args, int32 nret = 0);
+		bool InvokeLuaFunctionStackArgs(const string& name, std::vector<int32> stackArgs = std::vector<int32>(), int32 nret = 0);
 		int32 GetInteger(const string& key) const;
-		double GetNumber(const string& key) const;
+		float GetNumber(const string& key) const;
 		bool GetBoolean(const string& key) const;
 		string GetString(const string& key) const;
 		PropertyTable GetTable(const string& key);
@@ -239,6 +239,21 @@ namespace Wizzy
 		bool InvokeTableFunction(const string& tableKey, const string& fnName);
 		void MakeTableReference(const string& src, const string& ref);
 
+
+		bool IsFieldInteger(int32 table, const string& field);
+		bool IsFieldNumber(int32 table, const string& field);
+		bool IsFieldBoolean(int32 table, const string& field);
+		bool IsFieldString(int32 table, const string& field);
+		bool IsFieldTable(int32 table, const string& field);
+		bool IsFieldFunction(int32 table, const string& field);
+
+		bool IsFieldInteger(const string& table, const string& field);
+		bool IsFieldNumber(const string& table, const string& field);
+		bool IsFieldBoolean(const string& table, const string& field);
+		bool IsFieldString(const string& table, const string& field);
+		bool IsFieldTable(const string& table, const string& field);
+		bool IsFieldFunction(const string& table, const string& field);
+
 		void CreateMetaTable(const string& metaTable);
 		void SetMetaMethod(const string& metaTable, ScriptOperator op, lua_CFunction fn);
 		void SetMetaTable(int32 tableIndex, const string& metaTable);
@@ -252,6 +267,8 @@ namespace Wizzy
 		inline lua_State* GetLuaState() { return L; };
 
 		int32 GetStackCount();
+
+		size_t GetMemoryUsage();
 
 	private:
 		string TypeStrToScriptTypeName(const string& typeStr);
@@ -292,7 +309,7 @@ namespace Wizzy
 		}
 	}
 	template<typename ...TArg>
-	inline bool ScriptContext::InvokeLuaFunction(int32 index, TArg ...args)
+	inline bool ScriptContext::InvokeLuaFunction(int32 index, TArg ...args, int32 nret)
 	{
 		WZ_CORE_ASSERT(lua_isfunction(L, index), "Invalid context function call");
 
@@ -302,18 +319,18 @@ namespace Wizzy
 
 		((void)Push(args), ...);
 
-		bool result = InvokeFromStack(argc, 0);
+		bool result = InvokeFromStack(argc, nret);
 
 		Pop(1);
 
 		return result;
 	}
 	template<typename ...TArg>
-	inline bool ScriptContext::InvokeLuaFunction(const string& name, TArg ...args)
+	inline bool ScriptContext::InvokeLuaFunction(const string& name, TArg ...args, int32 nret)
 	{
 		lua_getglobal(L, name.c_str());
 		int32 idx = lua_gettop(L);
-		bool success = InvokeLuaFunction(idx, args...);
+		bool success = InvokeLuaFunction(idx, args..., nret);
 		return success;
 	}
 	template<typename T>

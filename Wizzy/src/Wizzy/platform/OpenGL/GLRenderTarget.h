@@ -46,7 +46,7 @@ namespace Wizzy {
 
     private:
         u32 m_frameBufferId, m_renderBufferId, m_textureId;
-        u32 m_width, m_height;
+        int32 m_width, m_height;
 
         
     };

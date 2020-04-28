@@ -193,7 +193,7 @@ namespace Wizzy {
                         _fragSource += _line + "\n";
                         break;
                     case ShaderType::invalid:
-                        if (_line != "\n") {
+                        if (_line != "") {
                             WZ_CORE_WARN("Shader source line '{0}' ignored as no shader type was specified (vertex/fragment/geometry)",
                                                             _lineNum);
                         }
@@ -209,7 +209,7 @@ namespace Wizzy {
             _lineNum++;
         }
 
-        m_props.SetProperty("LightMode", (int32)_lightMode);
+        m_props.Set("LightMode", (int32)_lightMode);
 
 		m_source = { _vertSource, _fragSource };
 

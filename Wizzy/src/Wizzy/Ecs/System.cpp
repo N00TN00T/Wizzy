@@ -8,7 +8,7 @@ namespace Wizzy {
 		m_flags.push_back(flags);
 		/* Stay invalid until a non-optional component
 			is added										*/
-		if ((flags & FLAG_OPTIONAL) == 0) {
+		if ((flags & component_flag_optional) == 0) {
 			m_isValid = true;
 		}
 	}

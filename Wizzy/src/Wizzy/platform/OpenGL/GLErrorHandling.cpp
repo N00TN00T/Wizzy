@@ -10,6 +10,7 @@ namespace Wizzy {
 		void __GL_Clear_Error_Log() { while (glGetError() != GL_NO_ERROR); }
 		string __GL_Error_To_String(u32 err) {
 			return (char*)gluErrorString(err);
+			
 		}
 	}
 }

@@ -1,153 +1,105 @@
 #include "spch.h"
 
 #include "Sandbox.h"
-#include "ResourceList.h"
 
-EngineManagerSystem::EngineManagerSystem()
+struct TestComponent : public wz::Component<TestComponent>
 {
-	AddComponentType<EngineData>();
+	wz::Texture::Handle texture;
+	wz::Renderer2D::Pipeline* pipeline;
+	float frameTime = 0;
+	bool textured = false;
+	float sizex = 5.f;
+	float sizey = 5.f;
+};
 
-	Subscribe(wz::EventType::app_init);
-	Subscribe(wz::EventType::app_frame_begin);
-	Subscribe(wz::EventType::app_update);
-	Subscribe(wz::EventType::app_render);
-	Subscribe(wz::EventType::app_frame_end);
-	Subscribe(wz::EventType::app_shutdown);
-}
-
-void EngineManagerSystem::OnEvent(const wz::Event& e, Wizzy::ComponentGroup& components) const
+class TestSystem : public wz::System
 {
-	WZ_PROFILE_FUNCTION()
-		EngineData& _testComp = *components.Get<EngineData>();
-
-	wz::ResourceManagement::SetResourceDir(_testComp.resourcePath);
-
-	switch (e.GetEventType())
+public:
+	TestSystem()
 	{
-	case wz::EventType::app_init:
-	{
-		if (ulib::File::exists(_testComp.resourcePath + "ResourceList.rl"))
-		{
-			LoadResourceList("ResourceList.rl");
-		}
+		AddComponentType<TestComponent>();
 
-		_testComp.hndShader = (wz::Shader::Handle)wz::ResourceManagement::HandleOf("test.shader");
-		_testComp.hndTexture = (wz::Texture::Handle)wz::ResourceManagement::HandleOf("test.png");
-
-		/*auto hnd = wz::ResourceManagement::AddToResourceDir<wz::Texture>(ulib::File::directory_of(GetExecutablePath()) + "/../../../test/test.png", "textures/test.png", wz::Texture::GetTemplateProps());
-		wz::ResourceManagement::Load(hnd);*/
-
-		/*hnd = wz::ResourceManagement::AddToResourceDir<wz::Shader>(ulib::File::directory_of(GetExecutablePath()) + "/../../../test/test.shader", "textures/test.shader", wz::Shader::GetTemplateProps());
-		wz::ResourceManagement::Load(hnd);*/
-
-		wz::RenderCommand::SetClearColor(.5f, .5f, .5f, 1.f);
-
-		wz::RenderCommand::SetCullMode(wz::WZ_CULL_NONE);
-
-		wz::RenderCommand::ToggleDepthTesting(false);
-
-		wz::RenderCommand::ToggleBlending(true);
-
-		_testComp.window->SetVSync(false);
-
-		_testComp.renderTarget = wz::RenderTargetPtr(wz::RenderTarget::Create(_testComp.window->GetWidth(), _testComp.window->GetHeight()));
-
-		return;
+		Subscribe(wz::EventType::app_init);
+		Subscribe(wz::EventType::app_update);
+		Subscribe(wz::EventType::app_render);
 	}
-	case wz::EventType::app_frame_begin:
+
+	virtual void OnEvent(const wz::Event& e, wz::ComponentGroup& components) const override
 	{
-		WZ_PROFILE_SCOPE("app_frame_begin");
-		wz::RenderCommand::Clear();
-		return;
-	}
-	case wz::EventType::app_update:
-	{
-		WZ_PROFILE_SCOPE("app_update");
-		_testComp.timeSinceValidate += ((wz::AppUpdateEvent&)e).GetDeltaTime();
-		if (_testComp.timeSinceValidate >= 1.f / _testComp.validationRate)
+		auto& comp = *components.Get<TestComponent>();
+		switch (e.GetEventType())
 		{
-			_testComp.ftStr = std::to_string(((wz::AppUpdateEvent&)e).GetDeltaTime() * 1000.f);
-			_testComp.timeSinceValidate = 0.f;
-			try
-			{
-				//wz::ResourceManagement::Validate(false);
+			case wz::EventType::app_init:
+			{	
+				wz::ResourceManagement::SetResourceDir("../res/");
+				comp.texture = wz::ResourceManagement::Load<wz::Texture>("Wizzy.png");
+				comp.pipeline = new wz::Renderer2D::Pipeline(_MB(15));
+				comp.pipeline->camTransform = glm::ortho<float>(0, 1600, 0, 900);
+
+				wz::RenderCommand::SetClearColor(wz::Color::magenta);
+				return;
 			}
-			catch (const wz::ResourceFileMissingException & e)
+			case wz::EventType::app_update:
 			{
-				wz::ResourceManagement::Delete(e.GetId());
-				WZ_CORE_WARN("A file was missing and unregistered from the project:");
-				wz::Log::SetExtra(false);
-				WZ_CORE_WARN("    Exception: {0}", e.GetMessage());
-				WZ_CORE_WARN("    File:      {0}", e.GetPath());
-				wz::Log::SetExtra(true);
+				wz::Renderer2D::Clear(comp.pipeline);
+				comp.frameTime = ((const wz::AppUpdateEvent&)e).GetDeltaTime();
+				return;
 			}
-			catch (const wz::Exception & e)
+			case wz::EventType::app_render:
 			{
-				WZ_CORE_CRITICAL("Failed to validate resources beyond fixing!");
-				wz::Log::SetExtra(false);
-				WZ_CORE_CRITICAL(e.GetUnhandledMessage());
-				WZ_BREAK;
-				wz::Log::SetExtra(true);
+				wz::Renderer2D::ResetMetrics();
+
+				wz::Renderer2D::Begin(comp.pipeline);
+				
+				for (float x = 0.f; x < 1600.f; x += comp.sizex)
+				{
+					for (float y = 0.f; y < 900.f; y += comp.sizey)
+					{
+						if (!comp.textured)
+						{
+							wz::Renderer2D::SubmitRect
+							(
+								comp.pipeline,
+								wz::Rect(x, y, comp.sizex, comp.sizey),
+								wz::Color(0.f, x / 1600.f, y / 900.f, 1.f)
+							);
+						}
+						else
+						{
+							wz::Renderer2D::SubmitTexture
+							(
+								comp.pipeline,
+								comp.texture,
+								{ x, y },
+								{ comp.sizex / 16.f, comp.sizey / 16.f },
+								0,
+								wz::Color(1.f, x / 1600.f, y / 900.f, 1.f)
+							);
+						}
+					}
+				}
+
+				wz::Renderer2D::End(comp.pipeline);
+
+				const auto& metrics = wz::Renderer2D::GetMetrics();
+
+				ImGui::Begin("Renderer2D Metrics");
+				ImGui::Text("%i Quads", metrics.numQuads);
+				ImGui::Text("%i Indices", metrics.numIndices);
+				ImGui::Text("%i vertices", metrics.GetNumVertices());
+				ImGui::Text("%i Draw Calls", metrics.numDrawCalls);
+				ImGui::Text("%i Memory usage (bytes)", metrics.GetMemoryUsage());
+				ImGui::Text("%f Frame time (ms)", comp.frameTime);
+				ImGui::Checkbox("Textured quads", &comp.textured);
+				ImGui::DragFloat2("Quad size", &comp.sizex, .01f, 1.f, 100.f);
+				ImGui::End();
+
+				return;
 			}
-
-			//wz::ResourceManagement::Validate(true);
 		}
-
-		if (wz::Input::GetKey(WZ_KEY_R))
-		{
-			_testComp.rotation += 20.f * ((wz::AppUpdateEvent&)e).GetDeltaTime();
-		}
-
-		if (wz::Input::GetKey(WZ_KEY_W))
-		{
-			_testComp.scale += 1.f * ((wz::AppUpdateEvent&)e).GetDeltaTime();
-		}
-		if (wz::Input::GetKey(WZ_KEY_S))
-		{
-			_testComp.scale -= 1.f * ((wz::AppUpdateEvent&)e).GetDeltaTime();
-		}
-
-		auto mouse = wz::Input::GetMousePos();
-		_testComp.pos = mouse;
-		ImGui::Begin("Performance");
-
-		ImGui::LabelText("frametime", "%sms", _testComp.ftStr.c_str());
-
-		ImGui::End();
-
-		return;
-	}
-	case wz::EventType::app_render:
-	{
-		WZ_PROFILE_SCOPE("app_render");
-		/*wz::Renderer2D::Begin(_testComp.hndShader, glm::ortho<float>(0, _testComp.window->GetWidth(), 0, _testComp.window->GetHeight(), -1, 1));
-
-		wz::Renderer2D::SubmitImage(_testComp.hndTexture, _testComp.pos, _testComp.scale, _testComp.rotation, wz::Color::white);
-		wz::Renderer2D::SubmitRect(wz::Rect(100, 100, 100, 100), wz::Color::blue);
-
-		wz::Renderer2D::End(_testComp.renderTarget);
-
-		ImGui::Begin("Game");
-
-		ImGui::Image((ImTextureID)_testComp.renderTarget->GetTextureId(), ImGui::GetWindowSize(), { 0, 1 }, { 1, 0 });
-
-		ImGui::End();*/
-
-		return;
-	}
-	case wz::EventType::app_frame_end:
-	{
-		WZ_PROFILE_SCOPE("app_frame_end");
-		return;
-	}
-	case wz::EventType::app_shutdown:
-	{
-		WriteResourceList("ResourceList.rl");
-		return;
-	}
 	}
 
-}
+};
 
 Sandbox::Sandbox()
 {
@@ -159,18 +111,15 @@ Sandbox::~Sandbox()
 
 void Sandbox::Init()
 {
-	WZ_PROFILE_FUNCTION();
 	wz::Log::SetCoreLogLevel(LOG_LEVEL_DEBUG);
+	wz::Log::SetClientLogLevel(LOG_LEVEL_TRACE);
 
-	EngineData t;
-	t.resourcePath = ulib::File::directory_of(GetExecutablePath()) + "/../../../res/";
-	t.window = m_window;
+	srand(time(NULL));
 
-	Wizzy::IComponent* tPtr = &t;
+	m_clientEcs.CreateEntity<TestComponent>();
 
-	m_clientEcs.CreateEntity(&tPtr, &t.staticId, 1);
+	m_clientSystems.AddSystem<TestSystem>();
 
-	m_clientSystems.AddSystem<EngineManagerSystem>();
 }
 
 

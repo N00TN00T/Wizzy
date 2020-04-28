@@ -34,8 +34,8 @@ int main(int argc, char** argv)
     signal(SIGSEGV, handle_crash);
 #endif
 
-    srand(time(NULL));
-
+    srand((unsigned int)time(NULL));
+    
 	Wizzy::Log::Init();
     WZ_CORE_INFO("Initialized the logs");
 
@@ -45,13 +45,15 @@ int main(int argc, char** argv)
         _app->Run();
         delete _app;
     }
-    /*catch (const std::exception & e)
+    catch (const std::exception & e)
     {
-        WZ_CORE_ASSERT(false, "Unhandled exception: '" + string(e.what()) + "'");
-    }*/
+        WZ_CORE_CRITICAL("Unhandled std::exception: {0}", e.what());
+        throw e;
+    }
     catch (const Wizzy::Exception & e)
     {
         WZ_CORE_CRITICAL(e.GetUnhandledMessage());
+        throw e;
     }
 
 	return 0;

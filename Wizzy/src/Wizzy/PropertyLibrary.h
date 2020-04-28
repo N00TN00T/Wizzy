@@ -15,13 +15,13 @@ namespace Wizzy
 		~PropertyTable();
 
 		template <typename T>
-		inline void SetProperty(const string& key, T value) 
+		inline void Set(const string& key, T value) 
 		{ 
 			if (m_properties.find(key) == m_properties.end())
 			{
 				auto prop = Property(value);
 				m_properties[key] = prop;
-				m_propKeys.push_back(key);
+				m_propKeys.emplace(key);
 			}
 			else
 			{
@@ -29,12 +29,12 @@ namespace Wizzy
 			}
 		}
 		template <typename T>
-		inline T& GetProperty(const string& key) const
+		inline T& Get(const string& key) const
 		{
 			WZ_CORE_ASSERT(m_properties.find(key) != m_properties.end(), "Tried getting a non-existent property");
 
 #define __TRY_GET(tt) auto value = std::get_if<tt>(&m_properties.at(key).value); \
-			WZ_CORE_ASSERT(value != nullptr, "Type mismatch when getting property. Requested '{0}'", typestr(T)); \
+			WZ_CORE_ASSERT(value != nullptr, "Type mismatch when getting property. Requested " + typestr(T)); \
 			return *(T*)(value);
 
 			if (IS_DECIMAL(T)) 
@@ -59,27 +59,29 @@ namespace Wizzy
 			}
 		}
 		template <typename T>
-		inline bool IsProperty(const string& key) const
+		inline bool Is(const string& key) const
 		{
 			return	m_properties.find(key) != m_properties.end()
 					&& ToTypeIndex<T>() == m_properties.at(key).value.index();
 		}
 
-		bool ExistsProperty(const string& key);
+		bool Exists(const string& key);
 
-		void DeleteProperty(string name);
+		void Delete(string name);
 
-		void Clear();
+		void ClearAll();
 
 		string ToString(const string& propKey) const;
 
 		string Serialize() const;
 		void Deserialize(string data);
 
-		inline const std::vector<string>& GetKeys() const
+		inline const std::unordered_set<string>& GetKeys() const
 		{
 			return m_propKeys;
 		}
+
+		void Add(const PropertyTable& other, bool overwrite = true);
 
 	private:
 		template <typename T>
@@ -109,7 +111,7 @@ namespace Wizzy
 		string ProcessString(string str);
 
 	private:
-		std::vector<string> m_propKeys;
+		std::unordered_set<string> m_propKeys;
 		std::unordered_map<string, Property> m_properties;
 	};
 

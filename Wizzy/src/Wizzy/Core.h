@@ -1,17 +1,23 @@
 #pragma once
 
-#ifdef WZ_PLATFORM_WINDOWS
-	#ifdef WZ_EXPORT
-		#define WZ_API __declspec(dllexport)
+#define WZ_STATIC
+
+#ifndef WZ_STATIC
+	#ifdef WZ_PLATFORM_WINDOWS
+		#ifdef WZ_EXPORT
+			#define WZ_API __declspec(dllexport)
+		#else
+			#define WZ_API __declspec(dllimport)
+		#endif
 	#else
-		#define WZ_API __declspec(dllimport)
+		#ifdef WZ_EXPORT
+			#define WZ_API __attribute__((visibility("default")))
+		#else
+			#define WZ_API
+		#endif
 	#endif
 #else
-	#ifdef WZ_EXPORT
-		#define WZ_API __attribute__((visibility("default")))
-	#else
-		#define WZ_API
-	#endif
+	#define WZ_API
 #endif
 
 #if !defined(WZ_PLATFORM_WINDOWS) && !defined(WZ_PLATFORM_LINUX)
@@ -54,8 +60,8 @@
 	#define WZ_CORE_ASSERT(x, ...) EMMIT_ASSERTION_IF_FALSE(x, __VA_ARGS__)*/
 
 
-	#define WZ_ASSERT(x,...) x;
-	#define WZ_CORE_ASSERT(x,...)x;
+	#define WZ_ASSERT(x,...)
+	#define WZ_CORE_ASSERT(x,...)
 
 #endif
 
@@ -69,7 +75,7 @@
 #define WZ_MAKE_VERSION(major, minor, patch) (std::to_string(major) + "." + std::to_string(minor) + "." + std::to_string(patch))
 #define WZ_VERSION_MAJOR 0
 #define WZ_VERSION_MINOR 1
-#define WZ_VERSION_PATCH 3
+#define WZ_VERSION_PATCH 5
 #define WZ_VERSION	WZ_MAKE_VERSION(WZ_VERSION_MAJOR, WZ_VERSION_MINOR, WZ_VERSION_PATCH)
 
 #define WZ_VERSION_SUM(major, minor, patch)		(major * 1000 + minor * 100 + patch)
@@ -98,7 +104,8 @@
 } \
 WZ_CORE_ASSERT(false, "Invalid renderer API selected"); \
 
-#define WZ_NULL_RESOURCE_HANDLE 	0
+#define WZ_NULL_RESOURCE_HANDLE 	::Wizzy::Resource::Handle::null()
+#define WZ_NULL_ID					0
 
 #define WZ_UNLOADED_TEXTURE_COLOR   ::Wizzy::Color::red
 #define WZ_INVALID_TEXTURE_COLOR    ::Wizzy::Color::magenta
@@ -112,8 +119,8 @@ WZ_CORE_ASSERT(false, "Invalid renderer API selected"); \
 
 // Serialization
 
-#define WZ_TOKEN_HEADER							"!½WZ\n"
-#define WZ_TOKEN_FOOTER							"\nWZ½!"
+#define WZ_TOKEN_HEADER							"!ï¿½WZ\n"
+#define WZ_TOKEN_FOOTER							"\nWZï¿½!"
 #define WZ_BYTE_TOKEN_BEGIN_FLOAT				((byte)4)
 #define WZ_BYTE_TOKEN_BEGIN_INT					((byte)5)
 #define WZ_BYTE_TOKEN_BEGIN_STRING				((byte)6)

@@ -170,7 +170,7 @@ namespace Wizzy {
 		EVENT_CLASS_TYPE(app_shutdown)
 			EVENT_CLASS_CATEGORY(category_application)
 
-			inline const float& GetExitCode() const
+			inline int32 GetExitCode() const
 		{
 			return m_code;
 		}

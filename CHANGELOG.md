@@ -1,5 +1,30 @@
 # CHANGELOG FOR WIZZY
 
+## 0.1.5 - New 2D Renderer
+### Renderer
+- Changed the API to be based on a Pipeline handle so render batches can be seamlessly created between pipelines with different shaders and rendertargets.
+- Use a RAM allocated buffer for writing submissions to and uploading to the GPU, instead of mapping a buffer ptr from the GPU each frame and uploading the changes.
+- Implemented a metrics class to get information about the renderer workload
+- Now has a fallback shader if none is specified (null or invalid handle)
+### ECS
+- Added enabled flags for Systems in the System layer to be able to enable/disable systems in a layer
+- Fixed a crash that occured if there were no entites that had all components required in a system but some of the components exist
+- Serializing & Deserializing now uses the PropertyTable
+### OpenGL
+- Now uses Debug Message Callbacks and logs it if GL 4.5
+### Log
+- Improved debug log messages to be more pleasing to the eye (and print more info)
+### Resource Management
+- Resource handles now asserts that they are the correct type when copied or assigned
+- Resource Handles can no longer be constructed with an integer
+- Resource Meta files are now correctly managed
+### Scripting
+- Added functions for checking types of fields in lua tables
+### Misc
+- Removed tests/examples and created a stress test instead in Sandbox
+- Minor fixes & improvements
+- Heavily improved performance by making sure resource handles are always passed as const &
+
 ## 0.1.4 - Better serialization & scripting improvements
 ### PropertyTable
 - Revamped the PropertyTable serialization/deserialization to something much simpler and readable (text format)
@@ -7,7 +32,7 @@
 ### ScriptContext
 - Made the ScriptContext class more complete with necessary features
 	- Pushing values to the stack
-	- Creating/setting metatables and setting their metaeents
+	- Creating/setting metatables and setting their metaevents
 	- Getting/Setting/Invoking from stack values
 	- Field setting/getting (for tables on stack)
 ### ResourceManagement

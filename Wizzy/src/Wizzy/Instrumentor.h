@@ -62,11 +62,11 @@ namespace Wizzy
 			InternalEndSession();
 		}
 
-		void WriteProfile(const ProfileResult& result)
+		void WriteProfile(ProfileResult& result)
 		{
 			std::stringstream json;
 
-			std::string name = result.Name;
+			std::string& name = result.Name;
 			std::replace(name.begin(), name.end(), '"', '\'');
 
 			json << ",{";
@@ -144,7 +144,8 @@ namespace Wizzy
 			long long start = std::chrono::time_point_cast<std::chrono::microseconds>(m_StartTimepoint).time_since_epoch().count();
 			long long end = std::chrono::time_point_cast<std::chrono::microseconds>(endTimepoint).time_since_epoch().count();
 
-			Instrumentor::Get().WriteProfile({ m_Name, start, end, std::this_thread::get_id() });
+			ProfileResult res = { m_Name, start, end, std::this_thread::get_id() };
+			Instrumentor::Get().WriteProfile(res);
 
 			m_Stopped = true;
 		}

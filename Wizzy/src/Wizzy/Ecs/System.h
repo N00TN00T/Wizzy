@@ -7,8 +7,9 @@ namespace Wizzy {
 	class System {
 	public:
 		enum ComponentFlags {
-			FLAG_NONE = 0, FLAG_OPTIONAL = 1, FLAG_OPTIONAL_MIN_1 = 2
+			component_flag_none = 0, component_flag_optional = 1, flag_optional_min_1 = 2
 		};
+		//virtual void Init(ComponentGroup& components) const {}
 		virtual void OnEvent(const Wizzy::Event& e,
 							 ComponentGroup& components) const = 0;
 		inline const std::vector<StaticCId>& GetTypeIds() const { return m_typeIds; }
@@ -20,10 +21,10 @@ namespace Wizzy {
 		bool IsSubscribed(Wizzy::EventType eventId) const;
 
 	protected:
-		void AddComponentType(StaticCId type, ComponentFlags flags = FLAG_NONE);
+		void AddComponentType(StaticCId type, ComponentFlags flags = component_flag_none);
 		template <typename TComponent>
-		void AddComponentType(ComponentFlags flags = FLAG_NONE);
-		void AddAllComponentTypes(ComponentFlags flags = FLAG_NONE);
+		void AddComponentType(ComponentFlags flags = component_flag_none);
+		void AddAllComponentTypes(ComponentFlags flags = component_flag_none);
 		void Subscribe(Wizzy::EventType eventId);
 		void SubscribeAll();
 
@@ -40,10 +41,11 @@ namespace Wizzy {
 	class SystemLayer {
 	public:
 		template <typename TSystem>
-		inline void AddSystem() {
+		inline void AddSystem(bool enabled = true) {
 			auto _newSystem = new TSystem;
 			WZ_CORE_ASSERT(_newSystem->IsValid(), "Invalid system");
 			m_systems.push_back(_newSystem);
+			m_systemEnabledFlags[_newSystem] = enabled;
 		}
 		template <typename TSystem>
 		inline void RemoveSystem() {
@@ -55,14 +57,42 @@ namespace Wizzy {
 			}
 		}
 
-		inline size_t SystemCount() const { return m_systems.size(); }
-
-		inline const System* operator[](size_t index) const {
-			WZ_CORE_ASSERT(index >= 0 && index < m_systems.size(), "System layer index out of range");
-			return m_systems.at(index);
+		template <typename TSystem>
+		inline void DisableSystem()
+		{
+			for (int i = 0; i < m_systems.size(); i++)
+			{
+				if (typestr(TSystem) == typestr(m_systems[i]))
+				{
+					m_systemEnabledFlags[m_systems[i]] = false;
+				}
+			}
 		}
+
+		template <typename TSystem>
+		inline void EnableSystem()
+		{
+			for (int i = 0; i < m_systems.size(); i++)
+			{
+				if (typestr(TSystem) == typestr(m_systems[i]))
+				{
+					m_systemEnabledFlags[m_systems[i]] = true;
+				}
+			}
+		}
+
+		inline bool Enabled(System* s) const 
+		{ 
+			WZ_CORE_ASSERT(m_systemEnabledFlags.find(s) != m_systemEnabledFlags.end(),
+				"System not in system layer");
+			return m_systemEnabledFlags.at(s); 
+		}
+
+		inline const std::vector<System*> GetSystems() const { return m_systems; }
+
 	private:
 		std::vector<System*> m_systems;
+		std::unordered_map<System*, bool> m_systemEnabledFlags;
 	};
 
 	template<typename TComponent>

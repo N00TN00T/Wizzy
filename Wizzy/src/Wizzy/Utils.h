@@ -68,7 +68,7 @@ namespace Wizzy {
 		_ret.push_back(std::vector<T>());
 		int32 vectorIndex = 0;
 
-		for (int i = 0; i < v.size() - delimiter.size(); i++)
+		for (size_t i = 0; i < v.size() - delimiter.size(); i++)
 		{
 			if (memcmp(&v[i], delimiter.data(), delimiter.size()) == 0)
 			{

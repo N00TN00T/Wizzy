@@ -2,16 +2,15 @@
 
 #include <glad/glad.h>
 
-#define STB_IMAGE_IMPLEMENTATION
-#include <stb_image.h>
-#define STB_IMAGE_WRITE_IMPLEMENTATION
-#include <stb_image_write.h>
+#define STB_IMAGE_STATIC
+
 
 #include "Wizzy/Renderer/Texture.h"
 #include "Wizzy/platform/OpenGL/GLTexture.h"
 #include "Wizzy/platform/OpenGL/GLErrorHandling.h"
 #include "Wizzy/platform/OpenGL/GLAPI.h"
 #include "Wizzy/WizzyExceptions.h"
+#include "Wizzy/ImageImporter.h"
 
 #define DEFAULT_WRAP_MODE       (GL_REPEAT)
 #define DEFAULT_MIN_FILTER_MODE (GL_LINEAR_MIPMAP_LINEAR)
@@ -20,16 +19,16 @@
 namespace Wizzy {
     GLTexture::GLTexture(const ResData& encoded, const PropertyTable& flags)
         : Texture(encoded, flags) {
-        stbi_set_flip_vertically_on_load(true);
-        auto decoded = stbi_load_from_memory(encoded.data(), encoded.size(), &m_width, &m_height, &m_channels, 0);
+        Image::set_vertical_flip_on_load(true);
+        auto decoded = Image::decode_image(encoded.data(), encoded.size(), m_width, m_height, m_channels);
         if (decoded)
         {
             Init(decoded);
-            stbi_image_free(decoded);
+            Image::free_image(decoded);
         }
         else
         {
-            WZ_THROW(Exception, "Failed loading texture: '" + string(stbi_failure_reason()) + "'");
+            WZ_THROW(Exception, "Failed loading texture: '" + string(Image::get_failure_reason()) + "'");
             return;
         }
     }
@@ -76,11 +75,11 @@ namespace Wizzy {
         glGetTexImage(GL_TEXTURE_2D, 0, GL_TextureChannelsToAPIFormat(m_channels), GL_UNSIGNED_BYTE, pixels);
         glBindTexture(GL_TEXTURE_2D, 0);
 
-        int32 len;
-        stbi_flip_vertically_on_write(true);
-        byte* serializedBytes = stbi_write_png_to_mem(pixels, 0, m_width, m_height, m_channels, &len);
+        int32 len = 0;
+        Image::set_vertical_flip_on_write(true);
+        byte* serializedBytes = Image::encode_png(pixels, m_width, m_height, m_channels, len);
         ResData data(serializedBytes, serializedBytes + len);
-
+        
         delete serializedBytes;
         free(pixels);
 
@@ -100,10 +99,10 @@ namespace Wizzy {
         GLenum _minFilterMode = DEFAULT_MIN_FILTER_MODE;
         GLenum _magFilterMode = DEFAULT_MAG_FILTER_MODE;
 
-        int32 _wrapModeBit = m_props.IsProperty<int32>("WrapMode") ?
-            m_props.GetProperty<int32>("WrapMode")
-            : GetTemplateProps().GetProperty<int32>("WrapMode");
-        m_props.SetProperty<int32>("WrapMode", _wrapModeBit);
+        int32 _wrapModeBit = m_props.Is<int32>("WrapMode") ?
+            m_props.Get<int32>("WrapMode")
+            : GetTemplateProps().Get<int32>("WrapMode");
+        m_props.Set<int32>("WrapMode", _wrapModeBit);
 
         switch (_wrapModeBit)
         {
@@ -112,10 +111,10 @@ namespace Wizzy {
         case WZ_WRAP_MODE_REPEAT: _wrapMode = GL_REPEAT; break;
         }
 
-        int32 _minFilterModeBit = m_props.IsProperty<int32>("MinFilterMode") ?
-            m_props.GetProperty<int32>("MinFilterMode")
-            : GetTemplateProps().GetProperty<int32>("MinFilterMode");
-        m_props.SetProperty<int32>("MinFilterMode", _minFilterModeBit);
+        int32 _minFilterModeBit = m_props.Is<int32>("MinFilterMode") ?
+            m_props.Get<int32>("MinFilterMode")
+            : GetTemplateProps().Get<int32>("MinFilterMode");
+        m_props.Set<int32>("MinFilterMode", _minFilterModeBit);
 
         switch (_minFilterModeBit)
         {
@@ -127,10 +126,10 @@ namespace Wizzy {
         case WZ_MIN_FILTER_MODE_LINEAR_MIPMAP_LINEAR: _minFilterMode = GL_LINEAR_MIPMAP_LINEAR; break;
         }
 
-        int32 _magFilterModeBit = m_props.IsProperty<int32>("MagFilterMode") ?
-            m_props.GetProperty<int32>("MagFilterMode")
-            : GetTemplateProps().GetProperty<int32>("MagFilterMode");
-        m_props.SetProperty<int32>("MagFilterMode", _magFilterModeBit);
+        int32 _magFilterModeBit = m_props.Is<int32>("MagFilterMode") ?
+            m_props.Get<int32>("MagFilterMode")
+            : GetTemplateProps().Get<int32>("MagFilterMode");
+        m_props.Set<int32>("MagFilterMode", _magFilterModeBit);
 
         switch (_magFilterModeBit)
         {
@@ -168,6 +167,8 @@ namespace Wizzy {
         if (mipmap) {
             GL_CALL(glGenerateMipmap(GL_TEXTURE_2D));
         }
+
+       
 
         WZ_CORE_INFO("Successfully Initialized GL Texture (w: {0}, h: {1}, c:{2}) and assigned id '{3}'", m_width, m_height, m_channels, m_textureId);
     }

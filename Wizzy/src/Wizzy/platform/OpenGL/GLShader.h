@@ -41,7 +41,7 @@ namespace Wizzy {
 
 
         inline virtual ResData Serialize() const override {
-            return ResData((const byte*)m_rawSource.data(), (const byte*)m_rawSource.data() + m_rawSource.size());
+            return ResData((const byte*)m_rawSource.data(), (const byte*)m_rawSource.data() + m_rawSource.length());
 		}
 
     protected:

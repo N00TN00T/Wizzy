@@ -15,6 +15,7 @@
 #include "Wizzy/Events/CharEvent.h"
 #include "Wizzy/Events/KeyEvent.h"
 #include "Wizzy/Events/MouseEvent.h"
+#include "Wizzy/Events/ClientEvent.h"
 
 #include "Wizzy/Renderer/Buffers.h"
 #include "Wizzy/Renderer/RenderTarget.h"
@@ -35,5 +36,7 @@
 #include "Wizzy/Rect.h"
 
 #include "Wizzy/JobSystem/JobSystem.h"
+
+#include "Wizzy/Instrumentor.h"
 
 namespace wz = ::Wizzy;

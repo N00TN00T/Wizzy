@@ -52,8 +52,6 @@
 #define WZ_KEY_GRAVE_ACCENT       96  /* ` */
 #define WZ_KEY_WORLD_1            161 /* non-US #1 */
 #define WZ_KEY_WORLD_2            162 /* non-US #2 */
-
-/* Function keys */
 #define WZ_KEY_ESCAPE             256
 #define WZ_KEY_ENTER              257
 #define WZ_KEY_TAB                258

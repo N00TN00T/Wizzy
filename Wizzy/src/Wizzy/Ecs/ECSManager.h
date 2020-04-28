@@ -1,28 +1,10 @@
 #pragma once
 
 #include "Wizzy/Ecs/System.h"
+#include "Wizzy/PropertyLibrary.h"
 
 namespace Wizzy
 {
-
-	/*					ECS.h
-
-		This is where the parts of the ECS-system are
-		tied together to form the ECS-system itself.
-		The ECS-system is defined by
-		- Entites
-			* A collection of components
-		- Components
-			* Pure data
-		- Systems
-			* Logic with the use of data (components)
-
-		This is a pure data oriented ECS-system
-		([Entites - Components - Systems]-system), which
-		is not to be confused with the more commonly used
-		systems like ECS (Entity-component system).
-
-	*/
 
 	/*
 		Used for remembering the index in the component
@@ -105,16 +87,14 @@ namespace Wizzy
 
 		void NotifySystems(const SystemLayer& systems, const Wizzy::Event& e) const;
 
-		void Save(string file) const;
-		std::vector<byte> Save() const;
-		void Load(string file);
-		void Load(std::vector<byte> data);
+		PropertyTable Serialize() const;
+		void Deserialize(const PropertyTable& table);
 
 		void Clear();
 
 	private:
 		std::unordered_map<StaticCId, ComponentMem>		m_components;
-		std::vector<Entity*>							m_entites;
+		std::vector<Entity*>							m_entities;
 		mutable std::mutex								m_updateMutex;
 
 		const string TOKEN_ENTITY = "ENTITY";
@@ -166,7 +146,7 @@ namespace Wizzy
 	inline TComponent* ECSManager::GetComponent(EntityHandle entity) const
 	{
 		return static_cast<TComponent*>(GetComponentInternal(ToRawType(entity),
-			m_components[TComponent::staticId],
+			m_components.at(TComponent::staticId),
 			TComponent::staticId));
 	}
 }

@@ -11,7 +11,7 @@ namespace Wizzy {
     public:
         __HANDLE_DEF;
         Texture(const ResData& data, const PropertyTable& flags);
-        Texture(byte *rawData, int32 width, int32 height, int32 channels, const PropertyTable& flags = *s_templateProps);
+        Texture(byte *rawData, int32 width, int32 height, int32 channels, const PropertyTable& flags = PropertyTable());
         virtual ~Texture();
 
         
@@ -36,7 +36,7 @@ namespace Wizzy {
         static
         Resource* Create(const ResData& data, const PropertyTable& props);
         static
-        Texture* Create(byte *rawData, int32 width, int32 height, int32 channels, const PropertyTable& props = *s_templateProps);
+        Texture* Create(byte *rawData, int32 width, int32 height, int32 channels, const PropertyTable& props = PropertyTable());
         
         inline static bool IsFileBinary() { return true; }
 

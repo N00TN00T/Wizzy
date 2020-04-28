@@ -175,12 +175,13 @@ project "Wizzy"
   filter "configurations:Release*"
     defines "WZ_CONFIG_RELEASE"
     runtime "Release"
-    symbols "On"
+	symbols "On"
     optimize "On"
 
   filter "configurations:Dist*"
     defines { "WZ_CONFIG_DIST", "WZ_DISABLE_ASSERTS" }
     runtime "Release"
+	symbols "Off"
     optimize "On"
 
 --[[------------------------------------------------------------------------------------]]
@@ -362,6 +363,7 @@ project "Sandbox"
   filter "configurations:Dist*"
     defines { "WZ_CONFIG_DIST", "WZ_DISABLE_ASSERTS" }
     runtime "Release"
+	symbols "Off"
     optimize "On"
 
 --[[------------------------------------------------------------------------------------]]

@@ -1,6 +1,7 @@
 #include "wzpch.h"
 
 #include "Wizzy/WizzyExceptions.h"
+#include "Wizzy/Resource/Resource.h"
 
 namespace Wizzy
 {
@@ -12,7 +13,7 @@ namespace Wizzy
 		m_handle = true;\
 	}\
 	tname::tname(const string& path, u32 line, const string& fn)\
-		: ResourceException("", line, fn), m_path(path), m_id(WZ_NULL_RESOURCE_HANDLE), m_name("N/A")\
+		: ResourceException("", line, fn), m_path(path), m_id(WZ_NULL_RESOURCE_HANDLE.id), m_name("N/A")\
 	{\
 		m_handle = false;\
 	}\
@@ -72,6 +73,26 @@ namespace Wizzy
 	string ResourceInvalidHandleException::GetMessage() const
 	{
 		return m_messagePrefix + " Invalid handle id " + std::to_string(m_id);
+	}
+
+	ResourceHandleRegisteredException::ResourceHandleRegisteredException(string existing, u32 id, u32 line, const string& fn)
+		: ResourceException("", line, fn), msg("Handle with id '" + std::to_string(id) + "' already exists for " + existing)
+	{
+	}
+
+	string ResourceHandleRegisteredException::GetSubMessage() const
+	{
+		return msg;
+	}
+
+	ResourceIsRuntimeException::ResourceIsRuntimeException(string context, u32 id, u32 line, const string& fn)
+		: ResourceException("" + context, line, fn), msg("Handle with id '" + std::to_string(id) + "' is runtime. ")
+	{
+	}
+
+	string ResourceIsRuntimeException::GetSubMessage() const
+	{
+		return msg;
 	}
 
 }

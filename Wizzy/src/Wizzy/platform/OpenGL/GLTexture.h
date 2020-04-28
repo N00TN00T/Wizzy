@@ -19,8 +19,6 @@ namespace Wizzy {
         virtual ResData Serialize() const override;
 
     private:
-        void Init(byte* data);
-
-    public:
+        void Init(byte* data); 
     };
 }

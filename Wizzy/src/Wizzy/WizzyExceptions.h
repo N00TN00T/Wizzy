@@ -133,11 +133,31 @@ namespace Wizzy
 		u32 m_id;
 	};
 
-	class ParseErrorException : public Exception
+	class ResourceHandleRegisteredException : public ResourceException
 	{
 	public:
-		ParseErrorException(const string& msg, int32 parseLine, string errorValue, u32 line, const string& fn)
-			: Exception(msg + "( '" + errorValue + "', line " + std::to_string(parseLine) + ")", line, fn)
+		ResourceHandleRegisteredException(string existing, u32 id, u32 line, const string& fn);
+		virtual string GetSubMessage() const override;
+
+	private:
+		string msg;
+	};
+
+	class ResourceIsRuntimeException : public ResourceException
+	{
+	public:
+		ResourceIsRuntimeException(string context, u32 id, u32 line, const string& fn);
+		virtual string GetSubMessage() const override;
+
+	private:
+		string msg;
+	};
+
+	class TableParseErrorException : public Exception
+	{
+	public:
+		TableParseErrorException(const string& msg, int32 parseLine, string errorValue, u32 line, const string& fn)
+			: Exception(msg + "( '" + errorValue + "'), line " + std::to_string(parseLine), line, fn)
 		{
 		}
 	};

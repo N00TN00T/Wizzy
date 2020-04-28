@@ -42,13 +42,14 @@ namespace Wizzy
 	{
 		string				resPath;
 		u32					resourceIndex;
-		PropertyTable		props;
+		PropertyTable		metaData;
 		ResourceCreateFn	createFn;
 		ResData				source;
 		string				type;
 		bool				runtime = false;
 		bool				binary;
 		std::filesystem::file_time_type lastWrite;
+		uId id;
 
 		inline string name() const 
 		{ 
@@ -83,48 +84,48 @@ namespace Wizzy
 
 		// Load a file already in the resource directory and register it to a handle
 		template <typename T>
-		static typename T::Handle Load(const string& resPath, uId id = 0, const PropertyTable& defaultProps = PropertyTable());
+		static typename T::Handle Load(const string& resPath, const PropertyTable& defaultProps = PropertyTable());
 
 		// Load a file associated with given handle
-		static void Load(Resource::Handle handle);
+		static void Load(const Resource::Handle& handle);
 
 		// Overwrite file data with the serialized data of the resource in memory
-		static void Save(Resource::Handle handle);
+		static void Save(const Resource::Handle& handle);
 
-		static void Unload(Resource::Handle handle);
+		static void Unload(const Resource::Handle& handle);
 
-		static void Reload(Resource::Handle handle, const PropertyTable& props);
-		static void Reload(Resource::Handle handle);
+		static void Reload(const Resource::Handle& handle, const PropertyTable& props);
+		static void Reload(const Resource::Handle& handle);
 
-		static void Delete(Resource::Handle handle);
+		static void Delete(const Resource::Handle& handle);
 
 		template <typename T>
-		static T& Get(typename T::Handle handle);
+		static T& Get(const typename T::Handle& handle);
 		template <typename T>
-		static bool TryGet(typename T::Handle handle, T*& outResource);
+		static bool TryGet(const typename T::Handle& handle, T*& outResource);
 
 		// Returns true if handle is registered correctly
-		static bool IsValid(Resource::Handle handle);
+		static bool IsValid(const Resource::Handle& handle);
 		// Returns true if handle to file is registered correctly
 		static bool IsValid(const string& resPath);
 		// Returns true if handle is valid an associated resource is loaded
-		static bool IsLoaded(Resource::Handle handle);
+		static bool IsLoaded(const Resource::Handle& handle);
 
 		static bool IsFileRegistered(const string& resFile);
 
 		template <typename T>
-		inline static bool Is(Resource::Handle hnd);
+		inline static bool Is(const Resource::Handle& hnd);
 
 		// Returns the handle for either resPath or name
 		static Resource::Handle HandleOf(const string& str);
 		
 		static string NameOf(const Resource::Handle& hnd);
 
-		inline static const std::set<Resource::Handle>& GetHandles() { return s_handles; }
+		inline static std::set<Resource::Handle> GetHandles() { return s_handles; }
 
 		template <typename T>
-		static void ForEach(std::function<void(const Resource::Handle&)> fn);
-		static void ForEach(std::function<void(const Resource::Handle&)> fn);
+		static void ForEach(std::function<bool(const Resource::Handle&)> fn);
+		static void ForEach(std::function<bool(const Resource::Handle&)> fn);
 
 		static void SetResourceDir(const string& dir);
 		inline static const string& GetResourceDir() { return s_resourceDir; }
@@ -132,17 +133,24 @@ namespace Wizzy
 		// Finds errors and throws exceptions for them
 		static void Validate(bool checkSources = false);
 
-		static const ResourceInfo& GetInfoFor(Resource::Handle handle);
+		static const ResourceInfo& GetInfoFor(const Resource::Handle& handle);
+		static PropertyTable& GetMetaData(const Resource::Handle& handle);
+
+		static Resource::Handle IdToHandle(uId id);
 
 	private:
 		template <typename T>
-		static typename T::Handle Register(string resPath, const PropertyTable& props);
-		template <typename T>
-		static typename T::Handle RegisterWithId(string resPath, uId id, const ResData& fileData, const PropertyTable& props, bool runtime = false);
+		static typename T::Handle Register(string resPath, const PropertyTable& props, bool runtime = false);
 
 		static string UniquenizePathName(const string& path);
 
 		static void DispatchEvent(ResourceEvent& e);
+
+		static void WriteMeta(const Resource::Handle& hnd);
+		static PropertyTable ReadMeta(const Resource::Handle& hnd);
+		static PropertyTable ReadMeta(const string& resPath);
+		static bool HasMeta(const Resource::Handle& hnd);
+		static bool HasMeta(const string& resPath);
 
 	private:
 		static std::vector<Resource*> s_resource;
@@ -180,7 +188,7 @@ namespace Wizzy
 	template<typename T>
 	inline typename T::Handle ResourceManagement::AddRuntimeResource(T* resource, const PropertyTable& props)
 	{
-		auto hnd = RegisterWithId<T>("runtime/", ++s_idCounter, ResData(), props, true);
+		auto hnd = Register<T>("runtime/", props, true);
 		s_resource[GetInfoFor(hnd).resourceIndex] = resource;
 		return hnd;
 	}
@@ -207,11 +215,7 @@ namespace Wizzy
 		auto handle = Register<T>(resPath, props);
 
 		auto& info = s_resourceInfo[handle];
-		static std::mutex mutex;
-		{
-			std::lock_guard<std::mutex> lock(mutex);
-			s_resource[info.resourceIndex] = resource;
-		}
+		s_resource[info.resourceIndex] = resource;
 		
 		info.source = serialized;
 
@@ -219,107 +223,89 @@ namespace Wizzy
 	}
 
 	template<typename T>
-	inline typename T::Handle ResourceManagement::Load(const string& resPath, uId id, const PropertyTable& props)
+	inline typename T::Handle ResourceManagement::Load(const string& resPath, const PropertyTable& props)
 	{
-		if (id == 0) id = ++s_idCounter;
-		
-		// Look for config file and if it exists, try to deserialize to props and send instead
-
 		WZ_CORE_TRACE("Loading a resource already in reasource dir");
-		PropertyTable cfgProps = props;
 
-		string configFile = s_resourceDir + resPath + ".wz";
-		if (ulib::File::exists(configFile))
-		{
-			WZ_CORE_TRACE("Config file found: {0}", configFile);
-			string cfgData = "";
-			if (!ulib::File::read(configFile, &cfgData, T::IsFileBinary()))
-			{
-				WZ_THROW(ResourceFileAccessException, configFile);
-			}
-			
-			try
-			{
-				cfgProps.Deserialize(cfgData);
-				WZ_CORE_TRACE("Config file deserialized");
-			}
-			catch (const Exception& e)
-			{
-				WZ_CORE_ERROR("Failed to deseralize config file {0}", configFile);
-				WZ_CORE_ERROR("    Reason: {0}", e.GetMessage());
-			}
-		}
-
-		ResData fileData;
-		if (!ulib::File::read(s_resourceDir + resPath, &fileData, T::IsFileBinary()))
-		{
-			WZ_THROW(ResourceFileAccessException, resPath);
-		}
-		auto handle = RegisterWithId<T>(resPath, id, fileData, cfgProps);
+		auto handle = Register<T>(resPath, props);
+		WZ_CORE_ASSERT(dynamic_cast<T::Handle*>(&handle), "Handle is incorrect type");
 		Load(handle);
 
 		return handle;
 	}
 
 	template<typename T>
-	inline T& ResourceManagement::Get(typename T::Handle handle)
+	inline T& ResourceManagement::Get(const typename T::Handle& handle)
 	{
-		WZ_CORE_ASSERT(IsValid(handle) && IsLoaded(handle), "Tried retrieving resource by invalid handle");
+		WZ_CORE_ASSERT(IsLoaded(handle), "Handle unloaded");
+		WZ_CORE_ASSERT(Is<T>(handle), "Handle type mistmatch");
 
 		return (T&)*s_resource.at(s_resourceInfo[handle].resourceIndex);
 	}
 
 	template<typename T>
-	inline bool ResourceManagement::TryGet(typename T::Handle handle, T*& outResource)
+	inline bool ResourceManagement::TryGet(const typename T::Handle& handle, T*& outResource)
 	{
 		if (IsValid(handle) && IsLoaded(handle))
 		{
-			outResource = (T*)s_resource[s_resourceInfo[handle].resourceIndex];
-			return true;
+			outResource = dynamic_cast<T*>(s_resource[s_resourceInfo[handle].resourceIndex]);
+			return outResource != NULL;
 		}
 		outResource = NULL;
 		return false;
 	}
 
 	template<typename T>
-	inline void ResourceManagement::ForEach(std::function<void(const Resource::Handle&)> fn)
+	inline void ResourceManagement::ForEach(std::function<bool(const Resource::Handle&)> fn)
 	{
 		for (const auto& hnd : s_handles)
 		{
 			WZ_DEBUG("{0}, {1}", typestr(T), GetInfoFor(hnd).type);
 			if (typestr(T) == GetInfoFor(hnd).type || typestr(T) == typestr(Resource))
 			{
-				fn(hnd);
+				if (!fn(hnd)) break;
 			}
 		}
 	}
 
 	template<typename T>
-	inline typename T::Handle ResourceManagement::Register(string resPath, const PropertyTable& props)
+	inline typename T::Handle ResourceManagement::Register(string resPath, const PropertyTable& props, bool runtime)
 	{
 		WZ_CORE_TRACE("Registering a resource of type '{0}' to path '{1}'", typestr(T), resPath);
 
-		if (!ulib::File::exists(s_resourceDir + resPath))
+		if (!ulib::File::exists(s_resourceDir + resPath) && !runtime)
 		{
 			WZ_THROW(ResourceInvalidPathException, resPath);
 		}
 
 		ResData fileData;
-		if (!ulib::File::read(s_resourceDir + resPath, &fileData, T::IsFileBinary()))
+		if (!ulib::File::read(s_resourceDir + resPath, &fileData, T::IsFileBinary()) && !runtime)
 		{
 			WZ_THROW(ResourceFileAccessException, resPath);
 		}
 
-		return RegisterWithId<T>(resPath, ++s_idCounter, fileData, props);
-	}
+		uId id = 0;
 
-	template<typename T>
-	inline typename T::Handle ResourceManagement::RegisterWithId(string resPath, uId id, const ResData& fileData, const PropertyTable& props, bool runtime)
-	{
+		if (!runtime && HasMeta(resPath))
+		{
+			auto metaData = ReadMeta(resPath);
+
+			if (metaData.Is<int32>("id"))
+			{
+				id = metaData.Get<int32>("id");
+				s_idCounter = id + 1;
+			}
+		}
+
+		if (id == 0)
+		{
+			id = ++s_idCounter;
+		}
+
 		WZ_CORE_TRACE("Creating a handle with ID {0}", id);
 
 		auto handle = T::Handle(id);
-
+		WZ_CORE_ASSERT(handle.Is<T>(), "Handle init error");
 		ResourceInfo info =
 		{
 			resPath,
@@ -330,11 +316,15 @@ namespace Wizzy
 			typestr(T),
 			runtime,
 			T::IsFileBinary(),
-			std::filesystem::file_time_type::clock::now()
+			std::filesystem::file_time_type::clock::now(),
+			id
 		};
 
-		info.props.SetProperty("SourceFile", resPath);
-		info.props.SetProperty("Type", typestr(T));
+		if (info.metaData.GetKeys().size() == 0) info.metaData = T::GetTemplateProps();
+
+		info.metaData.Set("resPath", resPath);
+		info.metaData.Set("type", typestr(T));
+		info.metaData.Set<int32>("id", id);
 
 		if (s_freeIndicesCount > 0)
 		{
@@ -352,36 +342,33 @@ namespace Wizzy
 		{
 			s_resource.push_back(nullptr);
 		}
-		WZ_CORE_ASSERT(s_handles.emplace(handle).second, "Handle already exists, make sure to load resource list before adding new resources");
-		
-		static std::mutex mutex;
+
+
+		bool alreadyExists = !s_handles.emplace(handle).second;
+
+		if (alreadyExists)
 		{
-			std::lock_guard<std::mutex> lock(mutex);
-			s_resourceInfo[handle] = info;
-			s_idCounter = std::max(s_idCounter, id + 1);
+			WZ_THROW(ResourceHandleRegisteredException, info.resPath, handle.id);
 		}
+
+		s_resourceInfo[handle] = info;
+		s_idCounter = std::max(s_idCounter, id + 1);
+
+		if (!runtime)
+		{
+			WriteMeta(handle);
+		}
+
+		WZ_CORE_INFO("Registered resource{0}:\n    Type:    {1}\n    ResPath: {2}\n    Id:      {3}",
+			runtime ? " (runtime)" : "", typestr(T), resPath, handle.id);
 
 		DispatchEvent(ResourceRegisteredEvent(handle));
-
-		if (info.runtime)
-		{
-			WZ_CORE_INFO("Registered resource (RUNTIME):");
-		}
-		else
-		{
-			WZ_CORE_INFO("Registered resource:");
-		}
-		Log::SetExtra(false);
-		WZ_CORE_INFO("    Type:    {0}", typestr(T));
-		WZ_CORE_INFO("    Respath: {0}", resPath);
-		WZ_CORE_INFO("    Id:      {0}", handle.id);
-		Log::SetExtra(true);
 
 		return handle;
 	}
 
 	template <typename T>
-	inline static bool ResourceManagement::Is(Resource::Handle hnd)
+	inline static bool ResourceManagement::Is(const Resource::Handle& hnd)
 	{
 		return IsValid(hnd) && typestr(T) == GetInfoFor(hnd).type;
 	}

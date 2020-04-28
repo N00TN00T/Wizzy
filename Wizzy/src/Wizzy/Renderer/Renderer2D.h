@@ -17,64 +17,132 @@ namespace Wizzy
 
     class Renderer2D
     {
-    private:
+    public:
+        typedef u32 PipelineId;
+
         struct VertexData
         {
-            vec2 pos;
-            vec2 uv;
-            Color color;
-            float textureSlot;
+            vec2    pos;
+            vec2    uv;
+            Color   color;
+            float   textureSlot;
         };
-        // NOTE: The indices will take ~20% more of the memory budget
+        struct Pipeline
+        {
+            friend class Renderer2D;
+        public:
+            Shader::Handle                  hShader         = WZ_NULL_RESOURCE_HANDLE;
+            RenderTarget::Handle            hRenderTarget   = WZ_NULL_RESOURCE_HANDLE;
+            mat4                            camTransform    = mat4(1.f);
+            const size_t                    budget;
+            const size_t                    maxObjects          = budget / OBJECT_SIZE;
+            const size_t                    maxIndices          = maxObjects * 6; 
+            const size_t                    numTextureSlots;
+
+            Pipeline(const size_t& budget = _MB(15));
+            ~Pipeline();
+
+            inline const u32& GetIndexCount() const { return indexCount; }
+            inline bool IsReady() const { return ready; }
+
+        private:
+            VertexBufferPtr                 vbo                 = NULL;
+            VertexArrayPtr                  vao                 = NULL;
+            bool                            ready               = false;
+            VertexData                      *pBufferHead        = NULL;
+            VertexData                      *pBufferCurrent     = NULL;
+            u32                             indexCount          = 0;
+            u32                             slotCount           = 0;
+            std::unordered_map<u32, u32>    textureSlots;
+        };
+
+        struct Metrics
+        {
+            u32 numQuads = 0;
+            u32 numDrawCalls = 0;
+            u32 numIndices = 0;
+            
+            u32 GetNumVertices() const { return numQuads * 4; }
+            u32 GetMemoryUsage() const
+            { return GetNumVertices() * VERTEX_SIZE + numIndices * sizeof(u32); }
+        };
+
+    private:
         static constexpr size_t VERTEX_SIZE             = (sizeof(VertexData));
-        static constexpr size_t MEMORY_BUDGET           = (_MB(150)); // + 20%
-        static constexpr size_t OBJECT_SIZE             = (VERTEX_SIZE * 4);
-        static constexpr size_t MAX_OBJECTS             = (MEMORY_BUDGET / OBJECT_SIZE);
-        static constexpr size_t MAX_INDICES             = (MAX_OBJECTS * 6);
-        static size_t TEXTURE_SLOTS;
+        static constexpr size_t OBJECT_SIZE             = (VERTEX_SIZE * 4) + sizeof(u32) * 4;
     public:
 
-        static void Begin(Shader::Handle hShader, const mat4& cameraTransform = mat4(1), RenderTarget::Handle renderTarget = NULL);
+        static void Init();
+        static void Shutdown();
 
-        static void SubmitImage(Texture::Handle hTexture,  const glm::vec2& position, const glm::vec2 scale, float rotation, const glm::vec4& color, RenderTarget::Handle hRenderTarget = WZ_NULL_RESOURCE_HANDLE);
-        static void SubmitImage(Texture::Handle hTexture, mat4 transform, const glm::vec4& color, RenderTarget::Handle hRenderTarget = WZ_NULL_RESOURCE_HANDLE);
+        static void Begin(Pipeline* pipeline);
 
-        static void SubmitImage(RenderTarget::Handle hTexture, const glm::vec2& position, const glm::vec2 scale, float rotation, const glm::vec4& color, RenderTarget::Handle hRenderTarget = WZ_NULL_RESOURCE_HANDLE);
-        static void SubmitImage(RenderTarget::Handle hTexture, mat4 transform, const glm::vec4& color, RenderTarget::Handle hRenderTarget = WZ_NULL_RESOURCE_HANDLE);
+        static void SubmitTexture(
+            Pipeline* pipeline,
+            const Texture::Handle& hTexture,  
+            const vec2& position, 
+            const vec2 scale, 
+            float rotation, 
+            const Color& color, 
+            const Rect& renderRect = Rect(0, 0, 0, 0)
+        );
+        static void SubmitTexture(
+            Pipeline* pipeline,
+            const Texture::Handle& hTexture, 
+            const mat4& transform, 
+            const Color& color, 
+            const Rect& renderRect = Rect(0, 0, 0, 0)
+        );
 
-        static void SubmitText(const string& text, Font* font, const glm::vec2& position, const glm::vec2 scale, float rotation, const glm::vec4& color, RenderTarget::Handle hRenderTarget = WZ_NULL_RESOURCE_HANDLE);
-        static void SubmitText(const string& text, Font* font, mat4 transform, const glm::vec4& color, RenderTarget::Handle hRenderTarget = WZ_NULL_RESOURCE_HANDLE);
+        static void SubmitRenderTarget(
+            Pipeline* pipeline,
+            const RenderTarget::Handle& hTexture,  
+            const vec2& position, 
+            const vec2 scale, 
+            float rotation, 
+            const Color& color, 
+            const Rect& renderRect = Rect(0, 0, 0, 0)
+        );
+        static void SubmitRenderTarget(
+            Pipeline* pipeline,
+            const RenderTarget::Handle& hTexture, 
+            const mat4& transform, 
+            const Color& color, 
+            const Rect& renderRect = Rect(0, 0, 0, 0)
+        );
 
-        static void SubmitRect(const Rect& rect, const glm::vec4& color, RectMode mode = RectMode::Filled, RenderTarget::Handle hRenderTarget = WZ_NULL_RESOURCE_HANDLE);
-        
-        static void End(RenderTarget::Handle hRenderTarget = WZ_NULL_RESOURCE_HANDLE);
+        static void SubmitRect(
+            Pipeline* pipeline,
+            const Rect& rect, 
+            const Color& color, 
+            RectMode mode = RectMode::Filled, 
+            const Rect& renderRect = Rect(0, 0, 0, 0)
+        );
 
-        static bool IsReady(RenderTarget::Handle hRenderTarget = WZ_NULL_RESOURCE_HANDLE);
+        static void End(Pipeline* pipeline);
+
+        static void Abort(Pipeline* pipeline);
+
+        static void Clear(Pipeline* pipeline);
+
+        inline static const Shader::Handle& GetFallbackShader() { return s_hFallbackShader; }
+
+        inline static const Metrics& GetMetrics() { return s_metrics; }
+        inline static void ResetMetrics() { s_metrics = Metrics(); }
 
     private:
-        static void Init(RenderTarget::Handle hRenderTarget);
-
-        static void Submit(u32 slot, const vec2& size, mat4 transform, const glm::vec4& color, RenderTarget::Handle hRenderTarget = WZ_NULL_RESOURCE_HANDLE);
+        static void Submit(
+            Pipeline* pipeline,
+            u32 textureSlot,
+            const vec2& size,
+            mat4 transform,
+            const Color& color,
+            const Rect& renderRect
+        );
 
     private:
-        struct RenderTargetData
-        {
-            bool ready = false;
-            VertexBufferPtr vbo;
-            VertexArrayPtr vao;
-            bool initialized = false;
-            VertexData* pBufferData;
-            std::unordered_map<u32, u32> textureSlots;
-            u32 slotCount = 0;
-            Shader::Handle hShader;
-            u32 indexCount = 0;
-            u32 submissionCount = 0;
-            std::mutex rendererMutex;
-            Texture::Handle hWhiteTexture;
-            mat4 camTransform;
-        };
-        
-        static RenderTargetData s_windowTargetData;
-        static std::unordered_map<RenderTarget::Handle, RenderTargetData, Resource::Handle::hash> s_renderTargetData;
+        static Texture::Handle s_hWhite1x1Texture;
+        static Shader::Handle s_hFallbackShader;
+        static Metrics s_metrics;
     };
 }

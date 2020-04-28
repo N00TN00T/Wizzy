@@ -10,7 +10,8 @@ namespace Wizzy {
 		key_press, key_release, key_repeat,
 		char_sent,
 		mouse_press, mouse_release, mouse_move, mouse_scroll,
-		resource_register, resource_load, resource_save, resource_unload, resource_delete, resource_file_change
+		resource_register, resource_load, resource_save, resource_unload, resource_delete, resource_file_change,
+		client_event
 	};
 
 	enum EventCategory {
@@ -19,8 +20,9 @@ namespace Wizzy {
 		category_input = BIT(1),
 		category_keyboard = BIT(2),
 		category_mouse = BIT(3),
-		category_mouse_button = BIT(4),
+		category_mouse_button = BIT(5),
 		category_resources = BIT(4),
+		category_client = BIT(6)
 	};
 
 	#define EVENT_CLASS_TYPE(type) static EventType GetStaticType() { return EventType::type; }\

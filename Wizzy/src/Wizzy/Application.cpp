@@ -8,6 +8,7 @@
 #include "Wizzy/ImGuiSystem.h"
 #include "Wizzy/Stopwatch.h"
 #include "Wizzy/JobSystem/JobSystem.h"
+#include "Wizzy/Renderer/Renderer2D.h"
 
 #include "Wizzy/Instrumentor.h"
 
@@ -27,7 +28,7 @@ namespace Wizzy {
 	}
 
 	void Application::OnEvent(Event& e) {
-		WZ_PROFILE_FUNCTION();
+		//WZ_PROFILE_FUNCTION();
 		EventDispatcher _dispatcher(e);
 
 		_dispatcher.Dispatch<WindowCloseEvent>([this](WindowCloseEvent& e) {
@@ -90,13 +91,15 @@ namespace Wizzy {
 		m_engineSystems.AddSystem<ImGuiSystem>();
 
 		JobSystem::Init();
+
 		this->Init();
 
+		Renderer2D::Init();
 
 		DISPATCH_EVENT_LOCAL(AppInitEvent);
 		std::future<void> as;
 		int64 f = 0;
-		//std::thread* renderThread;
+		
 		while (m_running) {
 			string frameStr = "FRAME #" + std::to_string(++f);
 			WZ_PROFILE_SCOPE(frameStr.c_str());
@@ -107,10 +110,6 @@ namespace Wizzy {
 			DISPATCH_EVENT_LOCAL(AppUpdateEvent, m_window->GetDeltaTime());
 
 			DISPATCH_EVENT_LOCAL(AppRenderEvent);
-			//WZ_DEBUG("hi");
-			//as = std::async(std::launch::async, &Application::OnEvent, this, AppRenderEvent());
-
-			//std::thread(&Application::OnEvent, this, AppRenderEvent()).detach();
 
 			DISPATCH_EVENT_LOCAL(AppFrameEndEvent, m_window->GetDeltaTime());
 			
@@ -121,6 +120,8 @@ namespace Wizzy {
 		DISPATCH_EVENT_LOCAL(AppShutdownEvent, 0);
 
 		this->Shutdown();
+
+		Renderer2D::Shutdown();
 
 		WZ_CORE_INFO("WIZZY APPLICATION END");
 

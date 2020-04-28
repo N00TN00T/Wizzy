@@ -29,13 +29,9 @@ namespace Wizzy {
 			s_clientLogger->set_level((spdlog::level::level_enum)level);
 		}
 
-		inline static void SetExtra(bool on) { s_extra = on; }
-		inline static bool Extra() { return s_extra; }
-
 	private:
 		static LoggerPtr s_coreLogger;
 		static LoggerPtr s_clientLogger;
-		static bool s_extra;
 	};
 
     inline std::string LogLevelToString(LogLevel level) {
@@ -52,33 +48,22 @@ namespace Wizzy {
     }
 }
 
-#if defined WZ_CONFIG_DEBUG
-	#define PRINT_PREFIX_CORE(l)\
-		if(::Wizzy::Log::Extra() && ::Wizzy::Log::GetCoreLogger()->level() <= (::Wizzy::LogLevel)l)\
-			printf("==========%s:%d==========\n", __FILENAME__, __LINE__)
-	#define PRINT_PREFIX(l) \
-		if(::Wizzy::Log::Extra() && ::Wizzy::Log::GetClientLogger()->level() <= (::Wizzy::LogLevel)l)\
-			printf("==========%s:%d==========\n", __FILENAME__, __LINE__)
-#else
-	#define PRINT_PREFIX(l)
-	#define PRINT_PREFIX_CORE(l)
-#endif
-
 #ifndef WZ_CONFIG_DIST
 
-	#define WZ_CORE_TRACE(...) { PRINT_PREFIX_CORE(LOG_LEVEL_TRACE); ::Wizzy::Log::GetCoreLogger()->trace(__VA_ARGS__); }
-	#define WZ_CORE_DEBUG(...) { PRINT_PREFIX_CORE(LOG_LEVEL_DEBUG); ::Wizzy::Log::GetCoreLogger()->debug(__VA_ARGS__); }
-	#define WZ_CORE_INFO(...) { PRINT_PREFIX_CORE(LOG_LEVEL_INFO); ::Wizzy::Log::GetCoreLogger()->info(__VA_ARGS__); }
-	#define WZ_CORE_WARN(...)  { PRINT_PREFIX_CORE(LOG_LEVEL_WARN); ::Wizzy::Log::GetCoreLogger()->warn(__VA_ARGS__); }
-	#define WZ_CORE_ERROR(...)  { PRINT_PREFIX_CORE(LOG_LEVEL_ERROR); ::Wizzy::Log::GetCoreLogger()->error(__VA_ARGS__); }
-	#define WZ_CORE_CRITICAL(...)  { PRINT_PREFIX_CORE(LOG_LEVEL_CRITICAL); ::Wizzy::Log::GetCoreLogger()->critical(__VA_ARGS__); }
+	#define WZ_CORE_TRACE(...)		{ SPDLOG_LOGGER_CALL(::Wizzy::Log::GetCoreLogger(), spdlog::level::trace, __VA_ARGS__); }
+	#define WZ_CORE_DEBUG(...)		{ SPDLOG_LOGGER_CALL(::Wizzy::Log::GetCoreLogger(), spdlog::level::debug, __VA_ARGS__); }
+	#define WZ_CORE_INFO(...)		{ SPDLOG_LOGGER_CALL(::Wizzy::Log::GetCoreLogger(), spdlog::level::info, __VA_ARGS__); }
+	#define WZ_CORE_WARN(...)		{ SPDLOG_LOGGER_CALL(::Wizzy::Log::GetCoreLogger(), spdlog::level::warn, __VA_ARGS__); }
+	#define WZ_CORE_ERROR(...)		{ SPDLOG_LOGGER_CALL(::Wizzy::Log::GetCoreLogger(), spdlog::level::err, __VA_ARGS__); }
+	#define WZ_CORE_CRITICAL(...)	{ SPDLOG_LOGGER_CALL(::Wizzy::Log::GetCoreLogger(), spdlog::level::critical, __VA_ARGS__); }
 
-	#define WZ_TRACE(...)  { PRINT_PREFIX(LOG_LEVEL_TRACE); ::Wizzy::Log::GetClientLogger()->trace(__VA_ARGS__); }
-	#define WZ_DEBUG(...) { PRINT_PREFIX(LOG_LEVEL_DEBUG); ::Wizzy::Log::GetClientLogger()->debug(__VA_ARGS__); }
-	#define WZ_INFO(...)  { PRINT_PREFIX(LOG_LEVEL_INFO); ::Wizzy::Log::GetClientLogger()->info(__VA_ARGS__); }
-	#define WZ_WARN(...)  { PRINT_PREFIX(LOG_LEVEL_WARN); ::Wizzy::Log::GetClientLogger()->warn(__VA_ARGS__); }
-	#define WZ_ERROR(...)  { PRINT_PREFIX(LOG_LEVEL_ERROR); ::Wizzy::Log::GetClientLogger()->error(__VA_ARGS__); }
-	#define WZ_CRITICAL(...) { PRINT_PREFIX(LOG_LEVEL_CRITICAL); ::Wizzy::Log::GetClientLogger()->critical(__VA_ARGS__); }
+
+	#define WZ_TRACE(...)		   { SPDLOG_LOGGER_CALL(::Wizzy::Log::GetClientLogger(), spdlog::level::trace, __VA_ARGS__); }
+	#define WZ_DEBUG(...)		   { SPDLOG_LOGGER_CALL(::Wizzy::Log::GetClientLogger(), spdlog::level::debug, __VA_ARGS__); }
+	#define WZ_INFO(...)		   { SPDLOG_LOGGER_CALL(::Wizzy::Log::GetClientLogger(), spdlog::level::info, __VA_ARGS__); }
+	#define WZ_WARN(...)		   { SPDLOG_LOGGER_CALL(::Wizzy::Log::GetClientLogger(), spdlog::level::warn, __VA_ARGS__); }
+	#define WZ_ERROR(...)		   { SPDLOG_LOGGER_CALL(::Wizzy::Log::GetClientLogger(), spdlog::level::err, __VA_ARGS__); }
+	#define WZ_CRITICAL(...)	   { SPDLOG_LOGGER_CALL(::Wizzy::Log::GetClientLogger(), spdlog::level::critical, __VA_ARGS__); }
 
 #else // In distribution mode
 

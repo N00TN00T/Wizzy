@@ -23,29 +23,23 @@ namespace Wizzy
 
 	PropertyTable::~PropertyTable()
 	{
-		Clear();
-	
+		ClearAll();
 	}
 
-	bool PropertyTable::ExistsProperty(const string& key)
+	bool PropertyTable::Exists(const string& key)
 	{
 		return m_properties.find(key) != m_properties.end();
 	}
 
-	void PropertyTable::DeleteProperty(string name)
+	void PropertyTable::Delete(string name)
 	{
 		WZ_CORE_ASSERT(m_properties.find(name) != m_properties.end(), "Tried deleting non-existent property");
 		m_properties.erase(name);
 		m_propKeys.erase(std::find(m_propKeys.begin(), m_propKeys.end(), name));
 	}
 
-	void PropertyTable::Clear()
+	void PropertyTable::ClearAll()
 	{
-		for (int i = m_propKeys.size() - 1; i >= 0; i--)
-		{
-			DeleteProperty(m_propKeys[i]);
-		}
-
 		m_propKeys.clear();
 		m_properties.clear();
 	}
@@ -72,6 +66,17 @@ namespace Wizzy
 	{
 		DeserializeOffset(data, 0, -1);
 	}
+	void PropertyTable::Add(const PropertyTable& other, bool overwrite)
+	{
+		for (auto& k : other.GetKeys())
+		{
+			if (overwrite || !this->Exists(k))
+			{
+				this->m_propKeys.emplace(k);
+				this->m_properties[k] = other.m_properties.at(k);
+			}
+		}
+	}
 	void PropertyTable::SetValue(u8 typeIndex, Property& prop, const string& value)
 	{
 		if (typeIndex == ToTypeIndex<float>())				prop.value = std::stof(value);
@@ -93,17 +98,16 @@ namespace Wizzy
 	{
 		std::stringstream stream;
 		string indent = string(4ULL * (size_t)indents, ' ');
-		WZ_CORE_DEBUG("indents {0}: '{1}'", indents, indent);
 		stream << "[" << m_propKeys.size() << "]:\n";
 
 		for (auto& k : m_propKeys)
 		{
 			stream << indent << "\"" << k << "\"";
-			if (IsProperty<int32>(k))				stream << ":" << GetProperty<int32>(k) << "\n";
-			else if (IsProperty<float>(k))			stream << ":" << GetProperty<float>(k) << "\n";
-			else if (IsProperty<string>(k))			stream << ":" << EncodeString(GetProperty<string>(k)) << "\n";
-			else if (IsProperty<bool>(k))			stream << ":" << (GetProperty<bool>(k) ? "true" : "false") << "\n";
-			else if (IsProperty<PropertyTable>(k))	stream << GetProperty<PropertyTable>(k).Serialize(indents + 1);
+			if (Is<int32>(k))				stream << ":" << Get<int32>(k) << "\n";
+			else if (Is<float>(k))			stream << ":" << std::fixed << std::setprecision(10) << Get<float>(k) << "\n";
+			else if (Is<string>(k))			stream << ":" << EncodeString(Get<string>(k)) << "\n";
+			else if (Is<bool>(k))			stream << ":" << (Get<bool>(k) ? "true" : "false") << "\n";
+			else if (Is<PropertyTable>(k))	stream << Get<PropertyTable>(k).Serialize(indents + 1);
 		}
 
 		return stream.str();
@@ -129,7 +133,7 @@ namespace Wizzy
 			auto assignIndex = FindAssignToken(line);
 			if (assignIndex == string::npos)
 			{
-				WZ_THROW(ParseErrorException, "No assign (:) operator found", nLine, line);
+				WZ_THROW(TableParseErrorException, "No assign (:) operator found", nLine, line);
 			}
 
 			string key = line.substr(0, assignIndex);
@@ -137,27 +141,27 @@ namespace Wizzy
 			if (IsString(key))
 			{
 				key = ProcessString(key);
-				string value = line.substr(assignIndex + 1);
+				string value = line.substr((size_t)assignIndex + 1);
 
 				if (IsInteger(value))
 				{
-					SetProperty<int32>(key, std::stoi(value));
+					Set<int32>(key, std::stoi(value));
 				}
 				else if (IsNumber(value))
 				{
-					SetProperty<float>(key, std::stod(value));
+					Set<float>(key, std::stof(value));
 				}
 				else if (IsBoolean(value))
 				{
-					SetProperty<bool>(key, value == "true");
+					Set<bool>(key, value == "true");
 				}
 				else if (IsString(value))
 				{
-					SetProperty<string>(key, ProcessString(value));
+					Set<string>(key, ProcessString(value));
 				}
 				else
 				{
-					WZ_THROW(ParseErrorException, "Invalid value", nLine, value);
+					WZ_THROW(TableParseErrorException, "Invalid value", nLine, value);
 				}
 			}
 			else
@@ -167,9 +171,9 @@ namespace Wizzy
 
 				if (iOpenBracket == string::npos || iCloseBracket == string::npos || iCloseBracket < iOpenBracket)
 				{
-					WZ_THROW(ParseErrorException, "Invalid key", nLine, key);
+					WZ_THROW(TableParseErrorException, "Invalid key", nLine, key);
 				}
-
+				
 				string sizeStr = key.substr(iOpenBracket + 1, iCloseBracket - (iOpenBracket + 1));
 				if (IsInteger(sizeStr))
 				{
@@ -182,7 +186,7 @@ namespace Wizzy
 					{
 						if (!IsString(tName))
 						{
-							WZ_THROW(ParseErrorException, "Invalid tabe key", nLine, tName);
+							WZ_THROW(TableParseErrorException, "Invalid tabe key", nLine, tName);
 						}
 						tName = ProcessString(tName);
 						int32 size = std::stoi(sizeStr);
@@ -191,13 +195,13 @@ namespace Wizzy
 							PropertyTable sub;
 							skipLines = sub.DeserializeOffset(data, data.find(line) + line.size(), size);
 							nParentSkips += skipLines;
-							SetProperty<PropertyTable>(tName, sub);
+							Set<PropertyTable>(tName, sub);
 						}
 					}
 				}
 				else
 				{
-					WZ_THROW(ParseErrorException, "Invalid table size value ([X])", nLine, sizeStr);
+					WZ_THROW(TableParseErrorException, "Invalid table size value ([X])", nLine, sizeStr);
 				}
 			}
 			nLine++;
@@ -254,11 +258,12 @@ namespace Wizzy
 	}
 	string PropertyTable::EncodeString(string str) const
 	{
-		for (int i = str.size() - 1; i >= 0; i--)
+		for (int32 i = str.size() - 1; i >= 0; i--)
 		{
 			char c = str[i];
 
 			if (c == '\"') str.insert(str.begin() + i, '\\');
+			if (c == '\n') { str.insert(str.begin() + i, '\\'); str.insert(str.begin() + i, 'n'); }
 		}
 
 		str = "\"" + str + "\"";
@@ -270,11 +275,12 @@ namespace Wizzy
 		str = str.substr(1, str.size() - 2);
 
 		char last = 0;
-		for (int i = str.size() - 1; i >= 0; i--)
+		for (int32 i = 0; i < str.size(); i++)
 		{
 			char c = str[i];
 
-			if (c == '\"' && last == '\\') str.erase(i - 1);
+			if (c == '\"' && last == '\\') str.erase(i--);
+			if (c == 'n' && last == '\\') { str[i] = '\n'; str.erase(i--); }
 
 			last = c;
 		}

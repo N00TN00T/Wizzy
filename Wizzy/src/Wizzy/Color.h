@@ -1,16 +1,20 @@
 #pragma once
 
+#include <imgui.h>
+
 namespace Wizzy {
 
 	struct Color {
 		Color();
 		Color(float r, float g, float b, float a);
 		Color(const glm::vec4& vec) : asVec4(vec) {}
+		Color(const ImVec4& vec) : imguiVec4(vec) {}
 
 		union {
 			float rgba[4];
 			struct { float r, g, b, a; };
 			glm::vec4 asVec4;
+			ImVec4 imguiVec4;
 		};
 
 
@@ -26,6 +30,16 @@ namespace Wizzy {
 		operator const glm::vec4& () const
 		{
 			return asVec4;
+		}
+
+		operator ImVec4& ()
+		{
+			return imguiVec4;
+		}
+
+		operator const ImVec4& () const
+		{
+			return imguiVec4;
 		}
 
         Color& Add(const Color& other);
