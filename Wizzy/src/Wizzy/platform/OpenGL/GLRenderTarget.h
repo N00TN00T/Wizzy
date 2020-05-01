@@ -38,14 +38,11 @@ namespace Wizzy {
 
     private:
         u32 CreateTexture(u32 width, u32 height, byte* data = NULL);
-        u32 CreateRenderBuffer(u32 width, u32 height);
         void SetTexture(u32 textureId, u32 width, u32 height, byte* data = NULL);
-        void SetRenderBuffer(u32 renderBufferId, u32 width, u32 height);
-
         void Init(byte* data = NULL);
 
     private:
-        u32 m_frameBufferId, m_renderBufferId, m_textureId;
+        u32 m_frameBufferId, m_textureId;
         int32 m_width, m_height;
 
         

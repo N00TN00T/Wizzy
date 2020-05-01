@@ -65,6 +65,7 @@ namespace Wizzy {
 		static const Color magenta;
 		static const Color yellow;
 		static const Color violet;
+		static const Color transparent;
 
         inline static Color Lerp(const Color& a, const Color& b, float f) {
             return Color(a.r + f, a.g + f, a.b + f, a.a + f) * (b - a);

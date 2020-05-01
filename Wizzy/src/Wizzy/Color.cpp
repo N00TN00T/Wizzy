@@ -58,17 +58,18 @@ namespace Wizzy {
         return left.Divide(right);
     }
 
-	const Color Color::white =		Color(1.f, 1.f, 1.f, 1.f);
-	const Color Color::red =		Color(.8f, .1f, .1f, 1.f);
-	const Color Color::green =		Color(.1f, 1.f, .1f, 1.f);
-	const Color Color::blue =		Color(.1f, .1f, 1.f, 1.f);
-	const Color Color::cyan =		Color(.1f, 1.f, 1.f, 1.f);
-	const Color Color::black =		Color(.0f, .0f, .0f, 1.f);
-	const Color Color::darkGrey =	Color(.2f, .2f, .2f, 1.f);
-	const Color Color::gray =		Color(.5f, .5f, .5f, 1.f);
-	const Color Color::lightGrey =	Color(.75f, .75f, .75f, 1.f);
-	const Color Color::pink =		Color(1.f, .25f, .35f, 1.f);
-	const Color Color::magenta =	Color(1.f, .1f, .8f, 1.f);
-	const Color Color::yellow =		Color(0.f, .8f, .8f, 1.f);
-	const Color Color::violet =		Color(85.f, .1f, .7f, 1.f);
+	const Color Color::white =		    Color(1.f, 1.f, 1.f, 1.f);
+	const Color Color::red =		    Color(.8f, .1f, .1f, 1.f);
+	const Color Color::green =		    Color(.1f, 1.f, .1f, 1.f);
+	const Color Color::blue =		    Color(.1f, .1f, 1.f, 1.f);
+	const Color Color::cyan =		    Color(.1f, 1.f, 1.f, 1.f);
+	const Color Color::black =		    Color(.0f, .0f, .0f, 1.f);
+	const Color Color::darkGrey =	    Color(.2f, .2f, .2f, 1.f);
+	const Color Color::gray =		    Color(.5f, .5f, .5f, 1.f);
+	const Color Color::lightGrey =	    Color(.75f, .75f, .75f, 1.f);
+	const Color Color::pink =		    Color(1.f, .25f, .35f, 1.f);
+	const Color Color::magenta =	    Color(1.f, .1f, .8f, 1.f);
+	const Color Color::yellow =		    Color(0.f, .8f, .8f, 1.f);
+	const Color Color::violet =		    Color(85.f, .1f, .7f, 1.f);
+    const Color Color::transparent =	Color(0.f, 0.f, 0.f, 0.f);
 }

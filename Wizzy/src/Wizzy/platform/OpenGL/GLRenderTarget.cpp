@@ -35,9 +35,7 @@ namespace Wizzy {
     GLRenderTarget::~GLRenderTarget() {
         WZ_CORE_TRACE("Destructed renderbuffer, destructing texture");
         GL_CALL(glDeleteTextures(1, &m_textureId));
-        WZ_CORE_TRACE("Destructed framebuffer, destructing renderbuffer");
-        GL_CALL(glDeleteRenderbuffers(1, &m_renderBufferId));
-        WZ_CORE_TRACE("Destructing GL RenderTarget");
+        WZ_CORE_TRACE("Destructed framebuffer");
         GL_CALL(glDeleteFramebuffers(1, &m_frameBufferId));
     }
 
@@ -67,8 +65,6 @@ namespace Wizzy {
 
         SetTexture(m_textureId, width, height);
 
-        SetRenderBuffer(m_renderBufferId, width, height);
-
         GL_CALL(glBindFramebuffer(GL_FRAMEBUFFER, 0));
 
         WZ_CORE_TRACE("Changed size from { {0}, {1} } to { {2}, {3} }", m_width, m_height, width, height);
@@ -84,15 +80,6 @@ namespace Wizzy {
         SetTexture(_textureId, width, height, data);
 
         return _textureId;
-    }
-
-    u32 GLRenderTarget::CreateRenderBuffer(u32 width, u32 height) {
-        u32 _renderBufferId;
-        GL_CALL(glGenRenderbuffers(1, &_renderBufferId));
-
-        SetRenderBuffer(_renderBufferId, width, height);
-
-        return _renderBufferId;
     }
 
     void GLRenderTarget::SetTexture(u32 textureId, u32 width, u32 height, byte* data) {
@@ -134,14 +121,11 @@ namespace Wizzy {
         WZ_CORE_TRACE("Creating empty internal GL texture");
         m_textureId = CreateTexture(m_width, m_height, data);
 
-        WZ_CORE_TRACE("Creating render buffer");
-        m_renderBufferId = CreateRenderBuffer(m_width, m_height);
-
         WZ_CORE_ASSERT(glCheckFramebufferStatus(GL_FRAMEBUFFER) == GL_FRAMEBUFFER_COMPLETE, "GL Frame buffer initialization failed");
 
         this->Unbind();
 
-        WZ_CORE_INFO("GL Render Target initialized (Width: {0}, Height: {1}, FBO: {2}, RBO: {3}, textureId: {4})", m_width, m_height, m_frameBufferId, m_renderBufferId, m_textureId);
+        WZ_CORE_TRACE("GL Render Target initialized (Width: {0}, Height: {1}, FBO: {2}, textureId: {4})", m_width, m_height, m_frameBufferId, m_textureId);
     }
     ResData GLRenderTarget::Serialize() const
     {

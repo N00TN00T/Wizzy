@@ -55,7 +55,8 @@ namespace Wizzy
 		{
 			pResource = info.createFn(info.source, info.metaData);
 			s_resource[info.resourceIndex] = pResource;
-			WZ_CORE_INFO("Resource '{0}' loaded", info.resPath);
+			if (!info.runtime) 	{WZ_CORE_INFO("Resource '{0}' loaded", info.resPath);}
+			else				{WZ_CORE_TRACE("Resource '{0}' loaded", info.resPath);}
 			DispatchEvent(ResourceLoadedEvent(handle));
 		}
 		catch (const Exception & e)
@@ -96,7 +97,8 @@ namespace Wizzy
 				return;
 			}
 
-			WZ_CORE_INFO("Resource '{0}' serialized", info.name());
+			if (!info.runtime) 	{WZ_CORE_INFO("Resource '{0}' serialized", info.name());}
+			else 				{WZ_CORE_TRACE("Resource '{0}' serialized", info.name());}
 
 			info.source = serialized;
 
@@ -108,7 +110,8 @@ namespace Wizzy
 
 		WriteMeta(handle);
 
-		WZ_CORE_INFO("Saved resource '{0}'", info.name());
+		if (!info.runtime) 	{WZ_CORE_INFO("Saved resource '{0}'", info.name());}
+		else            	{WZ_CORE_TRACE("Saved resource '{0}'", info.name());}
 		DispatchEvent(ResourceSavedEvent(handle));
 		
 	}
@@ -126,7 +129,7 @@ namespace Wizzy
 		delete s_resource[info.resourceIndex];
 		s_resource[info.resourceIndex] = nullptr;
 
-		WZ_CORE_INFO("Unloaded resource '{0}'", info.resPath);
+		if (!info.runtime) WZ_CORE_INFO("Unloaded resource '{0}'", info.resPath);
 		DispatchEvent(ResourceUnloadedEvent(handle));
 		
 	}
@@ -189,17 +192,28 @@ namespace Wizzy
 			string resPath = s_resourceInfo[handle].resPath;
 			s_resourceInfo.erase(handle);
 
-			WZ_CORE_INFO("Deleted resource '{0}'", resPath);
+			if (!info.runtime) 	{WZ_CORE_INFO("Deleted resource '{0}'", resPath);}
+			else				{WZ_CORE_TRACE("Deleted resource '{0}'", resPath);}
 	}
 
 	void ResourceManagement::SetResourceDir(const string& dir)
 	{
-			if (!ulib::Directory::exists(dir))
+			if (!ulib::Directory::exists(dir) && dir != "")
 			{
 				WZ_THROW(ResourceInvalidPathException, dir);
 			}
 			s_resourceDir = dir;
 			if (s_resourceDir.size() > 0 && (s_resourceDir[s_resourceDir.size() - 1] != '/' && s_resourceDir[s_resourceDir.size() - 1] != '\\'))  s_resourceDir += "/";
+
+			string idCountFile = s_resourceDir + ".id";
+			if (ulib::File::exists(idCountFile))
+			{
+				string content;
+				if (ulib::File::read(idCountFile, &content))
+				{
+					s_idCounter = std::stoi(content);
+				}
+			}
 	}
 
 	void ResourceManagement::Validate(bool checkSources)

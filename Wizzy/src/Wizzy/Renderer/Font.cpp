@@ -57,7 +57,7 @@ namespace Wizzy
         }
     }
 
-    RenderTarget::Handle Font::Render(const string& text, const Shader::Handle& hShader)
+    const RenderTarget::Handle& Font::Render(const string& text, const Shader::Handle& hShader)
     {
         WZ_CORE_ASSERT(ResourceManagement::IsLoaded(hShader), "Shader not loaded in font render");
         if (m_cache.find(text) != m_cache.end() && ResourceManagement::IsLoaded(m_cache[text].hTexture))
@@ -69,46 +69,45 @@ namespace Wizzy
         { // Text has no cached texture, create new texture
             WZ_CORE_TRACE("Rendering text to rendertarget");
             glm::vec2 textureSize = MeasureString(text);
-            RenderTarget::Handle hNewTexture = ResourceManagement::AddRuntimeResource
+            m_cache[text].hTexture = ResourceManagement::AddRuntimeResource
             (
                 (RenderTarget*)RenderTarget::Create(textureSize.x, textureSize.y), RenderTarget::GetTemplateProps()
             );
-            WZ_CORE_ASSERT(ResourceManagement::IsLoaded(hNewTexture), 
-            "Failed creating runtime rendertarget texture for font render");
-
-            ValidateCache();
-
-            m_cache[text].hTexture = hNewTexture;
-            m_cache[text].size = MeasureString(text);
             m_cachedStrings.push(text);
 
-            auto& newTexture = ResourceManagement::Get<RenderTarget>(hNewTexture);
+            m_cache[text].sizeBytes = 
+                (textureSize.x * textureSize.y * 4 * sizeof(float) 
+                + sizeof(RenderTarget)
+                + sizeof(vec2) 
+                + sizeof(size_t));
+            m_cachedBytes += m_cache[text].sizeBytes;
 
-            size_t maxCharTextureSize = m_fontSize 
-                                        * m_fontSize 
-                                        * sizeof(Renderer2D::VertexData) 
-                                        * 4.f;
-            size_t budget = maxCharTextureSize * text.size();
-            Renderer2D::Pipeline pipeline(budget);
-            pipeline.hRenderTarget = hNewTexture;
+            auto& hStringTexture = m_cache[text].hTexture;
+
+            Renderer2D::Pipeline pipeline(_MB(1));  // TODO: Set exact budget (#OPTIMIZE)
+                                                    // It's a big allocation that could happen
+                                                    // often potentially causing stuttering
+                                                    // if a lot of text is changed to new text
+                                                    // often
+
+
+
             pipeline.hShader = hShader;
-            pipeline.camTransform = glm::ortho<float>
-                                    (
-                                        0, 
-                                        newTexture.GetWidth(), 
-                                        0.f, 
-                                        newTexture.GetHeight()
-                                    );
+            pipeline.camTransform = glm::ortho<float>(0, textureSize.x, 0, textureSize.y);
+            pipeline.hRenderTarget = hStringTexture;
+            pipeline.clearColor = Color::transparent;
 
-            Renderer2D::Pipeline charPipeline(maxCharTextureSize);
-            charPipeline.hShader = hShader;
-
-            
+            Renderer2D::Clear(&pipeline);
             Renderer2D::Begin(&pipeline);
-            std::vector<RenderTarget::Handle> toDelete;
-            glm::vec2 penPos(0, textureSize.y - m_fontSize);
+
+            // Since we scale -1 on Y, the pivot y is on the top
+            vec2 penPos(0.f, textureSize.y - m_fontSize);
             for (auto c : text)
             {
+                if (m_characterInfo.find(c) == m_characterInfo.end()) c = '?';
+                auto& info = m_characterInfo.at(c);
+
+                
                 if (c == '\n')
                 {
                     penPos.y -= m_fontSize;
@@ -116,73 +115,43 @@ namespace Wizzy
                     continue;
                 }
 
-                if (m_characterInfo.find(c) == m_characterInfo.end()) c = '?';
-
-                auto& info = m_characterInfo[c];
-
-                if (c == ' ')
+                if (c != ' ')
                 {
-                    penPos.x += info.advanceX;
-                    continue;
+                    // TODO: Use static mat4 transform and only change position every time
+                    Renderer2D::SubmitTexture
+                    (
+                        &pipeline,
+                        m_hAtlasTexture,
+                        penPos + info.bearing,
+                        {1.f, -1.f},
+                        0.f,
+                        Color::white,
+                        Rect(info.xPos, 0, info.size.x, info.size.y)
+                    );
                 }
-
-                auto hCharTexture = ResourceManagement::AddRuntimeResource
-                (
-                    (RenderTarget*)RenderTarget::Create(info.width, info.height), RenderTarget::GetTemplateProps()
-                );
-                WZ_CORE_ASSERT(ResourceManagement::IsLoaded(hCharTexture), 
-                    "Failed creating rendertarget texture for char font rendering");
-                toDelete.push_back(hCharTexture);
-
-                auto& charTexture = ResourceManagement::Get<RenderTarget>(hCharTexture);
-
-                charPipeline.camTransform = glm::ortho<float>
-                                            (
-                                                0, 
-                                                charTexture.GetWidth(), 
-                                                0.f, 
-                                                charTexture.GetHeight()
-                                            );
-
-                charPipeline.hRenderTarget = hCharTexture;
                 
-                // Submit & draw character on char texture
-                Renderer2D::Begin(&charPipeline);
-                auto& atlasTexture = ResourceManagement::Get<Texture>(m_hAtlasTexture);
-                Renderer2D::SubmitTexture
-                (
-                    &charPipeline, 
-                    m_hAtlasTexture, 
-                    { -(info.xOffset * atlasTexture.GetWidth()), 0 }, 
-                    vec2(1.f), 
-                    0, 
-                    Color::white
-                );
-                Renderer2D::End(&charPipeline);
 
-                // Draw the char texture on the final texture
-                Renderer2D::SubmitRenderTarget
-                (
-                    &pipeline,
-                    hCharTexture, 
-                    { penPos.x + info.bitmapLeft, penPos.y - (info.height - info.bitmapTop) }, 
-                    vec2(1.f), 
-                    0, 
-                    Color::white, 
-                    Rect()
-                );
-
-                penPos.x += info.advanceX;
+                penPos += info.advance;
             }
 
             Renderer2D::End(&pipeline);
 
-            for (auto r : toDelete)
+            while (m_cachedBytes > CACHE_BUDGET)
             {
-                ResourceManagement::Delete(r);
+                auto& str = m_cachedStrings.front();
+
+                auto& cache = m_cache[str];
+
+                ResourceManagement::Delete(cache.hTexture);
+
+                m_cachedBytes -= cache.sizeBytes;
+
+                m_cache.erase(str);
+
+                m_cachedStrings.pop();
             }
 
-            return hNewTexture;
+            return hStringTexture;
         }
     }
 
@@ -191,7 +160,7 @@ namespace Wizzy
         if (m_cache.find(str) != m_cache.end())
         {
             WZ_CORE_TRACE("Reusing text size from cache for '{0}'", str);
-            return m_cache[str].size;
+            return m_cache[str].textSize;
         }
         else
         {
@@ -216,12 +185,12 @@ namespace Wizzy
                 }
                 if (c == ' ')
                 {
-                    posX += info.advanceX;
+                    posX += info.advance.x;
                     continue;
                 }
 
-                posX += info.advanceX;
-                yBonus = std::max(yBonus, (int32)(info.height - info.bitmapTop));
+                posX += info.advance.x;
+                yBonus = std::max(yBonus, (int32)(info.size.y - info.bearing.y));
             }
 
             size.x = std::max((int32)size.x, posX);
@@ -229,7 +198,7 @@ namespace Wizzy
 
             ValidateCache();
 
-            m_cache[str].size = size;
+            m_cache[str].textSize = size;
 
             return size;
         }
@@ -237,7 +206,7 @@ namespace Wizzy
 
     void Font::ValidateCache()
     {
-        while (m_cachedStrings.size() >= MAX_CACHED_STRINGS)
+        while (m_cachedBytes >= CACHE_BUDGET)
         {
             auto& top = m_cachedStrings.front();
 
@@ -284,7 +253,7 @@ namespace Wizzy
         WZ_CORE_TRACE("Counting atlas texture size");
         for (int32 i = 0; i < 128; i++) // TODO: Unicode
         {
-            _error = FT_Load_Char(face, i, FT_LOAD_DEFAULT);
+            _error = FT_Load_Char(face, i, FT_LOAD_RENDER);
             if (_error != FT_Err_Ok || i == ' ')  continue;
 
             WZ_CORE_TRACE("Found char value {0}", i);
@@ -315,16 +284,16 @@ namespace Wizzy
 
             auto glyph = face->glyph;
 
-            m_characterInfo[i].advanceX = glyph->advance.x >> 6;
-            m_characterInfo[i].advanceY = glyph->advance.y >> 6;
+            m_characterInfo[i].advance.x = glyph->advance.x >> 6;
+            m_characterInfo[i].advance.y = glyph->advance.y >> 6;
 
-            m_characterInfo[i].width = glyph->bitmap.width;
-            m_characterInfo[i].height = glyph->bitmap.rows;
+            m_characterInfo[i].size.x = glyph->bitmap.width;
+            m_characterInfo[i].size.y = glyph->bitmap.rows;
 
-            m_characterInfo[i].bitmapLeft = glyph->bitmap_left;
-            m_characterInfo[i].bitmapTop = glyph->bitmap_top;
+            m_characterInfo[i].bearing.x = glyph->bitmap_left;
+            m_characterInfo[i].bearing.y = glyph->bitmap_top;
 
-            m_characterInfo[i].xOffset = (float)textPos / (float)atlasWidth;
+            m_characterInfo[i].xPos = textPos;
 
             if (glyph->bitmap.buffer)
             {
@@ -332,7 +301,7 @@ namespace Wizzy
                 atlasTexture.AddSubTexture(glyph->bitmap.buffer, glyph->bitmap.width, glyph->bitmap.rows, textPos, 0, 1);
             }
 
-            textPos += glyph->bitmap.width + 2;
+            textPos += glyph->bitmap.width;
         }
     }
     void Font::InitWZ(const ResData& data, const PropertyTable& props)

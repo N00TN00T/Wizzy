@@ -1,5 +1,42 @@
 # CHANGELOG FOR WIZZY
 
+## 0.1.6 - Optimized Text Rendering & First Game In Wizzy! (Breakout)
+### Text Rendering
+- Fonts now properly renders texts to a render target
+- Renders atlas to RenderTarget with a source rectangle instead of the old way of creating a RenderTarget for each char, then rendering it to the string rendertarget and then disposing the char rendertarget
+- Rendered strings are cached so a new texture isn't created every time a text is rendered
+- Cache is limited to a memory budget (as of now, 100MB)
+### Demo Game (Breakout)
+- Created a simple Breakout game to showcase features of Wizzy
+- Currently only shows basics like rendering, text rendering, input polling & resource file syncing
+- Game currently consists of, as of 1th of May 2020, the following:
+	- A platform controlled by A & D (The player)
+	- A block of bricks
+	- A ball that constantly moves with a velocity and bounces of the player/bricks and the window bounds except for the bottom when it's position is reset instead
+	- The ball destroys bricks on collision
+	- A bit of text is rendered in the corner displaying the total time passed
+- Demonstrates how the ECS can be used efficiently
+- Will constantly be expanded upon to demonstrate the 2D capabilities
+### Renderer
+- Added `SubmitText()` function
+- Added a `clearColor` value in Renderer2D::Pipeline so pipelines can have different clear colors
+- ClearColor is now cached in RendererAPI to avoid unnecessary api call if settings color to what it already is
+- Added a text shader which works as a fallback shader for text submissions
+- RenderTarget no longer creates a dummy RenderBuffer and thereby halfes its memory usage
+- Fixed a bug where nested pipeline batches would mess up Textures. Moved texture binding from 
+`Submit()` to `End()`
+- Fixed a bug where Viewports were messed up when rendering to a pipeline with a non-window RenderTarget. Fixed by resetting viewport to Window viewport after changing it for the RenderTarget
+- Fixed render rectangles so they work correctly
+### ECS
+- Added `ForEachEntity()` function in ECSManager so all entity handles can be iterated safely
+- Added the `HasComponent<>()` function to check if a component type is associated with an EntityHandle
+### Resource Management
+- Now always writes the highest id to a file, and reads it when initialized. This is to prevent resource id duplicates.
+### Misc
+- `Rect::Intersect()` now has an optional out parameter that is set to the intersection area rectangle
+- Changed unnecessary info level logs to trace level
+
+
 ## 0.1.5 - New 2D Renderer
 ### Renderer
 - Changed the API to be based on a Pipeline handle so render batches can be seamlessly created between pipelines with different shaders and rendertargets.

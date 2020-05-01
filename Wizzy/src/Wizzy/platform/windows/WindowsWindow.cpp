@@ -70,8 +70,6 @@ namespace Wizzy {
 
 		glfwSetWindowUserPointer(m_glfwWindow, &m_data);
 
-		SetVSync(false);
-
 		glfwSetWindowSizeCallback(m_glfwWindow, [](GLFWwindow *w, int32 width, int32 height) {
 
 			auto& _data = *((WindowData*)glfwGetWindowUserPointer(w));

@@ -62,8 +62,8 @@ namespace Wizzy {
 
 		/* Move the last entity to overwrite the
 			entity being removed					*/
-		const auto& _destIndex = ToEntityMemIndex(handle);
-		const auto& _srcIndex = m_entities.size() - 1;
+		auto _destIndex = ToEntityMemIndex(handle);
+		auto _srcIndex = m_entities.size() - 1;
 		delete m_entities[_destIndex];
 		m_entities[_destIndex] = m_entities[_srcIndex];
 		m_entities[_destIndex]->first = _destIndex;
@@ -351,6 +351,7 @@ namespace Wizzy {
 	IComponent* ECSManager::GetComponentInternal(Entity * entity,
 											const ComponentMem& memPool,
 											const StaticCId & componentId) const {
+		// TODO: #OPTIMIZE
 		WZ_PROFILE_FUNCTION();
 		const auto& _entityComps = entity->second;
 
@@ -563,5 +564,14 @@ namespace Wizzy {
 		}
 		m_entities.clear();
 		m_components.clear();
+	}
+
+	void ECSManager::ForEachEntity(std::function<bool(EntityHandle)> callback)
+	{
+		for (int i = m_entities.size() - 1; i >= 0; i--)
+		{
+			auto hEntity = ToEntityHandle(m_entities[i]);
+			if (!callback(hEntity)) break;
+		}
 	}
 }

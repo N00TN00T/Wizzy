@@ -8,9 +8,22 @@
 #include "Wizzy/platform/OpenGL/GLRenderTarget.h"
 
 namespace Wizzy {
+
+    Color g_clearColor = Color::transparent;
+
     void GLRendererAPI::SetClearColor(float r, float g, float b, float a) {
-        GL_CALL(glClearColor(r, g, b, a));
+        if (g_clearColor.r != r && g_clearColor.g != g && g_clearColor.b != b && g_clearColor.a != a)
+        {
+            GL_CALL(glClearColor(r, g, b, a));
+            g_clearColor.r = r; g_clearColor.g = g; g_clearColor.b = b; g_clearColor.a = a;
+        }
     }
+
+    const Color& GLRendererAPI::GetClearColor() const
+    {
+        return g_clearColor;
+    }
+
     void GLRendererAPI::Clear()  {
         GL_CALL(glClear(GL_COLOR_BUFFER_BIT));
     }

@@ -28,13 +28,38 @@ namespace Wizzy
 
 		inline bool IsValid() const { return w != 0 && h != 0; }
 
-		inline bool Intersects(const Rect& other)
+		inline vec2 Center() const { return vec2(Left() + w / 2.f, Bottom() + h / 2.f); }
+
+		inline bool Intersects(const Rect& other, Rect* intersection = NULL)
 		{
 			bool xIntersect = (this->Left() > other.Left() && this->Left() < other.Right()) ||
 				(this->Right() > other.Left() && this->Right() < other.Right());
 
 			bool yIntersect = (this->Bottom() > other.Bottom() && this->Bottom() < other.Top()) ||
 				(this->Top() > other.Bottom() && this->Top() < other.Top());
+
+			if (intersection != NULL && (xIntersect && yIntersect))
+			{
+				intersection->x = 
+					other.Left() > this->Left()
+					? other.Left()
+					: this->Left();
+				
+				intersection->y = 
+					other.Bottom() > this->Bottom()
+					? other.Bottom()
+					: this->Bottom();
+				
+				intersection->w = 
+					other.Left() > this->Left()
+					? this->Right() - intersection->Left()
+					: other.Right() - intersection->Left();
+				
+				intersection->h = 
+					other.Bottom() > this->Bottom()
+					? this->Top() - intersection->Bottom()
+					: other.Top() - intersection->Bottom();
+			}
 
 			return xIntersect && yIntersect;
 		}

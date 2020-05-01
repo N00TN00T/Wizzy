@@ -85,6 +85,8 @@ namespace Wizzy {
             typestr(TComponent)
 		});
 
+		
+
 		return static_cast<StaticCId>(componentTypes().size() - 1);
 	}
 

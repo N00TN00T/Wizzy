@@ -20,7 +20,7 @@ namespace Wizzy
         this->Bind();
         auto t = BufferUsageToAPIBufferUsage(usage);
         GL_CALL(glBufferData(GL_ARRAY_BUFFER, size, data, t));
-        WZ_CORE_INFO("Successfully created GL vertex buffer with id '{0}'", m_id);
+        WZ_CORE_TRACE("Successfully created GL vertex buffer with id '{0}'", m_id);
         this->Unbind();
     }
     GLVertexBuffer::~GLVertexBuffer()
@@ -73,7 +73,7 @@ namespace Wizzy
         this->Bind();
         GL_CALL(glBufferData(GL_ELEMENT_ARRAY_BUFFER, count * sizeof(u32), data, GL_STATIC_DRAW));
         this->Unbind();
-        WZ_CORE_INFO("Successfully created GL index buffer with id '{0}'", m_id);
+        WZ_CORE_TRACE("Successfully created GL index buffer with id '{0}'", m_id);
     }
     GLIndexBuffer::~GLIndexBuffer()
     {
@@ -107,7 +107,7 @@ namespace Wizzy
         WZ_CORE_TRACE("Creating GL vertex array");
         GL_CALL(glGenVertexArrays(1, &m_id));
         this->Unbind();
-        WZ_CORE_INFO("Successfully created GL vertex array with id '{0}'", m_id);
+        WZ_CORE_TRACE("Successfully created GL vertex array with id '{0}'", m_id);
     }
     GLVertexArray::~GLVertexArray()
     {

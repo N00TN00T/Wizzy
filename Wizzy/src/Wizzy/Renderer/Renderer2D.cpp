@@ -4,6 +4,7 @@
 #include "Wizzy/Resource/ResourceManagement.h"
 #include "Wizzy/Renderer/RenderCommand.h"
 
+#include "Wizzy/Application.h"
 #include "Wizzy/Instrumentor.h"
 #include "Wizzy/WizzyExceptions.h"
 constexpr char fallback_shader_source[] = R"(
@@ -55,10 +56,60 @@ void main() {
 
 )";
 
+constexpr char text_shader_source[] = R"(
+
+#shader vertex
+
+#version 330 core
+
+layout (location = 0) in vec2 v_position;
+layout (location = 1) in vec2 v_uv;
+layout (location = 2) in vec4 v_color;
+layout (location = 3) in float v_location;
+
+out vec2 uv;
+out vec4 color;
+out float location;
+
+
+uniform mat4 u_camTransform;
+
+void main() {
+    uv = v_uv;
+	location = v_location;
+	color = v_color;
+    gl_Position = u_camTransform * vec4(v_position, 0.0, 1.0);
+}
+
+
+#shader fragment
+
+
+#version 330 core
+
+
+out vec4 fragColor;
+
+
+in vec2 uv;
+in vec4 color;
+in float location;
+
+
+uniform sampler2D u_textures[32];
+
+void main() {
+    fragColor = vec4(1.0, 1.0, 1.0, texture(u_textures[int(round(location))], uv).r) * color;
+
+}
+
+)";
+
 namespace Wizzy
 {
 	Texture::Handle Renderer2D::s_hWhite1x1Texture(WZ_NULL_RESOURCE_HANDLE);
 	Shader::Handle Renderer2D::s_hFallbackShader(WZ_NULL_RESOURCE_HANDLE);
+	Shader::Handle Renderer2D::s_hTextShader(WZ_NULL_RESOURCE_HANDLE);
 	Renderer2D::Metrics Renderer2D::s_metrics;
 
 	Renderer2D::Pipeline::Pipeline(const size_t& budget) 
@@ -129,6 +180,16 @@ namespace Wizzy
 			)
 		);
 
+		inBytes = (byte*)text_shader_source;
+		s_hTextShader = ResourceManagement::AddRuntimeResource
+		(
+			(Shader*)Shader::Create
+			(
+				ResData(inBytes, inBytes + sizeof(text_shader_source)), 
+				Shader::GetTemplateProps()
+			)
+		);
+
 		RenderCommand::SetCullMode(WZ_CULL_NONE);
 		RenderCommand::ToggleBlending(true);
 	}
@@ -176,13 +237,12 @@ namespace Wizzy
 		
 		auto& texture = ResourceManagement::Get<Texture>(hTexture);
 
-		if (pipeline->textureSlots.find(texture.GetId()) == pipeline->textureSlots.end())
+		if (pipeline->textureSlots.find(hTexture) == pipeline->textureSlots.end())
 		{
-			pipeline->textureSlots[texture.GetId()] = pipeline->slotCount++;
+			pipeline->textureSlots[hTexture] = pipeline->slotCount++;
 		}
 
-		u32 slot = pipeline->textureSlots[texture.GetId()];
-		texture.Bind(slot);
+		u32 slot = pipeline->textureSlots[hTexture];
 
 		Submit
 		(
@@ -222,13 +282,12 @@ namespace Wizzy
 		
 		auto& texture = ResourceManagement::Get<RenderTarget>(hTexture);
 
-		if (pipeline->textureSlots.find(texture.GetTextureId()) == pipeline->textureSlots.end())
+		if (pipeline->textureSlots.find(hTexture) == pipeline->textureSlots.end())
 		{
-			pipeline->textureSlots[texture.GetTextureId()] = pipeline->slotCount++;
+			pipeline->textureSlots[hTexture] = pipeline->slotCount++;
 		}
 		
-		u32 slot = pipeline->textureSlots[texture.GetTextureId()];
-		texture.BindTexture(slot);
+		u32 slot = pipeline->textureSlots[hTexture];
 
 		Submit
 		(
@@ -241,16 +300,58 @@ namespace Wizzy
 		);
 	}
 
+	void Renderer2D::SubmitText(
+		Pipeline* pipeline,
+		const Font::Handle& hFont,  
+		const string& text,
+		const vec2& position, 
+		const vec2 scale, 
+		float rotation, 
+		const Color& color)
+	{
+		mat4 transform = glm::translate(mat4(1.f), vec3(position, 0.f));
+		if (scale.x != 1 || scale.y != 1)
+			transform = glm::scale(transform, vec3(scale, 1.f));
+		if (rotation != 0)
+			transform = glm::rotate(transform, glm::radians(rotation), vec3(0, 0, 1));
+
+		SubmitText(pipeline, hFont, text, transform, color);	
+	}
+	void Renderer2D::SubmitText(
+		Pipeline* pipeline,
+		const Font::Handle& hFont, 
+		const string& text,
+		const mat4& transform, 
+		const Color& color)
+	{
+		WZ_CORE_ASSERT(ResourceManagement::IsLoaded(hFont), 
+			"Unloaded font in Renderer2D submission");
+
+		auto& font = ResourceManagement::Get<Font>(hFont);
+
+		if (!ResourceManagement::IsValid(pipeline->hShader)) 
+			pipeline->hShader = s_hTextShader;
+			
+		auto& hRenderTarget = font.Render(text, pipeline->hShader);
+
+		SubmitRenderTarget
+		(
+			pipeline,
+			hRenderTarget,
+			transform,
+			color
+		);
+	}
+
 	void Renderer2D::SubmitRect(
 		Pipeline* pipeline,
 		const Rect& rect, 
 		const Color& color, 
-		RectMode mode, 
-		const Rect& renderRect)
+		RectMode mode)
 	{
 		WZ_CORE_ASSERT(ResourceManagement::IsLoaded(s_hWhite1x1Texture), 
 		"White texture not loaded properly");
-		SubmitTexture(pipeline, s_hWhite1x1Texture, rect.position, rect.size, 0, color, renderRect);
+		SubmitTexture(pipeline, s_hWhite1x1Texture, rect.position, rect.size, 0, color);
 	}
 
 	void Renderer2D::End(Renderer2D::Pipeline* pipeline)
@@ -287,6 +388,27 @@ namespace Wizzy
 			17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30 ,31 };
 		shader->Upload1iv("u_textures", 32, slots);
 
+		for (const auto& [hTexture, slot] : pipeline->textureSlots)
+		{
+			if (ResourceManagement::Is<Texture>(hTexture))
+			{
+				auto& texture = ResourceManagement::Get<Texture>(hTexture);
+				texture.Bind(slot);
+			}
+			else if (ResourceManagement::Is<RenderTarget>(hTexture))
+			{
+				auto& renderTarget = ResourceManagement::Get<RenderTarget>(hTexture);
+				renderTarget.BindTexture(slot);
+			}
+			else 
+			{
+				WZ_CORE_CRITICAL(
+					"Texture handle in TextureSlotMap is not Texture nor RenderTarget???? {0}", 
+					hTexture.GetType());
+				WZ_BREAK;
+			}
+		}
+
 		pipeline->vao->Bind();
 		pipeline->vao->GetIndexBuffer()->Bind();
 
@@ -299,10 +421,21 @@ namespace Wizzy
 				Viewport(0, 0, renderTarget->GetWidth(), renderTarget->GetHeight())
 			);
 		}
+		else 
+		{
+			auto& wnd = Application::Get().GetWindow();
+			RenderCommand::SetViewport
+			(
+				Viewport(0, 0, wnd.GetWidth(), wnd.GetHeight())
+			);
+		}
 
 		RenderCommand::DrawIndexed(pipeline->vao, pipeline->indexCount);
 
-		if (renderTarget) renderTarget->Unbind();
+		if (renderTarget) 
+		{
+			renderTarget->Unbind();
+		}
 
 		s_metrics.numDrawCalls++;
 	}
@@ -319,6 +452,7 @@ namespace Wizzy
 		ResourceManagement::TryGet<RenderTarget>(pipeline->hRenderTarget, pRenderTarget);
 
 		if (pRenderTarget) pRenderTarget->Bind();
+		RenderCommand::SetClearColor(pipeline->clearColor);
 		RenderCommand::Clear();
 		if (pRenderTarget) pRenderTarget->Unbind();
 	}
@@ -326,7 +460,7 @@ namespace Wizzy
 	void Renderer2D::Submit(
 		Pipeline* pipeline,
 		u32 textureSlot,
-		const vec2& size,
+		vec2&& size,
 		mat4 transform,
 		const Color& color,
 		const Rect& renderRect)
@@ -360,6 +494,10 @@ namespace Wizzy
 			uv[1].x = right; uv[1].y = bot;
 			uv[2].x = right; uv[2].y = top;
 			uv[3].x = left; uv[3].y = top;
+
+			
+			size.x *= renderRect.w / size.x;
+			size.y *= renderRect.h / size.y;
 		}
 
 		auto& pBuffer = pipeline->pBufferCurrent;
@@ -421,7 +559,6 @@ namespace Wizzy
 
 		if (pipeline->slotCount >= pipeline->numTextureSlots)
 		{
-			WZ_PROFILE_SCOPE("Premature flush");
 			End(pipeline);
 			Begin(pipeline);
 		}

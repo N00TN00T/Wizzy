@@ -69,8 +69,7 @@ namespace Wizzy
 	class ResourceManagement
 	{
 	public:
-		/*static void LoadResourceList(const string& listFile);
-		static void WriteResourceList(const string& listFile);*/
+
 		// Add file to resource directory and register it to a handle. Will NOT load the resource.
 		template <typename T>
 		static typename T::Handle  AddToResourceDir(const string& file, string resPath, const PropertyTable& props);
@@ -293,7 +292,6 @@ namespace Wizzy
 			if (metaData.Is<int32>("id"))
 			{
 				id = metaData.Get<int32>("id");
-				s_idCounter = id + 1;
 			}
 		}
 
@@ -343,13 +341,12 @@ namespace Wizzy
 			s_resource.push_back(nullptr);
 		}
 
+		
 
 		bool alreadyExists = !s_handles.emplace(handle).second;
 
-		if (alreadyExists)
-		{
-			WZ_THROW(ResourceHandleRegisteredException, info.resPath, handle.id);
-		}
+		WZ_CORE_ASSERT(!alreadyExists, 
+			"Handle with id " + std::to_string(handle.id) + " already exists");
 
 		s_resourceInfo[handle] = info;
 		s_idCounter = std::max(s_idCounter, id + 1);
@@ -359,10 +356,22 @@ namespace Wizzy
 			WriteMeta(handle);
 		}
 
-		WZ_CORE_INFO("Registered resource{0}:\n    Type:    {1}\n    ResPath: {2}\n    Id:      {3}",
-			runtime ? " (runtime)" : "", typestr(T), resPath, handle.id);
+		if (info.runtime)
+		{
+			WZ_CORE_TRACE("Registered resource (runtime):\n    Type:    {0}\n    ResPath: {1}\n    Id:      {2}",
+				typestr(T), resPath, handle.id);
+		}
+		else
+		{
+			WZ_CORE_INFO("Registered resource:\n    Type:    {0}\n    ResPath: {1}\n    Id:      {2}",
+				typestr(T), resPath, handle.id);
+		}
 
 		DispatchEvent(ResourceRegisteredEvent(handle));
+
+		string idCountFile = s_resourceDir + ".id";
+		bool result = ulib::File::write(idCountFile, std::to_string(s_idCounter));
+		WZ_CORE_ASSERT(result, "failed writing .id file");
 
 		return handle;
 	}

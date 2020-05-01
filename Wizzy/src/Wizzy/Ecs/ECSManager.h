@@ -82,6 +82,8 @@ namespace Wizzy
 		void RemoveComponent(EntityHandle entity);
 		template <typename TComponent>
 		TComponent* GetComponent(EntityHandle entity) const;
+		template <typename TComponent>
+		bool HasComponent(EntityHandle entity) const;
 
 		std::vector<std::pair<StaticCId, IComponent*>> GetComponents(EntityHandle entity) const;
 
@@ -91,6 +93,8 @@ namespace Wizzy
 		void Deserialize(const PropertyTable& table);
 
 		void Clear();
+
+		void ForEachEntity(std::function<bool(EntityHandle)> callback);
 
 	private:
 		std::unordered_map<StaticCId, ComponentMem>		m_components;
@@ -113,6 +117,11 @@ namespace Wizzy
 		inline EntityDataRef& ToEntityData(EntityHandle handle) const
 		{
 			return ToRawType(handle)->second;
+		}
+
+		inline EntityHandle ToEntityHandle(Entity* e) const 
+		{
+			return static_cast<EntityHandle>(e);
 		}
 
 		void AddComponentInternal(Entity* entity,
@@ -148,5 +157,20 @@ namespace Wizzy
 		return static_cast<TComponent*>(GetComponentInternal(ToRawType(entity),
 			m_components.at(TComponent::staticId),
 			TComponent::staticId));
+	}
+	template <typename TComponent>
+	inline bool ECSManager::HasComponent(EntityHandle entity) const
+	{
+		// TODO: Use unordered_set instead of vector (#OPTIMIZE)
+		auto e = ToRawType(entity);
+
+		for (auto entry : e->second)
+		{
+			auto& type = entry.first;
+
+			if (type == TComponent::staticId) return true;
+		}
+
+		return false;
 	}
 }

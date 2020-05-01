@@ -9,6 +9,7 @@
 #include "Wizzy/Stopwatch.h"
 #include "Wizzy/JobSystem/JobSystem.h"
 #include "Wizzy/Renderer/Renderer2D.h"
+#include "Wizzy/Resource/ResourceManagement.h"
 
 #include "Wizzy/Instrumentor.h"
 
@@ -92,18 +93,19 @@ namespace Wizzy {
 
 		JobSystem::Init();
 
+		ResourceManagement::SetResourceDir("");
+
 		this->Init();
+
+		DISPATCH_EVENT_LOCAL(AppInitEvent);
 
 		Renderer2D::Init();
 
-		DISPATCH_EVENT_LOCAL(AppInitEvent);
 		std::future<void> as;
 		int64 f = 0;
 		
 		while (m_running) {
-			string frameStr = "FRAME #" + std::to_string(++f);
-			WZ_PROFILE_SCOPE(frameStr.c_str());
-			m_window->OnFrameBegin();
+			WZ_PROFILE_SCOPE("App loop");
 
 			DISPATCH_EVENT_LOCAL(AppFrameBeginEvent, m_window->GetDeltaTime());
 

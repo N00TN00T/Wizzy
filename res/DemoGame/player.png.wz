@@ -1,7 +1,7 @@
 [6]:
 "WrapMode":9
-"resPath":"Wizzy.png"
+"resPath":"DemoGame/player.png"
 "MinFilterMode":6
 "MagFilterMode":8
 "type":"class Wizzy::Texture"
-"id":189
+"id":1

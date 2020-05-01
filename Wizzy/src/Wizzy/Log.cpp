@@ -10,7 +10,7 @@ namespace Wizzy {
 
 	void Log::Init() {
 #ifdef WZ_CONFIG_DEBUG
-		spdlog::set_pattern("%^==============================================================================\n[%n - %l - %H:%M:%S:%e - %s - Line %# - Thread %t]\n==============================================================================%$\n%v\n");
+		spdlog::set_pattern("%^================================================================================================================\n[%n - %l - %H:%M:%S:%e - %s - %! - Line %# - Thread %t]\n================================================================================================================%$\n%v\n");
 #elif defined(WZ_CONFIG_RELEASE)
 		spdlog::set_pattern("%^%v%$\n");
 #elif defined(WZ_CONFIG_DIST)
@@ -18,7 +18,7 @@ namespace Wizzy {
 #else
 #error No configuration defined
 #endif
-        s_coreLogger = spdlog::stdout_color_mt("Core");
+			s_coreLogger = spdlog::stdout_color_mt("Core");
         SetCoreLogLevel(LOG_LEVEL_TRACE);
 		
         s_clientLogger = spdlog::stdout_color_mt("Client");
