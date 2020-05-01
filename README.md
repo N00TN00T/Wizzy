@@ -3,9 +3,7 @@ Wizzy engine aims to be a cross-platform interactive application engine for crea
 
 ## Development
 The development can be followed on my trello board
-<div>
-  <iframe src="https://trello.com/b/Y1N2zPXm.html" width="800em" height="600em"></iframe>
-</div>
+<iframe src="https://trello.com/b/Y1N2zPXm.html" width="800px" height="600px"> </iframe>
 
 ## Building
 
