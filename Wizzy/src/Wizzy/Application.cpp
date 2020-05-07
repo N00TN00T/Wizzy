@@ -14,7 +14,7 @@
 #include "Wizzy/Instrumentor.h"
 
 
-#define DISPATCH_EVENT_LOCAL(eType, ...) { this->OnEvent(eType(__VA_ARGS__)); }
+#define DISPATCH_EVENT_LOCAL(eType, ...) { this->DispatchEvent(eType(__VA_ARGS__)); }
 
 namespace Wizzy {
 
@@ -28,8 +28,8 @@ namespace Wizzy {
 
 	}
 
-	void Application::OnEvent(Event& e) {
-		//WZ_PROFILE_FUNCTION();
+	void Application::DispatchEvent(Event& e)
+	{
 		EventDispatcher _dispatcher(e);
 
 		_dispatcher.Dispatch<WindowCloseEvent>([this](WindowCloseEvent& e) {
@@ -37,10 +37,8 @@ namespace Wizzy {
 			return false;
 		});
 
-		WZ_CORE_TRACE("Notifying client systems '{0}'", e);
-		m_clientEcs.NotifySystems(m_clientSystems, e);
-		WZ_CORE_TRACE("Notifying engine systems '{0}'", e);
-		m_engineEcs.NotifySystems(m_engineSystems, e);
+		WZ_CORE_TRACE("Notifying systems '{0}'", e);
+		m_ecs.NotifySystems(m_systems, e);
 
 		for (auto& fn : m_eventCallbacks)
 		{
@@ -75,37 +73,31 @@ namespace Wizzy {
 			900);
 
 		m_window = std::shared_ptr<IWindow>(IWindow::Create(_windowProps));
-		m_window->SetEventCallback(WZ_BIND_FN(Application::OnEvent));
+		m_window->SetEventCallback(WZ_BIND_FN(Application::DispatchEvent));
 
 		m_running = true;
-
-		ImGuiComponent _imguiComponent;
-		Wizzy::IComponent* _comps[] = {
-			&_imguiComponent
-		};
-		Wizzy::StaticCId _ids[] = {
-			ImGuiComponent::staticId
-		};
-
-		m_engineEcs.CreateEntity(_comps, _ids, 1);
-
-		m_engineSystems.AddSystem<ImGuiSystem>();
-
+		
 		JobSystem::Init();
 
 		ResourceManagement::SetResourceDir("");
 
+		Renderer2D::Init();
+		
 		this->Init();
+
+		m_ecs.CreateEntity<ImGuiComponent>();
+		m_systems.AddSystem<ImGuiSystem>();
 
 		DISPATCH_EVENT_LOCAL(AppInitEvent);
 
-		Renderer2D::Init();
 
 		std::future<void> as;
 		int64 f = 0;
 		
 		while (m_running) {
 			WZ_PROFILE_SCOPE("App loop");
+
+			m_window->OnFrameBegin();
 
 			DISPATCH_EVENT_LOCAL(AppFrameBeginEvent, m_window->GetDeltaTime());
 
@@ -114,9 +106,10 @@ namespace Wizzy {
 			DISPATCH_EVENT_LOCAL(AppRenderEvent);
 
 			DISPATCH_EVENT_LOCAL(AppFrameEndEvent, m_window->GetDeltaTime());
-			
 
 			m_window->OnFrameEnd();
+
+			ResourceManagement::_Update();
 
 		}
 		DISPATCH_EVENT_LOCAL(AppShutdownEvent, 0);

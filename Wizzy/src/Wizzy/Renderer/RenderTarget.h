@@ -27,15 +27,15 @@ namespace Wizzy {
         virtual
         u32 GetTextureId() const = 0;
         virtual
-        u32 GetWidth() const = 0;
+        s32 GetWidth() const = 0;
         virtual
-        u32 GetHeight() const = 0;
+        s32 GetHeight() const = 0;
 
         virtual
-        void SetSize(u32 width, u32 height) = 0;
+        void SetSize(s32 width, s32 height) = 0;
 
         static
-        RenderTarget* Create(u32 width, u32 height);
+        RenderTarget* Create(s32 width, s32 height, s32 channels = 4);
 
         static Resource* Create(const ResData& data, const PropertyTable& props);
 

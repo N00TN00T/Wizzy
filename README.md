@@ -1,3 +1,4 @@
+<img src="https://charlie-malmqvist.com/wizzy-ware-logo.png">
 # Wizzy Engine
 Wizzy engine aims to be a cross-platform interactive application engine for creating any form of interactive applications from a 3D modelling application or a 2D graphics application to a game engine interface.
 

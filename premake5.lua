@@ -366,6 +366,6 @@ project "Sandbox"
     defines { "WZ_CONFIG_DIST", "WZ_DISABLE_ASSERTS" }
     runtime "Release"
     symbols "Off"
-    optimize "Speed"
+    optimize "Full"
 
 --[[------------------------------------------------------------------------------------]]

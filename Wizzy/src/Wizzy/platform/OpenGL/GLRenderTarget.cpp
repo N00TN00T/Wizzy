@@ -9,8 +9,8 @@
 
 namespace Wizzy {
 
-    GLRenderTarget::GLRenderTarget(u32 width, u32 height)
-        : m_width(width), m_height(height), RenderTarget(PropertyTable()) {
+    GLRenderTarget::GLRenderTarget(s32 width, s32 height, s32 channels)
+        : m_width(width), m_height(height), m_channels(channels), RenderTarget(PropertyTable()) {
         Init();
     }
     GLRenderTarget::GLRenderTarget(const ResData& encoded, const PropertyTable& props)
@@ -57,13 +57,13 @@ namespace Wizzy {
         GL_CALL(glBindTexture(GL_TEXTURE_2D, 0));
     }
 
-    void GLRenderTarget::SetSize(u32 width, u32 height) {
+    void GLRenderTarget::SetSize(s32 width, s32 height) {
 
         WZ_CORE_TRACE("Changing size on GL RenderTarget (framebuffer)");
 
         GL_CALL(glBindFramebuffer(GL_FRAMEBUFFER, m_frameBufferId));
 
-        SetTexture(m_textureId, width, height);
+        SetTexture(m_textureId, width, height, m_channels);
 
         GL_CALL(glBindFramebuffer(GL_FRAMEBUFFER, 0));
 
@@ -73,42 +73,32 @@ namespace Wizzy {
         m_height = height;
     }
 
-    u32 GLRenderTarget::CreateTexture(u32 width, u32 height, byte* data) {
+    u32 GLRenderTarget::CreateTexture(s32 width, s32 height, s32 channels, byte* data) {
         u32 _textureId;
         GL_CALL(glGenTextures(1, &_textureId));
 
-        SetTexture(_textureId, width, height, data);
+        SetTexture(_textureId, width, height, channels, data);
 
         return _textureId;
     }
 
-    void GLRenderTarget::SetTexture(u32 textureId, u32 width, u32 height, byte* data) {
+    void GLRenderTarget::SetTexture(u32 textureId, s32 width, s32 height, s32 channels, byte* data) {
         GL_CALL(glBindTexture(GL_TEXTURE_2D, textureId));
 
-        GL_CALL(glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, width, height, 0, GL_RGBA,
+        GLenum fmt = TextureChannelsToAPIFormat(channels);
+
+        GL_CALL(glTexImage2D(GL_TEXTURE_2D, 0, fmt, width, height, 0, fmt,
                      GL_UNSIGNED_BYTE, data));
 
         GL_CALL(glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR));
         GL_CALL(glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR));
         GL_CALL(glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT));
         GL_CALL(glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT));
-
+        
         GL_CALL(glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0,
                                GL_TEXTURE_2D, textureId, 0));
 
         GL_CALL(glBindTexture(GL_TEXTURE_2D, 0));
-    }
-    void GLRenderTarget::SetRenderBuffer(u32 renderBufferId, u32 width, u32 height) {
-        GL_CALL(glBindRenderbuffer(GL_RENDERBUFFER, renderBufferId));
-
-        GL_CALL(glRenderbufferStorage(GL_RENDERBUFFER, GL_DEPTH24_STENCIL8,
-                                      width, height));
-        GL_CALL(glFramebufferRenderbuffer(GL_FRAMEBUFFER,
-                                          GL_DEPTH_STENCIL_ATTACHMENT,
-                                          GL_RENDERBUFFER,
-                                          renderBufferId));
-
-        GL_CALL(glBindRenderbuffer(GL_RENDERBUFFER, 0));
     }
     void GLRenderTarget::Init(byte* data)
     {
@@ -119,7 +109,7 @@ namespace Wizzy {
         GL_CALL(glBindFramebuffer(GL_FRAMEBUFFER, m_frameBufferId));
 
         WZ_CORE_TRACE("Creating empty internal GL texture");
-        m_textureId = CreateTexture(m_width, m_height, data);
+        m_textureId = CreateTexture(m_width, m_height, m_channels, data);
 
         WZ_CORE_ASSERT(glCheckFramebufferStatus(GL_FRAMEBUFFER) == GL_FRAMEBUFFER_COMPLETE, "GL Frame buffer initialization failed");
 

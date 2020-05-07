@@ -36,6 +36,7 @@ namespace Wizzy
 	string ResourceManagement::s_resourceDir = "";
 	u32 ResourceManagement::s_freeIndicesCount = 0;
 	uId ResourceManagement::s_idCounter;
+	std::queue<ResourceManagement::ResourceAction> ResourceManagement::s_deferredActions;
 
 	void ResourceManagement::Load(const Resource::Handle& handle)
 	{
@@ -123,14 +124,23 @@ namespace Wizzy
 		__CHECK_HANDLE(handle, true);
 
 		auto& info = s_resourceInfo[handle];
+		info.isUnloading = true;
 
-		WZ_CORE_TRACE("Unloading resource (path: {0}, handle: {1})", info.resPath, info.id);
+		DeferAction([handle]() 
+		{
+			auto& info = s_resourceInfo[handle];
 
-		delete s_resource[info.resourceIndex];
-		s_resource[info.resourceIndex] = nullptr;
+			WZ_CORE_TRACE("Unloading resource (path: {0}, handle: {1})", info.resPath, info.id);
 
-		if (!info.runtime) WZ_CORE_INFO("Unloaded resource '{0}'", info.resPath);
-		DispatchEvent(ResourceUnloadedEvent(handle));
+			delete s_resource[info.resourceIndex];
+			s_resource[info.resourceIndex] = nullptr;
+
+			if (!info.runtime) WZ_CORE_INFO("Unloaded resource '{0}'", info.resPath);
+
+			info.isUnloading = false;
+
+			DispatchEvent(ResourceUnloadedEvent(handle));
+		});
 		
 	}
 
@@ -182,18 +192,23 @@ namespace Wizzy
 				Unload(handle);
 			}
 
-			DispatchEvent(ResourceDeletedEvent(handle));
+			info.isDeleting = true;
 
-			delete s_resource[info.resourceIndex];
-			s_resource[info.resourceIndex] = nullptr;
-			s_freeIndicesCount++;
+			DeferAction([handle, info]()
+			{
+				DispatchEvent(ResourceDeletedEvent(handle));
 
-			s_handles.erase(handle);
-			string resPath = s_resourceInfo[handle].resPath;
-			s_resourceInfo.erase(handle);
+				delete s_resource[info.resourceIndex];
+				s_resource[info.resourceIndex] = nullptr;
+				s_freeIndicesCount++;
 
-			if (!info.runtime) 	{WZ_CORE_INFO("Deleted resource '{0}'", resPath);}
-			else				{WZ_CORE_TRACE("Deleted resource '{0}'", resPath);}
+				s_handles.erase(handle);
+				string resPath = s_resourceInfo[handle].resPath;
+				s_resourceInfo.erase(handle);
+
+				if (!info.runtime) 	{WZ_CORE_INFO("Deleted resource '{0}'", resPath);}
+				else				{WZ_CORE_TRACE("Deleted resource '{0}'", resPath);}
+			});
 	}
 
 	void ResourceManagement::SetResourceDir(const string& dir)
@@ -313,7 +328,7 @@ namespace Wizzy
 
 	void ResourceManagement::DispatchEvent(ResourceEvent& e)
 	{
-		Application::Get().OnEvent(e);
+		Application::Get().DispatchEvent(e);
 	}
 
 	void ResourceManagement::WriteMeta(const Resource::Handle& hnd)
@@ -367,7 +382,9 @@ namespace Wizzy
 
 	bool ResourceManagement::IsValid(const Resource::Handle& handle)
 	{
-		return s_handles.find(handle) != s_handles.end() && s_resourceInfo.find(handle) != s_resourceInfo.end();
+		return s_handles.find(handle) != s_handles.end() 
+			&& s_resourceInfo.find(handle) != s_resourceInfo.end()
+			&& !s_resourceInfo[handle].isDeleting;
 	}
 
 	bool ResourceManagement::IsValid(const string& resPath)
@@ -389,7 +406,9 @@ namespace Wizzy
 
 	bool ResourceManagement::IsLoaded(const Resource::Handle& handle)
 	{
-		return IsValid(handle) && s_resource[s_resourceInfo[handle].resourceIndex] != nullptr;
+		return IsValid(handle) 
+				&& !GetInfoFor(handle).isUnloading 
+				&& s_resource[s_resourceInfo[handle].resourceIndex] != nullptr;
 	}
 
 	bool ResourceManagement::IsFileRegistered(const string& resFile)
@@ -449,6 +468,23 @@ namespace Wizzy
 		{
 			if (!fn(hnd)) break;
 		}
+	}
+
+	void ResourceManagement::_Update()
+	{
+		while (s_deferredActions.size() > 0)
+		{
+			auto& action = s_deferredActions.front();
+
+			action();
+
+			s_deferredActions.pop();
+		}
+	}
+
+	void ResourceManagement::DeferAction(ResourceAction action)
+	{
+		s_deferredActions.push(action);
 	}
 
 }

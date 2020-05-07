@@ -51,7 +51,6 @@ namespace Wizzy {
         string              m_rawSource;
 		ShaderProgramSource m_source;
         u32					m_shaderId;
-
         
     };
 }

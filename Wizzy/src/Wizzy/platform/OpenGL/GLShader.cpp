@@ -7,7 +7,7 @@
 #include "Wizzy/platform/OpenGL/GLErrorHandling.h"
 #include "Wizzy/platform/OpenGL/GLAPI.h"
 #include "Wizzy/Utils.h"
-#include "Wizzy/PropertyLibrary.h"
+#include "Wizzy/PropertyTable.h"
 #include "Wizzy/WizzyExceptions.h"
 
 #define U_LOCATION(p, n) glGetUniformLocation(p, n)
@@ -17,6 +17,8 @@ bool string_is_glsl_type(const string& str) {
 }
 
 namespace Wizzy {
+
+    u32 g_currentlyBound = 0;
 
 	ShaderDataType string_to_shader_type(const string& str) {
 		
@@ -55,84 +57,120 @@ namespace Wizzy {
     }
 
     void GLShader::Bind() const {
-		GL_CALL(glUseProgram(m_shaderId));
+		if (g_currentlyBound != m_shaderId)
+        {
+            GL_CALL(glUseProgram(m_shaderId));
+            g_currentlyBound = m_shaderId;
+        }
     }
 
     void GLShader::Unbind() const {
-        GL_CALL(glUseProgram(0));
+        if (g_currentlyBound != 0)
+        {
+            GL_CALL(glUseProgram(0));
+            g_currentlyBound = 0;
+        }
     }
 
-    void GLShader::UploadMat4(const string& name, const mat4& value) {
+    void GLShader::UploadMat4(const string& name, const mat4& value) 
+    {
+        this->Bind();
         GL_CALL(glUniformMatrix4fv(U_LOCATION(m_shaderId, name.c_str()), 1,
                                       GL_FALSE, glm::value_ptr(value)));
     }
-    void GLShader::UploadMat3(const string& name, const mat3& value) {
+    void GLShader::UploadMat3(const string& name, const mat3& value) 
+    {
+        this->Bind();
         GL_CALL(glUniformMatrix3fv(U_LOCATION(m_shaderId, name.c_str()), 1,
                                       GL_FALSE, glm::value_ptr(value)));
     }
 
-    void GLShader::Upload1i(const string & name, const int32 & value) {
+    void GLShader::Upload1i(const string & name, const int32 & value) 
+    {
+        this->Bind();
 		GL_CALL(glUniform1i(U_LOCATION(m_shaderId, name.c_str()), value));
 	}
 
-    void GLShader::Upload2i(const string & name, const int32 *value) {
+    void GLShader::Upload2i(const string & name, const int32 *value) 
+    {
+        this->Bind();
 		GL_CALL(glUniform2i(U_LOCATION(m_shaderId, name.c_str()), value[0], value[1]));
 	}
 
-    void GLShader::Upload3i(const string & name, const int32 *value) {
+    void GLShader::Upload3i(const string & name, const int32 *value) 
+    {
+        this->Bind();
 		GL_CALL(glUniform3i(U_LOCATION(m_shaderId, name.c_str()), value[0], value[1], value[2]));
 	}
 
-    void GLShader::Upload4i(const string & name, const int32 *value) {
+    void GLShader::Upload4i(const string & name, const int32 *value) 
+    {
+        this->Bind();
 		GL_CALL(glUniform4i(U_LOCATION(m_shaderId, name.c_str()), value[0], value[1], value[2], value[3]));
 	}
 
-	void GLShader::Upload1f(const string & name, const float & value) {
+	void GLShader::Upload1f(const string & name, const float & value) 
+    {
+        this->Bind();
 		GL_CALL(glUniform1f(U_LOCATION(m_shaderId, name.c_str()), value));
 	}
 
-	void GLShader::Upload2f(const string & name, const vec2 & value) {
+	void GLShader::Upload2f(const string & name, const vec2 & value) 
+    {
+        this->Bind();
 		GL_CALL(glUniform2f(U_LOCATION(m_shaderId, name.c_str()), value.x, value.y));
 	}
 
-	void GLShader::Upload3f(const string& name, const vec3& value) {
+	void GLShader::Upload3f(const string& name, const vec3& value) 
+    {
+        this->Bind();
 		GL_CALL(glUniform3f(U_LOCATION(m_shaderId, name.c_str()), value.x, value.y, value.z));
 	}
 
-	void GLShader::Upload4f(const string& name, const vec4& value) {
+	void GLShader::Upload4f(const string& name, const vec4& value) 
+    {
+        this->Bind();
 		GL_CALL(glUniform4f(U_LOCATION(m_shaderId, name.c_str()), value.x, value.y, value.z, value.w));
 	}
 
     void GLShader::Upload1iv(const string& name, const u32& count, const int32* value)
     {
+        this->Bind();
         GL_CALL(glUniform1iv(U_LOCATION(m_shaderId, name.c_str()), count, value));
     }
     void GLShader::Upload2iv(const string& name, const u32& count, const int32* value)
     {
+        this->Bind();
         GL_CALL(glUniform2iv(U_LOCATION(m_shaderId, name.c_str()), count, value));
     }
     void GLShader::Upload3iv(const string& name, const u32& count, const int32* value)
     {
+        this->Bind();
         GL_CALL(glUniform3iv(U_LOCATION(m_shaderId, name.c_str()), count, value));
     }
     void GLShader::Upload4iv(const string& name, const u32& count, const int32* value)
     {
+        this->Bind();
         GL_CALL(glUniform4iv(U_LOCATION(m_shaderId, name.c_str()), count, value));
     }
     void GLShader::Upload1fv(const string& name, const u32& count, const float* value)
     {
+        this->Bind();
         GL_CALL(glUniform1fv(U_LOCATION(m_shaderId, name.c_str()), count, value));
     }
     void GLShader::Upload2fv(const string& name, const u32& count, const vec2& value)
     {
+        this->Bind();
         GL_CALL(glUniform2fv(U_LOCATION(m_shaderId, name.c_str()), count, glm::value_ptr(value)));
     }
     void GLShader::Upload3fv(const string& name, const u32& count, const vec3& value)
     {
+        this->Bind();
         GL_CALL(glUniform3fv(U_LOCATION(m_shaderId, name.c_str()), count, glm::value_ptr(value)));
     }
     void GLShader::Upload4fv(const string& name, const u32& count, const vec4& value)
     {
+        this->Bind();
         GL_CALL(glUniform4fv(U_LOCATION(m_shaderId, name.c_str()), count, glm::value_ptr(value)));
     }
 

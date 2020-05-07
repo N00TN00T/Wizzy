@@ -1,6 +1,6 @@
 #pragma once
 
-#include "Wizzy/PropertyLibrary.h"
+#include "Wizzy/PropertyTable.h"
 
 
 #define __HANDLE_DEF struct Handle : public ::Wizzy::Resource::Handle \
@@ -68,7 +68,7 @@ namespace Wizzy {
             };
 
             template <typename T>
-            inline bool Is()
+            inline bool Is() const
             {
                 return type == typestr(T::Handle);
             }

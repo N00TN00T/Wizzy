@@ -9,14 +9,17 @@ namespace Wizzy {
                 int32 channels, const PropertyTable& props = PropertyTable());
         ~GLTexture();
 
-        virtual
         void Bind(int32 location) const override;
-        virtual
         void Unbind() const override;
 
-        virtual void AddSubTexture(byte* data, int32 width, int32 height, int32 posX, int32 posY, int32 channels) override;
+        void AddSubTextureData(byte* data, int32 width, int32 height, int32 posX, int32 posY, int32 channels) override;
 
-        virtual ResData Serialize() const override;
+        void AddSubTexture(Texture* texture, s32 posX, s32 posY) override;
+
+        std::shared_ptr<byte> GetData() const override;
+        void SetData(byte* data, s32 channels, s32 width, s32 height) override;
+
+        ResData Serialize() const override;
 
     private:
         void Init(byte* data); 

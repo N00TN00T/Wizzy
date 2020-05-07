@@ -20,7 +20,7 @@ namespace Wizzy {
 		Application();
 		virtual ~Application();
 
-		void OnEvent(Event& e);
+		void DispatchEvent(Event& e);
 
 		void Run();
 
@@ -37,12 +37,13 @@ namespace Wizzy {
 
 		void AddEventCallback(const std::function<void(Event & e)>& fn);
 
+	private:
+		void OnEventBase(const Event& e);
+
 	protected:
 		std::shared_ptr<IWindow> m_window;
-		Wizzy::ECSManager m_clientEcs;
-		Wizzy::SystemLayer m_clientSystems;
-		Wizzy::ECSManager m_engineEcs;
-		Wizzy::SystemLayer m_engineSystems;
+		Wizzy::ECSManager m_ecs;
+		Wizzy::SystemLayer m_systems;
 
 	private:
 		bool m_running;

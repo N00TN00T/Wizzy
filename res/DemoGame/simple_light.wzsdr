@@ -1,0 +1,75 @@
+
+
+#shader vertex
+
+#version 330 core
+
+layout (location = 0) in vec2 v_position;
+layout (location = 1) in vec2 v_uv;
+layout (location = 2) in vec4 v_color;
+layout (location = 3) in float v_location;
+
+uniform mat4 u_camTransform;
+uniform float u_ambient;
+
+out vec2 position;
+out vec2 uv;
+out vec4 color;
+out float location;
+out float ambient;
+
+void main() {
+    position = v_position;
+    uv = v_uv;
+	location = v_location;
+	color = v_color;
+    ambient = u_ambient;
+    
+    gl_Position = u_camTransform * vec4(v_position, 0.0, 1.0);
+}
+
+
+#shader fragment
+
+#version 330 core
+
+#define MAX_LIGHT_COUNT 16
+
+out vec4 fragColor;
+
+
+in vec2 position;
+in vec2 uv;
+in vec4 color;
+in float location;
+in float ambient;
+
+struct PointLight
+{
+    vec2 lightPos;
+    vec4 lightColor;
+    float intensity;
+    float radius;
+};
+uniform PointLight u_pointLights[MAX_LIGHT_COUNT];
+uniform int u_pointLightCount = 0;
+
+uniform sampler2D u_textures[32];
+
+void main() {
+
+    fragColor = vec4(0.0, 0.0, 0.0, 1.0);
+
+    for (int i = 0; i < u_pointLightCount; i++)
+    {
+        float distRatio = max(1.0 - length((u_pointLights[i].lightPos - position) / (u_pointLights[i].radius * 2.0)), 0.0);
+
+        fragColor += distRatio * u_pointLights[i].lightColor * u_pointLights[i].intensity;
+    }    
+
+    fragColor = max(fragColor, vec4(vec3(ambient), 1.0));
+
+    vec4 textureColor = texture(u_textures[int(round(location))], uv);
+
+    fragColor *= color * textureColor;
+}

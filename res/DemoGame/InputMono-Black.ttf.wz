@@ -1,5 +1,6 @@
-[4]:
-"Font size":36
+[5]:
+"fontSize":36
+"budget":20480000
+"id":1015
 "resPath":"DemoGame/InputMono-Black.ttf"
 "type":"class Wizzy::Font"
-"id":1015

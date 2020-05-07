@@ -1,7 +1,7 @@
 #pragma once
 
 #include "Wizzy/Ecs/System.h"
-#include "Wizzy/PropertyLibrary.h"
+#include "Wizzy/PropertyTable.h"
 
 namespace Wizzy
 {

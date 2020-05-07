@@ -25,6 +25,9 @@ namespace Wizzy
 
         for (int32 i = 0; i < TOKEN_HEADER.size(); i++) header += data[i];
 
+        m_cacheBudget = props.Is<u32>("budget") 
+                        ? props.Get<u32>("budget")
+                        : DEFAULT_FONT_CACHE_BUDGET;
 
         /*
             Wizzy serialized ttf fonts to a custom file format after first
@@ -71,12 +74,12 @@ namespace Wizzy
             glm::vec2 textureSize = MeasureString(text);
             m_cache[text].hTexture = ResourceManagement::AddRuntimeResource
             (
-                (RenderTarget*)RenderTarget::Create(textureSize.x, textureSize.y), RenderTarget::GetTemplateProps()
+                (RenderTarget*)RenderTarget::Create(textureSize.x, textureSize.y, 1), RenderTarget::GetTemplateProps()
             );
             m_cachedStrings.push(text);
 
             m_cache[text].sizeBytes = 
-                (textureSize.x * textureSize.y * 4 * sizeof(float) 
+                (textureSize.x * textureSize.y * sizeof(float) * 3
                 + sizeof(RenderTarget)
                 + sizeof(vec2) 
                 + sizeof(size_t));
@@ -84,13 +87,9 @@ namespace Wizzy
 
             auto& hStringTexture = m_cache[text].hTexture;
 
-            Renderer2D::Pipeline pipeline(_MB(1));  // TODO: Set exact budget (#OPTIMIZE)
-                                                    // It's a big allocation that could happen
-                                                    // often potentially causing stuttering
-                                                    // if a lot of text is changed to new text
-                                                    // often
 
-
+            s64 pipelineBudget = Renderer2D::OBJECT_SIZE * text.length();
+            Renderer2D::Pipeline pipeline(pipelineBudget);
 
             pipeline.hShader = hShader;
             pipeline.camTransform = glm::ortho<float>(0, textureSize.x, 0, textureSize.y);
@@ -135,9 +134,12 @@ namespace Wizzy
             }
 
             Renderer2D::End(&pipeline);
-
-            while (m_cachedBytes > CACHE_BUDGET)
+            WZ_CORE_DEBUG(text);
+            WZ_CORE_DEBUG(m_cachedBytes);
+            while (m_cachedBytes > m_cacheBudget && m_cachedStrings.size() > 1)
             {
+                WZ_CORE_TRACE("Font cache budget exceeded at a count of {0} strings", m_cachedStrings.size());
+                WZ_CORE_DEBUG("WADU HEK?!!");
                 auto& str = m_cachedStrings.front();
 
                 auto& cache = m_cache[str];
@@ -149,6 +151,8 @@ namespace Wizzy
                 m_cache.erase(str);
 
                 m_cachedStrings.pop();
+
+                m_budgetOverflows++;
             }
 
             return hStringTexture;
@@ -206,7 +210,7 @@ namespace Wizzy
 
     void Font::ValidateCache()
     {
-        while (m_cachedBytes >= CACHE_BUDGET)
+        while (m_cachedBytes >= m_cacheBudget)
         {
             auto& top = m_cachedStrings.front();
 
@@ -239,7 +243,9 @@ namespace Wizzy
             std::cout << "Failed loading font face\n";
             abort();
         }
-        m_fontSize = props.Is<int32>("Font size") ? props.Get<int32>("Font size") : GetTemplateProps().Get<int32>("Font size");
+        m_fontSize = props.Is<int32>("fontSize") 
+                    ? props.Get<int32>("fontSize") 
+                    : GetTemplateProps().Get<int32>("fontSize");
         FT_Set_Pixel_Sizes(face, 0, m_fontSize);
 
         int32 rowWidth = 0;
@@ -263,8 +269,6 @@ namespace Wizzy
 
             charCount++;
         }
-
-        m_spaceSize = atlasWidth / charCount;
 
         WZ_CORE_TRACE("Creating atlas texture");
         PropertyTable atlasProps = Texture::GetTemplateProps();
@@ -298,7 +302,7 @@ namespace Wizzy
             if (glyph->bitmap.buffer)
             {
                 auto& atlasTexture = ResourceManagement::Get<Texture>(m_hAtlasTexture);
-                atlasTexture.AddSubTexture(glyph->bitmap.buffer, glyph->bitmap.width, glyph->bitmap.rows, textPos, 0, 1);
+                atlasTexture.AddSubTextureData(glyph->bitmap.buffer, glyph->bitmap.width, glyph->bitmap.rows, textPos, 0, 1);
             }
 
             textPos += glyph->bitmap.width;

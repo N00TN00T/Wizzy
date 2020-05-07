@@ -52,7 +52,7 @@ namespace Wizzy {
         GL_CALL(glBindTexture(GL_TEXTURE_2D, 0));
     }
 
-	void GLTexture::AddSubTexture(byte* data, int32 width, int32 height, int32 posX, int32 posY, int32 channels)
+	void GLTexture::AddSubTextureData(byte* data, int32 width, int32 height, int32 posX, int32 posY, int32 channels)
 	{
         GLenum fmt = GL_RGBA;
         switch (channels)
@@ -62,26 +62,57 @@ namespace Wizzy {
         case 3: fmt = GL_RGB; break;
         case 4: fmt = GL_RGBA; break;
         }
-        this->Bind(1);
+        this->Bind(0);
         GL_CALL(glTexSubImage2D(GL_TEXTURE_2D, 0, posX, posY, width, height, fmt, GL_UNSIGNED_BYTE, data));
         this->Unbind();
 	}
 
+    void GLTexture::AddSubTexture(Texture* texture, s32 posX, s32 posY) 
+    {
+        std::shared_ptr<byte> pixels = texture->GetData();
+
+        this->AddSubTextureData
+        (
+            pixels.get(), 
+            texture->GetWidth(), 
+            texture->GetHeight(), 
+            posX,
+            posY,
+            texture->GetChannels()
+        );
+    }
+
+    std::shared_ptr<byte> GLTexture::GetData() const
+    {
+        byte* pixels = (byte*)malloc((s64)m_width * (s64)m_height * (s64)m_channels);
+
+        GL_CALL(glBindTexture(GL_TEXTURE_2D, m_textureId));
+        GL_CALL(glGetTexImage(GL_TEXTURE_2D, 0, GL_TextureChannelsToAPIFormat(m_channels), GL_UNSIGNED_BYTE, pixels));
+        this->Bind(0);
+
+        this->Unbind();
+
+        return std::shared_ptr<byte>(pixels);
+    }
+    void GLTexture::SetData(byte* data, s32 channels, s32 width, s32 height) 
+    {
+        GLenum fmt = GL_TextureChannelsToAPIFormat(channels);
+
+        WZ_CORE_TRACE("Setting texture data ({0} channles, {1}x{2})", channels, width, height);
+        GL_CALL(glTexImage2D(GL_TEXTURE_2D, 0, fmt, width, height,
+                             0, fmt, GL_UNSIGNED_BYTE, data));
+    }
+
     ResData GLTexture::Serialize() const
     {
-        byte* pixels = (byte*)malloc((int64)m_width * (int64)m_height * (int64)m_channels);
-
-        glBindTexture(GL_TEXTURE_2D, m_textureId);
-        glGetTexImage(GL_TEXTURE_2D, 0, GL_TextureChannelsToAPIFormat(m_channels), GL_UNSIGNED_BYTE, pixels);
-        glBindTexture(GL_TEXTURE_2D, 0);
+        std::shared_ptr<byte> pixels = this->GetData();
 
         int32 len = 0;
         Image::set_vertical_flip_on_write(true);
-        byte* serializedBytes = Image::encode_png(pixels, m_width, m_height, m_channels, len);
+        byte* serializedBytes = Image::encode_png(pixels.get(), m_width, m_height, m_channels, len);
         ResData data(serializedBytes, serializedBytes + len);
         
         delete serializedBytes;
-        free(pixels);
 
         return data;
     }
@@ -154,11 +185,7 @@ namespace Wizzy {
 
         GL_CALL(glPixelStorei(GL_UNPACK_ALIGNMENT, 1));
 
-        GLenum fmt = GL_TextureChannelsToAPIFormat(m_channels);
-
-        WZ_CORE_TRACE("Creating GL tex2d depending on given image type in flags");
-        GL_CALL(glTexImage2D(GL_TEXTURE_2D, 0, fmt, m_width, m_height,
-                             0, fmt, GL_UNSIGNED_BYTE, data));
+        this->SetData(data, m_channels, m_width, m_height);
 
         WZ_CORE_TRACE("Generating mitmaps");
         

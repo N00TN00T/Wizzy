@@ -94,7 +94,7 @@
 
 #define IS_DECIMAL(T)   typestr(T) == typestr(float) || typestr(T) == typestr(double)
 
-#define IS_STRING(T)    typestr(T) == typestr(string) || typestr(T) == typestr(char*)
+#define IS_STRING(T)    std::is_same<T, string>() || std::is_same<T, char*>()
 
 #define IS_BOOL(T)      typestr(T) == typestr(bool)
 

@@ -213,7 +213,8 @@ namespace Wizzy
 		Pipeline* pipeline,
 		const Texture::Handle& hTexture,  
 		const vec2& position, 
-		const vec2 scale, float rotation, 
+		const vec2& scale, 
+		float rotation, 
 		const Color& color, 
 		const Rect& renderRect)
 	{
@@ -259,7 +260,8 @@ namespace Wizzy
 		Pipeline* pipeline,
 		const RenderTarget::Handle& hTexture,  
 		const vec2& position, 
-		const vec2 scale, float rotation, 
+		const vec2& scale, 
+		float rotation, 
 		const Color& color, 
 		const Rect& renderRect)
 	{
@@ -305,7 +307,7 @@ namespace Wizzy
 		const Font::Handle& hFont,  
 		const string& text,
 		const vec2& position, 
-		const vec2 scale, 
+		const vec2& scale, 
 		float rotation, 
 		const Color& color)
 	{
@@ -328,19 +330,55 @@ namespace Wizzy
 			"Unloaded font in Renderer2D submission");
 
 		auto& font = ResourceManagement::Get<Font>(hFont);
+		
+		// TODO: Handle font cache budget overflows better (#OPTIMIZE)
+		/*if (font.GetNumBudgetOverflows() <= 0)
+		{
+			auto& hRenderTarget = font.Render(text, s_hTextShader);
 
-		if (!ResourceManagement::IsValid(pipeline->hShader)) 
-			pipeline->hShader = s_hTextShader;
-			
-		auto& hRenderTarget = font.Render(text, pipeline->hShader);
+			SubmitRenderTarget
+			(
+				pipeline,
+				hRenderTarget,
+				transform,
+				color
+			);
+		}
+		else
+		{*/
+			auto sz = font.MeasureString(text);
+			vec2 penPos(0.f, sz.y - font.GetFontSize());
+			for (auto c : text)
+			{
+				auto& info = font.CharInfo(c);
+				
+				if (c == '\n')
+				{
+					penPos.y -= font.GetFontSize();
+					penPos.x = 0;
+					continue;
+				}
 
-		SubmitRenderTarget
-		(
-			pipeline,
-			hRenderTarget,
-			transform,
-			color
-		);
+				if (c != ' ')
+				{
+					mat4 charTransform = glm::translate(transform, vec3(penPos.x + info.bearing.x, penPos.y + info.bearing.y - info.size.y, 0.f));
+					
+					Renderer2D::SubmitTexture
+					(
+						pipeline,
+						font.GetAtlasTexture(),
+						charTransform,
+						color,
+						Rect(info.xPos, info.size.y , info.size.x, -info.size.y)
+					);
+				}
+				
+
+				penPos += info.advance;
+			}
+		/*}
+
+		pipeline->lastFontBudgetOverflows[hFont] = font.GetNumBudgetOverflows();*/
 	}
 
 	void Renderer2D::SubmitRect(
@@ -380,9 +418,11 @@ namespace Wizzy
 			shader = &ResourceManagement::Get<Shader>(s_hFallbackShader);
 		}
 
+		// TODO: Do shader uploads in Begin() instead (#OPTIMIZE)
 		shader->Bind();
 		shader->UploadMat4("u_camTransform", pipeline->camTransform);
 
+		// TODO: Only do this once per shader (#OPTIMIZE)
 		static const int slots[32] = 
 		{ 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 
 			17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30 ,31 };
@@ -390,7 +430,11 @@ namespace Wizzy
 
 		for (const auto& [hTexture, slot] : pipeline->textureSlots)
 		{
-			if (ResourceManagement::Is<Texture>(hTexture))
+			if (!ResourceManagement::IsLoaded(hTexture))
+			{
+				continue;
+			}
+			else if (ResourceManagement::Is<Texture>(hTexture))
 			{
 				auto& texture = ResourceManagement::Get<Texture>(hTexture);
 				texture.Bind(slot);
@@ -496,8 +540,8 @@ namespace Wizzy
 			uv[3].x = left; uv[3].y = top;
 
 			
-			size.x *= renderRect.w / size.x;
-			size.y *= renderRect.h / size.y;
+			size.x *= std::fabsf(renderRect.w / size.x);
+			size.y *= std::fabsf(renderRect.h / size.y);
 		}
 
 		auto& pBuffer = pipeline->pBufferCurrent;

@@ -48,6 +48,8 @@ namespace Wizzy
 		string				type;
 		bool				runtime = false;
 		bool				binary;
+		bool				isUnloading = false;
+		bool				isDeleting = false;
 		std::filesystem::file_time_type lastWrite;
 		uId id;
 
@@ -69,6 +71,12 @@ namespace Wizzy
 	class ResourceManagement
 	{
 	public:
+
+		template <typename T, typename ...Targ>
+		static typename T::Handle Create(const string& resPath, Targ&... arg);
+
+		template <typename T, typename ...Targ>
+		static typename T::Handle CreateRuntime(Targ&... arg);
 
 		// Add file to resource directory and register it to a handle. Will NOT load the resource.
 		template <typename T>
@@ -137,6 +145,9 @@ namespace Wizzy
 
 		static Resource::Handle IdToHandle(uId id);
 
+
+		static void _Update();
+
 	private:
 		template <typename T>
 		static typename T::Handle Register(string resPath, const PropertyTable& props, bool runtime = false);
@@ -151,6 +162,9 @@ namespace Wizzy
 		static bool HasMeta(const Resource::Handle& hnd);
 		static bool HasMeta(const string& resPath);
 
+		typedef std::function<void()> ResourceAction;
+		static void DeferAction(ResourceAction action);
+
 	private:
 		static std::vector<Resource*> s_resource;
 		static Resource::HandleMap<ResourceInfo> s_resourceInfo;
@@ -158,7 +172,25 @@ namespace Wizzy
 		static string s_resourceDir;
 		static u32 s_freeIndicesCount;
 		static uId s_idCounter;
+		
+		static std::queue<ResourceAction> s_deferredActions;
 	};
+
+	template <typename T, typename ...Targ>
+	inline typename T::Handle ResourceManagement::Create(const string& resPath, Targ&... arg)
+	{
+		T* res = (T*)T::Create(arg...);
+		PropertyTable props = res->GetProps();
+		return AddResource<T>(res, resPath, props);
+	}
+
+	template <typename T, typename ...Targ>
+	inline typename T::Handle ResourceManagement::CreateRuntime(Targ&... arg)
+	{
+		T* res = (T*)T::Create(arg...);
+		PropertyTable props = res->GetProps();
+		return AddRuntimeResource<T>(res, props);
+	}
 
 	template<typename T>
 	inline typename T::Handle ResourceManagement::AddToResourceDir(const string& file, string resPath, const PropertyTable& props)
@@ -277,6 +309,7 @@ namespace Wizzy
 			WZ_THROW(ResourceInvalidPathException, resPath);
 		}
 
+		WZ_CORE_TRACE("Trying to read resource file if not runtime");
 		ResData fileData;
 		if (!ulib::File::read(s_resourceDir + resPath, &fileData, T::IsFileBinary()) && !runtime)
 		{
@@ -285,6 +318,7 @@ namespace Wizzy
 
 		uId id = 0;
 
+		WZ_CORE_TRACE("Looking for meta to determine ID");
 		if (!runtime && HasMeta(resPath))
 		{
 			auto metaData = ReadMeta(resPath);
@@ -314,6 +348,8 @@ namespace Wizzy
 			typestr(T),
 			runtime,
 			T::IsFileBinary(),
+			false,
+			false,
 			std::filesystem::file_time_type::clock::now(),
 			id
 		};
@@ -379,7 +415,7 @@ namespace Wizzy
 	template <typename T>
 	inline static bool ResourceManagement::Is(const Resource::Handle& hnd)
 	{
-		return IsValid(hnd) && typestr(T) == GetInfoFor(hnd).type;
+		return IsValid(hnd) && hnd.Is<T>();
 	}
 	
 }

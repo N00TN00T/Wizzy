@@ -2,136 +2,7 @@
 
 #include "Sandbox.h"
 
-struct TestComponent : public wz::Component<TestComponent>
-{
-	wz::Texture::Handle texture;
-	wz::Font::Handle font;
-	wz::Renderer2D::Pipeline* pipeline;
-	float frameTime = 0;
-	bool textured = false;
-	bool text = true;
-	float sizex = 30.f;
-	float sizey = 30.f;
-};
-
-class TestSystem : public wz::System
-{
-public:
-	TestSystem()
-	{
-		AddComponentType<TestComponent>();
-
-		Subscribe(wz::EventType::app_init);
-		Subscribe(wz::EventType::app_update);
-		Subscribe(wz::EventType::app_render);
-	}
-
-	virtual void OnEvent(const wz::Event& e, wz::ComponentGroup& components) const override
-	{
-		auto& comp = *components.Get<TestComponent>();
-		switch (e.GetEventType())
-		{
-			case wz::EventType::app_init:
-			{	
-				wz::ResourceManagement::SetResourceDir("../res/");
-
-				comp.texture = wz::ResourceManagement::Load<wz::Texture>("Wizzy.png");
-				comp.font = wz::ResourceManagement::Load<wz::Font>("InputMono-Black.ttf");
-
-				comp.pipeline = new wz::Renderer2D::Pipeline(_MB(15));
-				comp.pipeline->camTransform = glm::ortho<float>(0, 1600, 0, 900);
-
-				wz::RenderCommand::SetClearColor(wz::Color::blue);
-				return;
-			}
-			case wz::EventType::app_update:
-			{
-				wz::Renderer2D::Clear(comp.pipeline);
-				comp.frameTime = ((const wz::AppUpdateEvent&)e).GetDeltaTime();
-				return;
-			}
-			case wz::EventType::app_render:
-			{
-				wz::Renderer2D::ResetMetrics();
-
-				wz::Renderer2D::Begin(comp.pipeline);
-				
-				for (float x = 0.f; x < 1600.f; x += comp.sizex)
-				{
-					for (float y = 0.f; y < 900.f; y += comp.sizey)
-					{
-						if (!comp.textured)
-						{
-							wz::Renderer2D::SubmitRect
-							(
-								comp.pipeline,
-								wz::Rect(x, y, comp.sizex, comp.sizey),
-								wz::Color(0.f, x / 1600.f, y / 900.f, 1.f)
-							);
-						}
-						else
-						{
-							wz::Renderer2D::SubmitTexture
-							(
-								comp.pipeline,
-								comp.texture,
-								{ x, y },
-								{ comp.sizex / 16.f, comp.sizey / 16.f },
-								0,
-								wz::Color(1.f, x / 1600.f, y / 900.f, 1.f)
-							);
-						}
-					}
-				}
-
-				if (comp.text)
-				{
-					wz::Renderer2D::SubmitText
-					(
-						comp.pipeline, 
-						comp.font,
-						"I am very capable of rendering text\nI also support rendering strings with newlines (\\n) like this\nHowever, I sadly do not support unicode characters yet: äåöäåö",
-						{ 0, 100 },
-						{ 1.f, 1.f },
-						0,
-						wz::Color::white
-					);
-
-					wz::Renderer2D::SubmitText
-					(
-						comp.pipeline, 
-						comp.font,
-						"These texts are actually render targets that were rendered once\nSo it's pretty much 0 costs (until I render 100+ different texts)",
-						{ 0, 0 },
-						{ 1.f, 1.f },
-						0,
-						wz::Color::red
-					);
-				}
-
-				wz::Renderer2D::End(comp.pipeline);
-
-				const auto& metrics = wz::Renderer2D::GetMetrics();
-
-				ImGui::Begin("Renderer2D Metrics");
-				ImGui::Text("%i Quads", metrics.numQuads);
-				ImGui::Text("%i Indices", metrics.numIndices);
-				ImGui::Text("%i vertices", metrics.GetNumVertices());
-				ImGui::Text("%i Draw Calls", metrics.numDrawCalls);
-				ImGui::Text("%i Memory usage (bytes)", metrics.GetMemoryUsage());
-				ImGui::Text("%f Frame time (ms)", comp.frameTime);
-				ImGui::Text("%.1f FPS", 1.f / comp.frameTime);
-				ImGui::Checkbox("Textured quads", &comp.textured);
-				ImGui::DragFloat2("Quad size", &comp.sizex, .01f, 1.f, 100.f);
-				ImGui::Checkbox("Render text", &comp.text);
-				ImGui::End();
-
-				return;
-			}
-		}
-	}
-
-};
+#define str(x) std::to_string(x)
 
 Sandbox::Sandbox()
 {
@@ -148,13 +19,155 @@ void Sandbox::Init()
 
 	srand(time(NULL));
 
-	m_clientEcs.CreateEntity<TestComponent>();
+	AddEventCallback(WZ_BIND_FN(Sandbox::OnEvent));
 
-	m_clientSystems.AddSystem<TestSystem>();
+	wz::ResourceManagement::SetResourceDir(
+		ulib::File::directory_of(GetExecutablePath()) + "/../../../res/");
 
+	texture = wz::ResourceManagement::Load<wz::Texture>("Wizzy.png");
+	font = wz::ResourceManagement::Load<wz::Font>("InputMono-Black.ttf");
+	//song = wz::ResourceManagement::Load<wz::AudioClip>("song.wav");
+
+	pipeline = new wz::Renderer2D::Pipeline(_MB(15));
+	pipeline->camTransform = glm::ortho<float>(0, 1600, 0, 900);
+
+	textPipeline = new wz::Renderer2D::Pipeline(_MB(5));
+	textPipeline->camTransform = glm::ortho<float>(0, 1600, 0, 900);
+	textPipeline->hShader = wz::Renderer2D::GetTextShader();
+
+	wz::RenderCommand::SetClearColor(wz::Color::blue);
+
+	#ifndef WZ_CONFIG_DEBUG
+	sizex = sizey = 3.8f;
+	#endif
+
+	return;
 }
 
 
 void Sandbox::Shutdown()
 {
+}
+
+void Sandbox::OnEvent(wz::Event& e)
+{
+	wz::EventDispatcher dispatcher(e);
+
+	dispatcher.Dispatch<wz::AppUpdateEvent>(WZ_BIND_FN(Sandbox::Update));
+	dispatcher.Dispatch<wz::AppRenderEvent>(WZ_BIND_FN(Sandbox::Render));
+}
+
+bool Sandbox::Update(wz::AppUpdateEvent& e)
+{
+	try
+	{
+		wz::ResourceManagement::Validate();
+	}
+	catch(const wz::ResourceException& e)
+	{
+		WZ_CORE_CRITICAL("Resource validation failed:\n", e.GetMessage());
+		WZ_BREAK;
+	}
+	
+
+	frameTime = ((const wz::AppUpdateEvent&)e).GetDeltaTime();
+
+	return false;
+}
+
+bool Sandbox::Render(wz::AppRenderEvent& e)
+{
+	wz::Renderer2D::Clear(pipeline);
+	wz::Renderer2D::ResetMetrics();
+	wz::Renderer2D::Begin(pipeline);
+	
+	for (float x = 0.f; x < 1600.f; x += sizex)
+	{
+		for (float y = 0.f; y < 900.f; y += sizey)
+		{
+			if (!textured)
+			{
+				wz::Renderer2D::SubmitRect
+				(
+					pipeline,
+					wz::Rect(x, y, sizex, sizey),
+					wz::Color(0.f, x / 1600.f, y / 900.f, 1.f)
+				);
+			}
+			else
+			{
+				wz::Renderer2D::SubmitTexture
+				(
+					pipeline,
+					texture,
+					{ x, y },
+					{ sizex / 16.f, sizey / 16.f },
+					0,
+					wz::Color(1.f, x / 1600.f, y / 900.f, 1.f)
+				);
+			}
+		}
+	}
+
+	const auto& metrics = wz::Renderer2D::GetMetrics();
+
+	
+
+	wz::Renderer2D::End(pipeline);
+
+	wz::Renderer2D::Begin(textPipeline);
+
+	if (text)
+	{
+		wz::Renderer2D::SubmitText
+		(
+			textPipeline, 
+			font,
+			"I am very capable of rendering text\nI also support rendering strings with newlines (\\n) like this\nHowever, I sadly do not support unicode characters yet: äåöäåö",
+			{ 0, 150 }
+		);
+
+		wz::Renderer2D::SubmitText
+		(
+			textPipeline, 
+			font,
+			"These texts are actually render targets that were rendered once\nSo static text costs just as much as rendering textures\nHowever, when cached texts exceeds the budget, there is a very \nnoticeable performance hit.",
+			{ 0, 0 },
+			{ 1.f, 1.f },
+			0,
+			wz::Color::red
+		);
+
+		vec2 pos = { 50.f, m_window->GetHeight() - 8 * 36 }; 
+		string metricsStr = str(metrics.numQuads) + " Quads\n"
+							+ str(metrics.numIndices) + " Indices\n"
+							+ str(metrics.GetNumVertices()) + " Vertices\n"
+							+ str(metrics.numDrawCalls + 1) + " Draw Calls\n"
+							+ str(metrics.GetMemoryUsage()) + " Memory Usage (bytes)\n"
+							//+ str(frameTime) + " Frame time (ms)\n"
+							//+ str(1.f / frameTime) + " FPS\n"
+							;
+		wz::Renderer2D::SubmitText(textPipeline, font, metricsStr, pos);
+	}
+
+	wz::Renderer2D::End(textPipeline);
+
+	ImGui::Begin("Debug");
+	ImGui::Checkbox("Textured quads", &textured);
+	ImGui::DragFloat2("Quad size", &sizex, .01f, 1.f, 100.f);
+	ImGui::Checkbox("Render text", &text);
+	ImGui::Text("%f Frame time (ms)", frameTime);
+	ImGui::Text("%f FPS", 1.f / frameTime);
+	if (!text)
+	{
+		ImGui::Text("%i Quads", metrics.numQuads);
+		ImGui::Text("%i Indices", metrics.numIndices);
+		ImGui::Text("%i Vertices", metrics.GetNumVertices());
+		ImGui::Text("%i Draw Calls", metrics.numDrawCalls);
+		ImGui::Text("%i Memory Usage (bytes)", metrics.GetMemoryUsage());
+	}
+
+	ImGui::End();
+
+	return false;
 }

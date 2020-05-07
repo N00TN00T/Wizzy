@@ -5,8 +5,8 @@
 #include "Wizzy/platform/OpenGL/GLRenderTarget.h"
 
 namespace Wizzy {
-    RenderTarget* RenderTarget::Create(u32 width, u32 height) {
-        CREATE_BY_API(new GLRenderTarget(width, height));
+    RenderTarget* RenderTarget::Create(s32 width, s32 height, s32 channels) {
+        CREATE_BY_API(new GLRenderTarget(width, height, channels));
     }
     Resource* RenderTarget::Create(const ResData& data, const PropertyTable& props)
     {

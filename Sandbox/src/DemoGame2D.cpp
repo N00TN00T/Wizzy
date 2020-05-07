@@ -4,7 +4,10 @@
 
 #define COMPONENT_DEF(n) struct n : public wz::Component<n>
 
+
 wz::Renderer2D::Pipeline* g_mainPipeline;
+wz::Renderer2D::Pipeline* g_textPipeline;
+u16 g_lightCounter = 0;
 wz::ECSManager* g_ecs;
 bool g_drawColliders = false;
 
@@ -16,7 +19,6 @@ COMPONENT_DEF(Position)
 COMPONENT_DEF(Sprite)
 {
     wz::Texture::Handle hTexture = WZ_NULL_RESOURCE_HANDLE;
-    wz::Color tint = wz::Color::white;
 };
 
 COMPONENT_DEF(PlayerConfig)
@@ -66,12 +68,23 @@ COMPONENT_DEF(Text)
 {
     wz::Font::Handle hFont;
     string value;
-    wz::Color color = wz::Color::white;
 };
 
 COMPONENT_DEF(ResourceComponent)
 {
     
+};
+
+COMPONENT_DEF(ColorTint)
+{
+    wz::Color value = wz::Color::white;
+};
+
+COMPONENT_DEF(LightConfig)
+{
+    float intensity = 1.f;
+	float ambient = .1f;
+	float radius = 100.f;
 };
 
 class PlayerController : public wz::System
@@ -426,6 +439,14 @@ public:
     }
 };
 
+class TestClass
+{
+public:
+
+
+private:
+};
+
 class SpriteRenderer : public wz::System
 {
 public:
@@ -434,16 +455,22 @@ public:
         AddComponentType<Position>();
         AddComponentType<Sprite>();
         AddComponentType<CollisionBox>(component_flag_optional);
+        AddComponentType<ColorTint>(component_flag_optional);
 
         Subscribe(wz::EventType::app_render);
         Subscribe(wz::EventType::app_frame_end);
 
+        
     }
 
     void OnEvent(const wz::Event& e, wz::ComponentGroup& components) const
     {
         auto& position = *components.Get<Position>();
         auto& sprite = *components.Get<Sprite>();
+
+        const wz::Color& color = components.Has<ColorTint>()
+                                ? components.Get<ColorTint>()->value
+                                : wz::Color::white;
 
         switch (e.GetEventType())
         {
@@ -458,7 +485,7 @@ public:
                         position.value,
                         { 1.f, 1.f },
                         0, 
-                        sprite.tint
+                        color
                     );
                 }
                 else 
@@ -467,7 +494,7 @@ public:
                     (
                         g_mainPipeline,
                         wz::Rect(position.value, { 32, 32 }),
-                        sprite.tint
+                        color
                     );
                 }
                 
@@ -511,19 +538,23 @@ public:
         auto& position = *components.Get<Position>();
         auto& text = *components.Get<Text>();
 
+        const wz::Color& color = components.Has<ColorTint>()
+                                ? components.Get<ColorTint>()->value
+                                : wz::Color::white;
+
         switch (e.GetEventType())
         {
             case wz::EventType::app_render:
             {
                 wz::Renderer2D::SubmitText
                 (
-                    g_mainPipeline,
+                    g_textPipeline,
                     text.hFont,
                     text.value,
                     position.value,
                     { 1.f, 1.f },
                     0.f,
-                    text.color
+                    color
                 );
 
                 return;
@@ -570,6 +601,7 @@ public:
                                                     wnd.GetHeight()
                                                 ));
                 g_mainPipeline->camTransform = camera.projection;
+                g_textPipeline->camTransform = camera.projection;
                 return;
             }
             case wz::EventType::window_resize:
@@ -581,25 +613,90 @@ public:
                                                     wnd.GetWidth(), 
                                                     wnd.GetHeight()
                                                 ));
-                g_mainPipeline->camTransform = camera.projection;
+                g_textPipeline->camTransform = camera.projection;
                 return;
             }
             case wz::EventType::app_update:
             {
-                if (!g_mainPipeline->IsReady())
-                {
-                    wz::Renderer2D::ResetMetrics();
-                    wz::Renderer2D::Clear(g_mainPipeline);
-                    wz::Renderer2D::Begin(g_mainPipeline);
-                }
+                wz::Renderer2D::ResetMetrics();
+
+                wz::Renderer2D::Clear(g_mainPipeline);
+                wz::Renderer2D::Begin(g_mainPipeline);
+
+                wz::Renderer2D::Clear(g_textPipeline);
+                wz::Renderer2D::Begin(g_textPipeline);
+
+                g_lightCounter = 0;
+
                 return;
             }
             case wz::EventType::app_frame_end:
             {
-                if (g_mainPipeline->IsReady())
+                wz::Renderer2D::End(g_mainPipeline);
+                wz::Renderer2D::End(g_textPipeline);
+                return;
+            }
+        }
+    }
+};
+
+class LightSystem : public wz::System
+{
+public:
+    LightSystem()
+    {
+        AddComponentType<Position>();
+        AddComponentType<LightConfig>();
+        AddComponentType<ColorTint>(component_flag_optional);
+
+        Subscribe(wz::EventType::app_update);
+
+    }
+
+    void OnEvent(const wz::Event& e, wz::ComponentGroup& components) const
+    {
+        auto& position = *components.Get<Position>();
+        auto& lightConfig = *components.Get<LightConfig>();
+
+        const wz::Color& color = components.Has<ColorTint>()
+                                ? components.Get<ColorTint>()->value
+                                : wz::Color::white;
+
+        switch (e.GetEventType())
+        {
+            case wz::EventType::app_update:
+            {
+                position.value = wz::Input::GetMousePos();
+
+                if (wz::ResourceManagement::IsLoaded(g_mainPipeline->hShader))
                 {
-                    wz::Renderer2D::End(g_mainPipeline);
+                    auto& shader = wz::ResourceManagement::Get<wz::Shader>(g_mainPipeline->hShader);
+
+                    shader.Upload1f("u_ambient", lightConfig.ambient);
+                    shader.Upload2f("u_pointLights[0].lightPos", position.value);
+                    shader.Upload4f("u_pointLights[0].lightColor", color);
+                    shader.Upload1f("u_pointLights[0].intensity", lightConfig.intensity);
+					shader.Upload1f("u_pointLights[0].radius", lightConfig.radius);
+
+                    shader.Upload1f("u_ambient", lightConfig.ambient);
+                    shader.Upload2f("u_pointLights[1].lightPos", position.value - vec2(0, 400));
+                    shader.Upload4f("u_pointLights[1].lightColor", color);
+                    shader.Upload1f("u_pointLights[1].intensity", lightConfig.intensity);
+					shader.Upload1f("u_pointLights[1].radius", lightConfig.radius);
+
+                    shader.Upload1i("u_pointLightCount", 2);
                 }
+
+				ImGui::Begin("Game Debugging");
+
+				ImGui::SliderFloat("Ambient Strength", &lightConfig.ambient, 0.f, .9f);
+				if (components.Has<ColorTint>())
+					ImGui::ColorEdit4("Light color", components.Get<ColorTint>()->value.rgba);
+				ImGui::DragFloat("Intensity", &lightConfig.intensity, .01f, .0f, 100.f);
+				ImGui::DragFloat("Radius", &lightConfig.radius, .1f, .0f, 10000.f);
+
+				ImGui::End();
+
                 return;
             }
         }
@@ -614,6 +711,16 @@ void DemoGame2D::Init()
     wz::ResourceManagement::SetResourceDir(resDir);
 
     g_mainPipeline = new wz::Renderer2D::Pipeline();
+    g_mainPipeline->hShader 
+                    = wz::ResourceManagement::Load<wz::Shader>("DemoGame/simple_light.wzsdr");
+    g_textPipeline  = new wz::Renderer2D::Pipeline();
+    g_textPipeline->hShader = wz::Renderer2D::GetTextShader();
+
+    {
+        auto e = m_ecs.CreateEntity<Position, Sprite>();
+        m_ecs.GetComponent<Sprite>(e)->hTexture
+                    = wz::ResourceManagement::Load<wz::Texture>("DemoGame/background.png");
+    }
 
     {
         Position p;
@@ -623,15 +730,15 @@ void DemoGame2D::Init()
         PlayerConfig pc;
         CollisionBox cb;
 
-        m_clientEcs.CreateEntity(p, s, pc, cb);
+        m_ecs.CreateEntity(p, s, pc, cb);
     }
 
     {
-        m_clientEcs.CreateEntity<Camera>();
+        m_ecs.CreateEntity<Camera>();
     }
 
     {
-        m_clientEcs.CreateEntity<Gui>();
+        m_ecs.CreateEntity<Gui>();
     }
 
     wz::Texture::Handle hBrickTexture
@@ -663,7 +770,8 @@ void DemoGame2D::Init()
                 Sprite s;
                 CollisionBox cb;
                 s.hTexture = hBrickTexture;
-                s.tint = wz::Color
+                ColorTint ct;
+                ct.value = wz::Color
                         (
                             (x + y) / (bounds.Right() + bounds.Top()), 
                             x / bounds.Right(), 
@@ -671,24 +779,24 @@ void DemoGame2D::Init()
                             1.f
                         );
 
-                auto e = m_clientEcs.CreateEntity(p, b, s, cb);
+                auto e = m_ecs.CreateEntity(p, b, s, cb, ct);
 
                 if (rand() % (int)(countx + county) == (int)countx)
                 {
                     Powerup pu;
-                    m_clientEcs.AddComponent(e, &pu);
+                    m_ecs.AddComponent(e, &pu);
                 }
             }    
         }
     }
 
     {
-        m_clientEcs.CreateEntity<ResourceComponent>();
+        m_ecs.CreateEntity<ResourceComponent>();
     }
 
     {
         // Game Tracker Entity
-        m_clientEcs.CreateEntity<Time, Text, Position>();
+        m_ecs.CreateEntity<Time, Text, Position>();
     }
 
     {
@@ -700,21 +808,33 @@ void DemoGame2D::Init()
         Sprite s;
         s.hTexture = wz::ResourceManagement::Load<wz::Texture>("DemoGame/ball.png");
 
-        m_clientEcs.CreateEntity(p, b, cb, s);
+        m_ecs.CreateEntity(p, b, cb, s);
     }
 
-    m_clientSystems.AddSystem<BallController>();
-    m_clientSystems.AddSystem<PlayerController>();
-    m_clientSystems.AddSystem<GuiSystem>();
-    m_clientSystems.AddSystem<CameraSystem>();
-    m_clientSystems.AddSystem<CollisionBoxUpdater>();
-    m_clientSystems.AddSystem<SpriteRenderer>();
-    m_clientSystems.AddSystem<BrickController>();
-    m_clientSystems.AddSystem<ResourceSystem>();
-    m_clientSystems.AddSystem<GameTracker>();
-    m_clientSystems.AddSystem<TextRenderer>();
+    {
+        auto e = m_ecs.CreateEntity<LightConfig, Position, ColorTint>();
+        m_ecs.GetComponent<ColorTint>(e)->value = wz::Color::white;
+    }
 
-    g_ecs = &m_clientEcs;
+    m_systems.AddSystem<BallController>();
+    m_systems.AddSystem<PlayerController>();
+    m_systems.AddSystem<GuiSystem>();
+    m_systems.AddSystem<CameraSystem>();
+    m_systems.AddSystem<CollisionBoxUpdater>();
+    m_systems.AddSystem<SpriteRenderer>();
+    m_systems.AddSystem<BrickController>();
+    m_systems.AddSystem<ResourceSystem>();
+    m_systems.AddSystem<GameTracker>();
+    m_systems.AddSystem<TextRenderer>();
+    m_systems.AddSystem<LightSystem>();
+
+    g_ecs = &m_ecs;
+
+    constexpr char code[] = R"(
+        test_var = 5
+    )";
+
+    wz::ResourceManagement::CreateRuntime<wz::Script, const char[27]>(code);
 }
 void DemoGame2D::Shutdown()
 {

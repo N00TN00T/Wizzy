@@ -31,6 +31,8 @@
 #include "Wizzy/Scripting/Script.h"
 #include "Wizzy/Scripting/ScriptContext.h"
 
+#include "Wizzy/Audio/AudioClip.h"
+
 #include "Wizzy/Ecs/ECSManager.h"
 
 #include "Wizzy/Rect.h"
