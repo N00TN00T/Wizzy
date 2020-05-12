@@ -11,7 +11,9 @@ namespace Wizzy {
 		char_sent,
 		mouse_press, mouse_release, mouse_move, mouse_scroll,
 		resource_register, resource_load, resource_save, resource_unload, resource_delete, resource_file_change,
-		client_event
+		client_event,
+
+		event_count
 	};
 
 	enum EventCategory {

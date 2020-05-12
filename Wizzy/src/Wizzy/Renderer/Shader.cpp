@@ -1,7 +1,6 @@
 #include "wzpch.h"
 
 #include "Wizzy/Renderer/Shader.h"
-#include "Wizzy/Utils.h"
 #include "Wizzy/platform/OpenGL/GLShader.h"
 #include "Wizzy/Renderer/Renderer.h"
 
@@ -48,6 +47,14 @@ namespace Wizzy {
 
         return nullptr;
     }
+
+    Resource* Shader::Create(const string& source, const PropertyTable& props) {
+
+        CREATE_BY_API(new GLShader(source, props));
+
+        return nullptr;
+    }
+
     const PropertyTable& Shader::GetTemplateProps()
     {
         if (!s_templateProps)

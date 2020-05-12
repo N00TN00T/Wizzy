@@ -41,6 +41,26 @@ void Sandbox::Init()
 	sizex = sizey = 3.8f;
 	#endif
 
+
+	wz::Game::Attach(m_systemLayer);
+
+	wz::Game::CreateCamera(&m_ecs);
+
+	for (float x = 0.f; x < 1600.f; x += sizex)
+	{
+		for (float y = 0.f; y < 900.f; y += sizey)
+		{
+			auto spr = wz::Game::CreateSprite(&m_ecs);
+			m_ecs.CreateComponent<wz::Game::Scale2D>(spr);
+			m_ecs.GetComponent<wz::Game::Sprite>(spr)->hTexture = texture;
+			m_ecs.GetComponent<wz::Game::Position2D>(spr)->value = { x, y };
+			m_ecs.GetComponent<wz::Game::Scale2D>(spr)->value = { sizex / 16.f, sizey / 16.f };
+		}
+	}
+
+	m_systemLayer.SetEnabledAll(false);
+
+
 	return;
 }
 
@@ -77,34 +97,37 @@ bool Sandbox::Update(wz::AppUpdateEvent& e)
 
 bool Sandbox::Render(wz::AppRenderEvent& e)
 {
-	wz::Renderer2D::Clear(pipeline);
-	wz::Renderer2D::ResetMetrics();
-	wz::Renderer2D::Begin(pipeline);
-	
-	for (float x = 0.f; x < 1600.f; x += sizex)
+
+	if (!useGameExtension)
 	{
-		for (float y = 0.f; y < 900.f; y += sizey)
+		wz::Renderer2D::Clear(pipeline);
+		wz::Renderer2D::Begin(pipeline);
+
+		for (float x = 0.f; x < 1600.f; x += sizex)
 		{
-			if (!textured)
+			for (float y = 0.f; y < 900.f; y += sizey)
 			{
-				wz::Renderer2D::SubmitRect
-				(
-					pipeline,
-					wz::Rect(x, y, sizex, sizey),
-					wz::Color(0.f, x / 1600.f, y / 900.f, 1.f)
-				);
-			}
-			else
-			{
-				wz::Renderer2D::SubmitTexture
-				(
-					pipeline,
-					texture,
-					{ x, y },
-					{ sizex / 16.f, sizey / 16.f },
-					0,
-					wz::Color(1.f, x / 1600.f, y / 900.f, 1.f)
-				);
+				if (!textured)
+				{
+					wz::Renderer2D::SubmitRect
+					(
+						pipeline,
+						wz::Rect(x, y, sizex, sizey),
+						wz::Color(0.f, x / 1600.f, y / 900.f, 1.f)
+					);
+				}
+				else
+				{
+					wz::Renderer2D::SubmitTexture
+					(
+						pipeline,
+						texture,
+						{ x, y },
+						{ sizex / 16.f, sizey / 16.f },
+						0,
+						wz::Color(1.f, x / 1600.f, y / 900.f, 1.f)
+					);
+				}
 			}
 		}
 	}
@@ -113,44 +136,48 @@ bool Sandbox::Render(wz::AppRenderEvent& e)
 
 	
 
-	wz::Renderer2D::End(pipeline);
-
-	wz::Renderer2D::Begin(textPipeline);
-
-	if (text)
+	if (!useGameExtension)
 	{
-		wz::Renderer2D::SubmitText
-		(
-			textPipeline, 
-			font,
-			"I am very capable of rendering text\nI also support rendering strings with newlines (\\n) like this\nHowever, I sadly do not support unicode characters yet: äåöäåö",
-			{ 0, 150 }
-		);
+		wz::Renderer2D::End(pipeline);
 
-		wz::Renderer2D::SubmitText
-		(
-			textPipeline, 
-			font,
-			"These texts are actually render targets that were rendered once\nSo static text costs just as much as rendering textures\nHowever, when cached texts exceeds the budget, there is a very \nnoticeable performance hit.",
-			{ 0, 0 },
-			{ 1.f, 1.f },
-			0,
-			wz::Color::red
-		);
+		wz::Renderer2D::Begin(textPipeline);
 
-		vec2 pos = { 50.f, m_window->GetHeight() - 8 * 36 }; 
-		string metricsStr = str(metrics.numQuads) + " Quads\n"
-							+ str(metrics.numIndices) + " Indices\n"
-							+ str(metrics.GetNumVertices()) + " Vertices\n"
-							+ str(metrics.numDrawCalls + 1) + " Draw Calls\n"
-							+ str(metrics.GetMemoryUsage()) + " Memory Usage (bytes)\n"
-							//+ str(frameTime) + " Frame time (ms)\n"
-							//+ str(1.f / frameTime) + " FPS\n"
-							;
-		wz::Renderer2D::SubmitText(textPipeline, font, metricsStr, pos);
+		if (text)
+		{
+			wz::Renderer2D::SubmitText
+			(
+				textPipeline, 
+				font,
+				"I am very capable of rendering text\nI also support rendering strings with newlines (\\n) like this\nHowever, I sadly do not support unicode characters yet: äåöäåö",
+				{ 0, 150 }
+			);
+
+			wz::Renderer2D::SubmitText
+			(
+				textPipeline, 
+				font,
+				"These texts are actually render targets that were rendered once\nSo static text costs just as much as rendering textures\nHowever, when cached texts exceeds the budget, there is a very \nnoticeable performance hit.",
+				{ 0, 0 },
+				{ 1.f, 1.f },
+				0,
+				wz::Color::red
+			);
+
+			vec2 pos = { 50.f, m_window->GetHeight() - 8 * 36 }; 
+			string metricsStr = str(metrics.numQuads) + " Quads\n"
+								+ str(metrics.numIndices) + " Indices\n"
+								+ str(metrics.GetNumVertices()) + " Vertices\n"
+								+ str(metrics.numDrawCalls + 1) + " Draw Calls\n"
+								+ str(metrics.GetMemoryUsage()) + " Memory Usage (bytes)\n"
+								//+ str(frameTime) + " Frame time (ms)\n"
+								//+ str(1.f / frameTime) + " FPS\n"
+								;
+			wz::Renderer2D::SubmitText(textPipeline, font, metricsStr, pos);
+			wz::Renderer2D::ResetMetrics();
+		}
+
+		wz::Renderer2D::End(textPipeline);
 	}
-
-	wz::Renderer2D::End(textPipeline);
 
 	ImGui::Begin("Debug");
 	ImGui::Checkbox("Textured quads", &textured);
@@ -165,6 +192,13 @@ bool Sandbox::Render(wz::AppRenderEvent& e)
 		ImGui::Text("%i Vertices", metrics.GetNumVertices());
 		ImGui::Text("%i Draw Calls", metrics.numDrawCalls);
 		ImGui::Text("%i Memory Usage (bytes)", metrics.GetMemoryUsage());
+		wz::Renderer2D::ResetMetrics();
+	}
+
+	if (ImGui::Checkbox("Use Game Extension", &useGameExtension))
+	{
+		if (useGameExtension) 	m_systemLayer.SetEnabledAll(true);
+		else 					m_systemLayer.SetEnabledAll(false);
 	}
 
 	ImGui::End();

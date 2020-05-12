@@ -1,7 +1,6 @@
 #include "wzpch.h"
 
 #include "Wizzy/Resource/ResourceManagement.h"
-#include "Wizzy/Utils.h"
 #include "Wizzy/Application.h"
 
 

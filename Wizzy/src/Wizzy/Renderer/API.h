@@ -138,6 +138,7 @@ namespace Wizzy {
 		else if (str == "BOOL")			return ShaderDataType::BOOL;
 
 		WZ_CORE_ASSERT(false, "'" + str + "' could not be converted to a ShaderDataType");
+        return ShaderDataType::NONE;
 	}
 
 	u32 ShaderDataTypeElementCount(ShaderDataType type);

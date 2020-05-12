@@ -4,36 +4,6 @@
 #include "Wizzy/Resource/Resource.h"
 #include "Wizzy/Events/ResourceEvent.h"
 
-/*
-
-Intended way of use:
-
-Instead of passing around pointers to resources they are associated with handles which
-can be passed around safely without accidentally touching garbage memory. The handle is
-associated with info about the resource, such as the path, name, props and resource index.
-This means that you may have a valid handle that points to a unloaded Resource so it's
-important to always make sure the resource is loaded before redeeming a handle to retrieve
-the associated resource.
-
-Handles are like pointers, if you lose them you have no way of accessing the memory
-they are associated with.
-
-To load a NEW resource from a file that is NOT in the resource directory
-	1.	Call AddToResourceDir<T>(string file, string resPath, PropertyTable props)
-			- 'file' is the file to be copied to the resource directory
-			- 'resPath' is the relative path from the resource directory as root
-			- 'props' is the import configuration
-			- The return value is a Resource::Handle where T is the resource class type
-	2.	Call Load(Resource::Handle handle)
-		- 'handle' is the handle registered and returned from AddToResourceDir()
-
-To load a resource that's already in the resource dir but not yet registered to a handle
-	Call Load(string resPath, uId id, PropertyTable defaultProps)
-		- 'resPath' is the relative resource directory path to a file that should exist
-		- 'id' is the id to be assigned to the handle
-		- 'defaultProps' is the props to be assigned if there aren't any serialized ones found
-*/
-
 namespace Wizzy
 {
 	typedef Resource* (*ResourceCreateFn)(const ResData&, const PropertyTable&); //td::function<Resource * (string, const PropertyTable&)> ResourceCreateFn;
@@ -73,10 +43,10 @@ namespace Wizzy
 	public:
 
 		template <typename T, typename ...Targ>
-		static typename T::Handle Create(const string& resPath, Targ&... arg);
+		static typename T::Handle Create(const string& resPath, const Targ&... arg);
 
 		template <typename T, typename ...Targ>
-		static typename T::Handle CreateRuntime(Targ&... arg);
+		static typename T::Handle CreateRuntime(const Targ&... arg);
 
 		// Add file to resource directory and register it to a handle. Will NOT load the resource.
 		template <typename T>
@@ -131,7 +101,7 @@ namespace Wizzy
 		inline static std::set<Resource::Handle> GetHandles() { return s_handles; }
 
 		template <typename T>
-		static void ForEach(std::function<bool(const Resource::Handle&)> fn);
+		static void ForEach(std::function<bool(const typename T::Handle&)> fn);
 		static void ForEach(std::function<bool(const Resource::Handle&)> fn);
 
 		static void SetResourceDir(const string& dir);
@@ -177,19 +147,17 @@ namespace Wizzy
 	};
 
 	template <typename T, typename ...Targ>
-	inline typename T::Handle ResourceManagement::Create(const string& resPath, Targ&... arg)
+	inline typename T::Handle ResourceManagement::Create(const string& resPath, const Targ&... arg)
 	{
 		T* res = (T*)T::Create(arg...);
-		PropertyTable props = res->GetProps();
-		return AddResource<T>(res, resPath, props);
+		return AddResource<T>(res, resPath);
 	}
 
 	template <typename T, typename ...Targ>
-	inline typename T::Handle ResourceManagement::CreateRuntime(Targ&... arg)
+	inline typename T::Handle ResourceManagement::CreateRuntime(const Targ&... arg)
 	{
 		T* res = (T*)T::Create(arg...);
-		PropertyTable props = res->GetProps();
-		return AddRuntimeResource<T>(res, props);
+		return AddRuntimeResource<T>(res);
 	}
 
 	template<typename T>
@@ -221,6 +189,7 @@ namespace Wizzy
 	{
 		auto hnd = Register<T>("runtime/", props, true);
 		s_resource[GetInfoFor(hnd).resourceIndex] = resource;
+		DispatchEvent(ResourceLoadedEvent(hnd));
 		return hnd;
 	}
 
@@ -249,7 +218,7 @@ namespace Wizzy
 		s_resource[info.resourceIndex] = resource;
 		
 		info.source = serialized;
-
+		DispatchEvent(ResourceLoadedEvent(handle));
 		return handle;
 	}
 
@@ -287,12 +256,11 @@ namespace Wizzy
 	}
 
 	template<typename T>
-	inline void ResourceManagement::ForEach(std::function<bool(const Resource::Handle&)> fn)
+	inline void ResourceManagement::ForEach(std::function<bool(const typename T::Handle&)> fn)
 	{
 		for (const auto& hnd : s_handles)
 		{
-			WZ_DEBUG("{0}, {1}", typestr(T), GetInfoFor(hnd).type);
-			if (typestr(T) == GetInfoFor(hnd).type || typestr(T) == typestr(Resource))
+			if (std::is_same<T, Resource>() || typestr(T) == GetInfoFor(hnd).type)
 			{
 				if (!fn(hnd)) break;
 			}

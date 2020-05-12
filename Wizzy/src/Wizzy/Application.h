@@ -1,6 +1,7 @@
 #pragma once
 
-#include "Wizzy/Ecs/ECSManager.h"
+#include "Wizzy/Ecs/Ecs.h"
+#include "Wizzy/Ecs/SystemLayout.h"
 #include "Wizzy/IWindow.h"
 
 namespace Wizzy {
@@ -42,14 +43,15 @@ namespace Wizzy {
 
 	protected:
 		std::shared_ptr<IWindow> m_window;
-		Wizzy::ECSManager m_ecs;
-		Wizzy::SystemLayer m_systems;
+		EcsInstance m_ecs;
+		SystemLayer m_systemLayer;
 
 	private:
 		bool m_running;
         bool m_wantRestart = false;
 		ApplicationProps m_props;
 		std::vector<std::function<void(Event & e)>> m_eventCallbacks;
+		SystemLayer m_coreLayer;
 
 	public:
 		inline static Application& Get() { return *s_instance; }

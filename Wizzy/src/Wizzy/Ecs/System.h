@@ -2,101 +2,155 @@
 
 #include "Wizzy/Ecs/Component.h"
 #include "Wizzy/Events/Event.h"
+#include "Wizzy/Events/AppEvent.h"
+
+template<typename Target, typename ListHead, typename... ListTails>
+inline constexpr size_t indexOfVariadicType()
+{
+	if constexpr (std::is_same<Target, ListHead>::value)
+		return 0;
+	else
+		return 1 + indexOfVariadicType<Target, ListTails...>();
+}
 
 namespace Wizzy {
-	class System {
+
+	typedef Bitset SystemSignature;
+
+
+
+	template <typename TSubclass, typename ...TComponents>
+	class System 
+	{
 	public:
-		enum ComponentFlags {
-			component_flag_none = 0, component_flag_optional = 1, flag_optional_min_1 = 2
+		enum ComponentFlags
+		{
+			flag_none = 0,
+			flag_optional = BIT(1),
 		};
-		//virtual void Init(ComponentGroup& components) const {}
-		virtual void OnEvent(const Wizzy::Event& e,
-							 ComponentGroup& components) const = 0;
-		inline const std::vector<StaticCId>& GetTypeIds() const { return m_typeIds; }
-		inline const std::vector<ComponentFlags>& GetFlags() const { return m_flags; }
-		inline const bool& IsValid() const { return m_isValid; }
+		typedef System<TSubclass, TComponents...> SystemImpl;
+		
 
-		inline bool ProcessAll() const { return m_processAllComponents; }
+		static constexpr u32 NUM_COMPONENT_TYPES =  sizeof...(TComponents);
+		static const ComponentId COMPONENT_TYPES[NUM_COMPONENT_TYPES];
 
-		bool IsSubscribed(Wizzy::EventType eventId) const;
+	public:
+		typedef std::array<IComponent*, NUM_COMPONENT_TYPES> ComponentPass;
+
+		inline bool ProcessComponentsPass(const Event& e, ComponentPass& components) const
+		{
+			return ProcessComponents(e, ((TComponents*)components.at(indexOfVariadicType<TComponents, TComponents...>()))...);
+		}
+
+		inline bool IsSubscribed(EventType eventType) const 
+		{ 
+			return m_subscriptions.Get((s32)eventType);
+		}
+
+		inline bool HasType(ComponentId type) 
+		{
+			return fullSignature().Get(type);
+		}
+
+		inline const SystemSignature& GetFullSignature() const
+		{
+			return fullSignature();
+		}
+
+		inline const SystemSignature& GetMinimumSignature() const
+		{
+			return m_minimumSignature;
+		}
+
+		inline bool HasTypeFlag(ComponentId type, s32 flag) 
+		{
+			WZ_CORE_ASSERT(HasType(type), 
+				"Cannot check type flag for component that is not in system signature");
+			if (m_flags.find(type) == m_flags.end())
+				m_flags[type] = flag_none;
+			return m_flags.at(type) & flag;
+		}
+
+		template <typename TComponent>
+		inline void Flag(s32 flags)
+		{
+			assert(HasType(TComponent::typeId()) && "System must have type to flag it");
+			if (m_flags.find(TComponent::typeId()) == m_flags.end()) 
+				m_flags[TComponent::typeId()] = flag_none;
+			m_flags[TComponent::typeId()] |= flags;
+			if (flags |= flag_optional)
+			{
+				m_minimumSignature.Set(TComponent::typeId(), false);
+			}
+		}
 
 	protected:
-		void AddComponentType(StaticCId type, ComponentFlags flags = component_flag_none);
-		template <typename TComponent>
-		void AddComponentType(ComponentFlags flags = component_flag_none);
-		void AddAllComponentTypes(ComponentFlags flags = component_flag_none);
-		void Subscribe(Wizzy::EventType eventId);
-		void SubscribeAll();
+		inline void Subscribe(EventType eventType)
+		{
+			m_subscriptions.Set((s32)eventType, true);
+		}
+
+		virtual bool ProcessComponents(const Event& e, TComponents*...) const = 0;
 
 	private:
-		std::vector<StaticCId> m_typeIds;
-		std::vector<ComponentFlags> m_flags;
-		bool m_isValid = false;
-		std::vector<Wizzy::EventType> m_subscriptions;
-		bool m_subscribeAll = false;
-		bool m_processAllComponents = false;
+		std::unordered_map<ComponentId, s32> m_flags;
+		Bitset m_subscriptions;
+		SystemSignature m_minimumSignature = fullSignature();
 
+	public:
+		inline static TSubclass* GetInstance() { return &s_instance; }
+		inline static ComponentPass& GetComponentPass() { return s_componentPass; }
+		inline static u32 GetComponentIndex(ComponentId type) {  return s_componentIndices.at(type);};
+
+	protected:
+		static TSubclass s_instance;
+	private:
+		template <typename ...TComponents>
+		inline static SystemSignature CreateFullSignature()
+		{
+			SystemSignature sig;
+
+
+			(sig.Set(TComponents::typeId(), true), ...);
+
+			return sig;
+		}
+
+		inline static const SystemSignature& fullSignature()
+		{
+			static SystemSignature s_fullSignature = CreateFullSignature<TComponents...>();
+			return s_fullSignature;
+		}
+
+		static ComponentPass s_componentPass;
+		static const std::unordered_map<ComponentId, u32> s_componentIndices;
  	};
 
-	class SystemLayer {
-	public:
-		template <typename TSystem>
-		inline void AddSystem(bool enabled = true) {
-			auto _newSystem = new TSystem;
-			WZ_CORE_ASSERT(_newSystem->IsValid(), "Invalid system");
-			m_systems.push_back(_newSystem);
-			m_systemEnabledFlags[_newSystem] = enabled;
-		}
-		template <typename TSystem>
-		inline void RemoveSystem() {
-			for (size_t i = 0; i < m_systems.size(); i++) {
-				if (typeid(TSystem) == typeid(m_systems[i])) {
-					m_systems.erase(m_systems.begin() + i);
-					return;
-				}
-			}
-		}
+	#define _SystemImpl System<TSubclass, TComponents...>
 
-		template <typename TSystem>
-		inline void DisableSystem()
-		{
-			for (int i = 0; i < m_systems.size(); i++)
-			{
-				if (typestr(TSystem) == typestr(m_systems[i]))
-				{
-					m_systemEnabledFlags[m_systems[i]] = false;
-				}
-			}
-		}
+	template <typename ...TComponent>
+	std::unordered_map<ComponentId, u32> BuildIndexMap()
+	{
+		u32 idx = 0;
 
-		template <typename TSystem>
-		inline void EnableSystem()
-		{
-			for (int i = 0; i < m_systems.size(); i++)
-			{
-				if (typestr(TSystem) == typestr(m_systems[i]))
-				{
-					m_systemEnabledFlags[m_systems[i]] = true;
-				}
-			}
-		}
+		std::unordered_map<ComponentId, u32> map;
+		(map.emplace(TComponent::typeId(), idx++), ...);
 
-		inline bool Enabled(System* s) const 
-		{ 
-			WZ_CORE_ASSERT(m_systemEnabledFlags.find(s) != m_systemEnabledFlags.end(),
-				"System not in system layer");
-			return m_systemEnabledFlags.at(s); 
-		}
+		return map;
+	}
 
-		inline const std::vector<System*> GetSystems() const { return m_systems; }
+	template <typename TSubclass, typename ...TComponents>
+	TSubclass _SystemImpl::s_instance = TSubclass();
 
-	private:
-		std::vector<System*> m_systems;
-		std::unordered_map<System*, bool> m_systemEnabledFlags;
+	template <typename TSubclass, typename ...TComponents>
+	const ComponentId _SystemImpl::COMPONENT_TYPES[_SystemImpl::NUM_COMPONENT_TYPES] =
+	{
+		TComponents::typeId()...
 	};
 
-	template<typename TComponent>
-	inline void System::AddComponentType(ComponentFlags flags) {
-		AddComponentType(TComponent::staticId, flags);
-	}
+	template <typename TSubclass, typename ...TComponents>
+	std::array<IComponent*, _SystemImpl::NUM_COMPONENT_TYPES> _SystemImpl::s_componentPass;
+
+	template <typename TSubclass, typename ...TComponents>
+	const std::unordered_map<ComponentId, u32> _SystemImpl::s_componentIndices = BuildIndexMap<TComponents...>();
 }

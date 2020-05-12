@@ -75,7 +75,7 @@
 #define WZ_MAKE_VERSION(major, minor, patch) (std::to_string(major) + "." + std::to_string(minor) + "." + std::to_string(patch))
 #define WZ_VERSION_MAJOR 0
 #define WZ_VERSION_MINOR 1
-#define WZ_VERSION_PATCH 6
+#define WZ_VERSION_PATCH 7
 #define WZ_VERSION	WZ_MAKE_VERSION(WZ_VERSION_MAJOR, WZ_VERSION_MINOR, WZ_VERSION_PATCH)
 
 #define WZ_VERSION_SUM(major, minor, patch)		(major * 1000 + minor * 100 + patch)
@@ -112,7 +112,7 @@ WZ_CORE_ASSERT(false, "Invalid renderer API selected"); \
 
 #define DEFAULT(t) t()
 
-#define WZ_NULL_ENTITY_HANDLE nullptr
+#define WZ_NULL_ENTITY_HANDLE 0
 
 #define WZ_NS_BEGIN(ns) namespace ns {
 #define WZ_NS_END }

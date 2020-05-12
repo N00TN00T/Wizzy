@@ -1,12 +1,14 @@
 #pragma once
 
+#define MAX_NUM_COMPONENT_TYPES	512
+
 namespace Wizzy {
 
 	typedef void* EntityHandle;
 	typedef std::vector<byte> ComponentMem;
-	typedef uint16_t StaticCId;
+	typedef uint16_t ComponentId;
 	struct IComponent;
-	typedef uint32_t(*ComponentCreateFn)(ComponentMem&, EntityHandle, IComponent*);
+	typedef u64(*ComponentCreateFn)(ComponentMem&, EntityHandle);
 	typedef void(*ComponentFreeFn)(IComponent*);
 
 	struct ComponentInfo {
@@ -21,14 +23,18 @@ namespace Wizzy {
 		EntityHandle entity = WZ_NULL_ENTITY_HANDLE;
 
 	public:
-        template <typename TComponent>
-		static StaticCId __REGISTER_COMPONENT_TYPE(ComponentCreateFn createFn,
-													ComponentFreeFn freeFn);
-		static const ComponentInfo& StaticInfo(StaticCId componentType);
+		virtual ~IComponent() {}
 
-		inline static bool IsTypeValid(StaticCId staticId) {
-			return staticId < componentTypes().size();
+        template <typename TComponent>
+		static ComponentId __REGISTER_COMPONENT_TYPE(ComponentCreateFn createFn,
+													ComponentFreeFn freeFn);
+		static const ComponentInfo& StaticInfo(ComponentId componentType);
+
+		inline static bool IsTypeValid(ComponentId type) {
+			return type <= componentTypes().size() && type > 0;
 		}
+
+		inline static ComponentId GetNumRegisteredTypes() { return componentTypes().size(); }
 
 		virtual void ShowGUI() {}
 	private:
@@ -42,23 +48,31 @@ namespace Wizzy {
 	template <typename TComponent>
 	struct Component
 		: public IComponent {
+		virtual ~Component() {}
 		const static ComponentCreateFn __CREATE_FN;
 		const static ComponentFreeFn __FREE_FN;
-		const static StaticCId staticId;
+		inline static ComponentId typeId()
+		{
+			static ComponentId id = IComponent::__REGISTER_COMPONENT_TYPE<TComponent> 
+			(
+				__COMPONENT_CREATE<TComponent>,
+				__COMPONENT_FREE<TComponent>
+			);
+			return id;
+		}
 		const static size_t size;
 	};
 
 	template <typename TComponent>
-	inline uint32_t __COMPONENT_CREATE(ComponentMem& memory,
-									EntityHandle entity,
-									IComponent *component) {
-		uint32_t _index = static_cast<uint32_t>(memory.size());
-		memory.resize(_index + TComponent::size);
-		TComponent *_c = nullptr;
-        _c = new(&memory[_index]) TComponent(*static_cast<TComponent*>(component));
+	inline u64 __COMPONENT_CREATE(ComponentMem& memory, EntityHandle entity) 
+	{
+		u64 index = static_cast<u64>(memory.size());
+		memory.resize(index + TComponent::size);
 
-		_c->entity = entity;
-		return _index;
+		TComponent* component = new(&memory[index]) TComponent();
+
+		component->entity = entity;
+		return index;
 	}
 
 	template <typename TComponent>
@@ -67,16 +81,8 @@ namespace Wizzy {
 		_c->~TComponent();
 	}
 
-	template <typename TComponent>
-	const StaticCId Component<TComponent>::staticId(
-		IComponent::__REGISTER_COMPONENT_TYPE<TComponent> (
-			__COMPONENT_CREATE<TComponent>,
-			__COMPONENT_FREE<TComponent>
-		)
-	);
-
     template <typename TComponent>
-    inline StaticCId IComponent::__REGISTER_COMPONENT_TYPE(ComponentCreateFn createFn,
+    inline ComponentId IComponent::__REGISTER_COMPONENT_TYPE(ComponentCreateFn createFn,
 													ComponentFreeFn freeFn) {
 		componentTypes().push_back({
 			createFn,
@@ -87,7 +93,7 @@ namespace Wizzy {
 
 		
 
-		return static_cast<StaticCId>(componentTypes().size() - 1);
+		return static_cast<ComponentId>(componentTypes().size());
 	}
 
 	template <typename TComponent>
@@ -98,52 +104,4 @@ namespace Wizzy {
 
 	template <typename TComponent>
 	const ComponentFreeFn Component<TComponent>::__FREE_FN(__COMPONENT_FREE<TComponent>);
-
-	class ComponentGroup {
-	public:
-
-		template <typename TComponent>
-		inline bool Has() {
-			return Has(TComponent::staticId);
-		}
-
-		inline bool Has(const StaticCId& type) {
-			return m_componentHash.find(type) != m_componentHash.end();
-		}
-
-		template <typename TComponent>
-		inline TComponent* Get() {
-			return static_cast<TComponent*>(Get(TComponent::staticId));
-		}
-
-		inline IComponent* Get(const StaticCId& type) {
-			WZ_CORE_ASSERT(this->Has(type), "Tried getting component that doesn't exist in component group");
-			return m_componentHash.at(type);
-		}
-
-		inline void Push(IComponent* component, const StaticCId& type) {
-			WZ_CORE_ASSERT(component != nullptr, "Null argument in Push(IComponent*, StaticCId)");
-			m_componentHash[type] = component;
-			if (type == 0) {
-				m_has0 = true;
-			}
-		}
-
-        inline void Clear() {
-            m_componentHash.clear();
-            m_has0 = false;
-        }
-
-        inline void HintCount(uint32_t count) {
-            m_componentHash.reserve(static_cast<size_t>(count));
-        }
-
-		inline std::unordered_map<StaticCId, IComponent*>& GetComponents() {
-			return m_componentHash;
-		}
-
-	private:
-		std::unordered_map<StaticCId, IComponent*> m_componentHash;
-		bool m_has0 = false;
-	};
 }

@@ -1,4 +1,6 @@
 
+
+
 /* std libraries */
 #include <iostream>
 #include <stdio.h>
@@ -24,6 +26,7 @@
 #include <future>
 #include <condition_variable>
 #include <atomic>
+#include <bitset>
 
 /* std data structures */
 #include <string>
@@ -48,18 +51,10 @@
 #include <glm/gtc/matrix_inverse.hpp>
 #include <glm/gtc/type_ptr.hpp>
 
-#include <lua.hpp>
-#include <LuaBridge/LuaBridge.h>
-
 #include <portable-file-dialogs.h>
 
-/* wizzy headers */
-
-#include "Wizzy/Core.h"
-#include "Wizzy/Log.h"
-#include "Wizzy/Color.h"
-
 #include <ulib.hpp>
+
 
 /* Platform/Compiler specific headers */
 //#ifdef WZ_PLATFORM_WINDOWS
@@ -105,3 +100,10 @@ typedef glm::mat4 mat4;
 
 const string& GetExecutablePath();
 void SetExecutablePath(const string& p);
+
+/* wizzy headers */
+
+#include "Wizzy/Core.h"
+#include "Wizzy/Log.h"
+#include "Wizzy/Color.h"
+#include "Wizzy/Utilities/Bitset.h"

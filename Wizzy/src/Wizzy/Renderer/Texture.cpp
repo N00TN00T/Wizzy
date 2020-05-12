@@ -2,7 +2,6 @@
 
 #include "Wizzy/Renderer/Texture.h"
 #include "Wizzy/platform/OpenGL/GLTexture.h"
-#include "Wizzy/Utils.h"
 #include "Wizzy/Renderer/Renderer.h"
 #include "Wizzy/Resource/ResourceManagement.h"
 #include "Wizzy/WizzyExceptions.h"

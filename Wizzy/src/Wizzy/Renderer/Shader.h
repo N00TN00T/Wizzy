@@ -81,8 +81,9 @@ namespace Wizzy {
 		std::vector<ShaderField> m_fields;
 
 	public:
-		static
-		Resource* Create(const ResData& data, const PropertyTable& props);
+		static Resource* Create(const ResData& data, const PropertyTable& props);
+
+		static Resource* Create(const string& source, const PropertyTable& props = PropertyTable());
 
 		static const PropertyTable& GetTemplateProps();
 

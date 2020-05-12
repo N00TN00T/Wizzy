@@ -2,24 +2,17 @@
 
 #include "DemoGame2D.h"
 
+// Personal Preference
 #define COMPONENT_DEF(n) struct n : public wz::Component<n>
+#define SYSTEM_DEF(n, ...) class n : public wz::System<n, __VA_ARGS__>
+// SYSTEM_DEF(MySystem, MyComponentA, MyComponentB ...)
 
+namespace wzg = wz::Game;
 
-wz::Renderer2D::Pipeline* g_mainPipeline;
-wz::Renderer2D::Pipeline* g_textPipeline;
 u16 g_lightCounter = 0;
-wz::ECSManager* g_ecs;
+wz::EcsInstance* g_ecs;
 bool g_drawColliders = false;
-
-COMPONENT_DEF(Position)
-{
-    vec2 value = vec2(0, 0);
-};
-
-COMPONENT_DEF(Sprite)
-{
-    wz::Texture::Handle hTexture = WZ_NULL_RESOURCE_HANDLE;
-};
+bool g_showCameras = false;
 
 COMPONENT_DEF(PlayerConfig)
 {   
@@ -28,7 +21,7 @@ COMPONENT_DEF(PlayerConfig)
 
 COMPONENT_DEF(Brick)
 {
-    
+    bool brighter = true;
 };
 
 COMPONENT_DEF(Powerup)
@@ -48,26 +41,16 @@ COMPONENT_DEF(Ball)
     vec2 spawnPos;
 };
 
-COMPONENT_DEF(Camera)
-{
-    mat4 projection;
-};
-
 COMPONENT_DEF(Gui)
 {
     bool showMetrics = false;
     bool showGameDebugging = false;
+    std::vector<wz::EntityHandle> cameraEntities;
 };
 
 COMPONENT_DEF(Time)
 {
-    float value;
-};
-
-COMPONENT_DEF(Text)
-{
-    wz::Font::Handle hFont;
-    string value;
+    float value = 0.f;
 };
 
 COMPONENT_DEF(ResourceComponent)
@@ -75,42 +58,37 @@ COMPONENT_DEF(ResourceComponent)
     
 };
 
-COMPONENT_DEF(ColorTint)
+COMPONENT_DEF(Name)
 {
-    wz::Color value = wz::Color::white;
+    string value = "Unnamed";
 };
 
-COMPONENT_DEF(LightConfig)
+COMPONENT_DEF(CameraConfig)
 {
-    float intensity = 1.f;
-	float ambient = .1f;
-	float radius = 100.f;
+    vec2 resolution;
+    bool dynamic = false;
 };
 
-class PlayerController : public wz::System
+SYSTEM_DEF(PlayerController, PlayerConfig, wzg::Position2D, wzg::Sprite)
 {
 public:
     PlayerController()
     {
-        AddComponentType<PlayerConfig>();
-        AddComponentType<Position>();
-        AddComponentType<Sprite>();
-
         Subscribe(wz::EventType::app_init);
         Subscribe(wz::EventType::app_update);
     }
 
-    void OnEvent(const wz::Event& e, wz::ComponentGroup& components) const
+    bool ProcessComponents( const wz::Event& e, 
+                            PlayerConfig* playerConfig, 
+                            wzg::Position2D* position, 
+                            wzg::Sprite* sprite
+                            ) const override
     {
-        auto& playerConfig = *components.Get<PlayerConfig>();
-        auto& position = *components.Get<Position>();
-        auto& sprite = *components.Get<Sprite>();
-
         switch (e.GetEventType())
         {
             case wz::EventType::app_init:
             {
-                return;
+                break;
             }
             case wz::EventType::app_update:
             {
@@ -119,112 +97,144 @@ public:
 
                 if (wz::Input::GetKey(WZ_KEY_A))
                 {   
-                    position.value.x -= delta * playerConfig.speed;
+                    position->value.x -= delta * playerConfig->speed;
                 }
                 if (wz::Input::GetKey(WZ_KEY_D))
                 {
-                    position.value.x += delta * playerConfig.speed;
+                    position->value.x += delta * playerConfig->speed;
                 }
 
-                auto& texture = wz::ResourceManagement::Get<wz::Texture>(sprite.hTexture);
+                auto& texture = wz::ResourceManagement::Get<wz::Texture>(sprite->hTexture);
 
                 wz::Rect bounds(0, 0, 1600.f, 900.f);
                 vec2 size = { texture.GetWidth(), texture.GetHeight() };
                 
-                position.value.x = std::max(bounds.Left(), position.value.x);
-                position.value.x = std::min(bounds.Right() - size.x, position.value.x);
+                position->value.x = std::max(bounds.Left(), position->value.x);
+                position->value.x = std::min(bounds.Right() - size.x, position->value.x);
 
-                return;
+                break;
             }
         }
+
+        return false;
     }
 };
 
-class BrickController : public wz::System
+SYSTEM_DEF(BrickController, Brick, Powerup, wzg::Light)
 {
 public:
     BrickController()
     {
-        AddComponentType<Brick>();
-        AddComponentType<Powerup>(component_flag_optional);
+        Flag<Powerup>(flag_optional);
+        Flag<wzg::Light>(flag_optional);
 
         Subscribe(wz::EventType::app_init);
         Subscribe(wz::EventType::app_update);
     }
 
-    void OnEvent(const wz::Event& e, wz::ComponentGroup& components) const
+    bool ProcessComponents(const wz::Event& e, 
+                           Brick* brick, 
+                           Powerup* powerup,
+                           wzg::Light* light) const override
     {
+        
+        switch (e.GetEventType())
+        {
+            case wz::EventType::app_update:
+            {
+                auto& delta = ((const wz::AppUpdateEvent&)e).GetDeltaTime();
+                if (light)
+                {
+                    if (brick->brighter)
+                    {
+                        light->intensity += delta;
+                        light->radius += delta * 5.f;
 
+                        if (light->intensity >= 1.5f)
+                        {
+                            brick->brighter = false;
+                        }
+                    }
+                    else
+                    {
+                        light->intensity -= delta;
+                        light->radius -= delta * 5.f;
+
+                        if (light->intensity <= 0.5f)
+                        {
+                            brick->brighter = true;
+                        }
+                    }
+                }
+                break;
+            }
+        }
+
+        return false;
     }
 };
 
-class GameTracker : public wz::System
+SYSTEM_DEF(GameTracker, Time, wzg::Text)
 {
 public:
     GameTracker()
     {
-        AddComponentType<Time>();
-        AddComponentType<Text>();
-
-        Subscribe(wz::EventType::app_init);
         Subscribe(wz::EventType::app_update);
     }
 
-    void OnEvent(const wz::Event& e, wz::ComponentGroup& components) const
+    bool ProcessComponents(const wz::Event& e, Time* time, wzg::Text* text) const override
     {
-        auto& time = *components.Get<Time>();
-        auto& text = *components.Get<Text>();
-
         switch (e.GetEventType())
         {
-            case wz::EventType::app_init:
-            {
-                text.hFont = wz::ResourceManagement::Load<wz::Font>("DemoGame/InputMono-Black.ttf");
-                time.value = 0.f;
-                return;
-            }
             case wz::EventType::app_update:
             {
-                time.value += ((const wz::AppUpdateEvent&)e).GetDeltaTime();
-                text.value = std::to_string(time.value) + "s";
-                return;
+                time->value += ((const wz::AppUpdateEvent&)e).GetDeltaTime();
+                text->value = std::to_string(time->value) + "s";
+
+                ImGui::BeginMainMenuBar();
+
+                bool lightingEnabled = wz::Game::IsLightingEnabled();
+                ImGui::Checkbox("Lighting", &lightingEnabled);
+                wz::Game::SetLightingEnabled(lightingEnabled);
+
+                ImGui::EndMainMenuBar();
+
+                break;
             }
         }
+        return false;
     }
 };
 
-class GuiSystem : public wz::System
+SYSTEM_DEF(GuiSystem, Gui)
 {
 public:
     GuiSystem()
     {
-        AddComponentType<Gui>();
-
         Subscribe(wz::EventType::app_update);
     }
 
-    void OnEvent(const wz::Event& e, wz::ComponentGroup& components) const
+    bool ProcessComponents(const wz::Event& e, Gui* gui) const override
     {
-        auto& gui = *components.Get<Gui>();
-
         ImGui::BeginMainMenuBar();
 
-        ImGui::Checkbox("Game Debugging", &gui.showGameDebugging);
-        ImGui::Checkbox("Renderer2D Metrics", &gui.showMetrics);
+        ImGui::Checkbox("Game Debugging", &gui->showGameDebugging);
+        ImGui::Checkbox("Renderer2D Metrics", &gui->showMetrics);
+        ImGui::Checkbox("Show Cameras", &g_showCameras);
 
         ImGui::EndMainMenuBar();
 
-        if (gui.showGameDebugging)
+        if (gui->showGameDebugging)
         {
-            ImGui::Begin("Game Debugging", &gui.showGameDebugging);
+            ImGui::Begin("Game Debugging", &gui->showGameDebugging);
             ImGui::Checkbox("Draw Colliders", &g_drawColliders);
             ImGui::End();
         }
 
-        if (gui.showMetrics)
+        if (gui->showMetrics)
         {
             auto& metrics = wz::Renderer2D::GetMetrics();
-            ImGui::Begin("Renderer2D Metrics", &gui.showMetrics);
+            ImGui::Begin("Renderer2D Metrics", &gui->showMetrics);
             ImGui::Text("%i Quads", metrics.numQuads);
             ImGui::Text("%i Indices", metrics.numIndices);
             ImGui::Text("%i vertices", metrics.GetNumVertices());
@@ -232,110 +242,109 @@ public:
             ImGui::Text("%i Memory usage (bytes)", metrics.GetMemoryUsage());
             ImGui::Text("%f Frame time (ms)", ((const wz::AppUpdateEvent&)e).GetDeltaTime());
             ImGui::End();
+            wz::Renderer2D::ResetMetrics();
         }
-}
+
+        return false;
+    }
 };
 
-class CollisionBoxUpdater : public wz::System
+SYSTEM_DEF(CollisionBoxUpdater, wzg::Position2D, CollisionBox, wzg::Sprite)
 {
 public:
     CollisionBoxUpdater()
     {
-        AddComponentType<Position>();
-        AddComponentType<CollisionBox>();
-        AddComponentType<Sprite>();
-
         Subscribe(wz::EventType::app_update);
     }
 
-    void OnEvent(const wz::Event& e, wz::ComponentGroup& components) const
+    bool ProcessComponents( const wz::Event& e, 
+                            wzg::Position2D* position, 
+                            CollisionBox* collisionBox, 
+                            wzg::Sprite* sprite
+                            ) const override
     {
-        auto& position = *components.Get<Position>();
-        auto& collisionBox = *components.Get<CollisionBox>();
-        auto& sprite = *components.Get<Sprite>();
-
         switch (e.GetEventType())
         {
             case wz::EventType::app_update:
             {
                 wz::Texture* texture;
-                if (wz::ResourceManagement::TryGet<wz::Texture>(sprite.hTexture, texture))
+                if (wz::ResourceManagement::TryGet<wz::Texture>(sprite->hTexture, texture))
                 {
                     auto sz = vec2(texture->GetWidth(), texture->GetHeight());
 
-                    collisionBox.rectangle.position = position.value;
-                    collisionBox.rectangle.size = sz;
+                    collisionBox->rectangle.position = position->value;
+                    collisionBox->rectangle.size = sz;
                 }
-                return;
+                break;
             }
         }
+
+        return false;
     }
 };
 
-class BallController : public wz::System
+SYSTEM_DEF(BallController, wzg::Position2D, CollisionBox, Ball, wzg::Light)
 {
 public:
     BallController()
     {
-        AddComponentType<Position>();
-        AddComponentType<CollisionBox>();
-        AddComponentType<Ball>();
-
         Subscribe(wz::EventType::app_init);
         Subscribe(wz::EventType::app_update);
     }
 
-    void OnEvent(const wz::Event& e, wz::ComponentGroup& components) const
+    bool ProcessComponents(const wz::Event& e, 
+                           wzg::Position2D* position, 
+                           CollisionBox* collisionBox, 
+                           Ball* ball,
+                           wzg::Light* light
+                           ) const override
     {
-        auto& position = *components.Get<Position>();
-        auto& collisionBox = *components.Get<CollisionBox>();
-        auto& ball = *components.Get<Ball>();
-
         switch (e.GetEventType())
         {
             case wz::EventType::app_init:
             {
-                ball.spawnPos = position.value;
-                return;
+                ball->spawnPos = position->value;
+                break;
             }
             case wz::EventType::app_update:
             {
                 auto& delta = ((const wz::AppUpdateEvent&)e).GetDeltaTime();
                 auto& wnd = wz::Application::Get().GetWindow();
 
-                auto& ballBounds = collisionBox.rectangle;
+                auto& ballBounds = collisionBox->rectangle;
                 auto bounds = wz::Rect(0, 0, wnd.GetWidth(), wnd.GetHeight());
 
                 // Touch side
                 if (ballBounds.Right() >= bounds.Right() 
                     || ballBounds.Left() <= bounds.Left())
                 {
-                    ball.direction.x *= -1.f;
+                    ball->direction.x *= -1.f;
                 }
 
                 // Touch top
                 if (ballBounds.Top() >= bounds.Top())
                 {
-                    ball.direction.y *= -1.f;
+                    ball->direction.y *= -1.f;
                 }
 
                 // Touch bottom
                 if (ballBounds.Bottom() <= bounds.Bottom())
                 {
-                    position.value = ball.spawnPos;
-                    ball.direction.y = (float)((rand() % 100) + 10) / 100.f;
-                    ball.direction.x = (float)(rand() % 100) / 100.f;
-                    ball.direction = glm::normalize(ball.direction);
+                    position->value = ball->spawnPos;
+                    ball->direction.y = (float)((rand() % 100) + 10) / 100.f;
+                    ball->direction.x = (float)(rand() % 100) / 100.f;
+                    ball->direction = glm::normalize(ball->direction);
                 }
 
-                position.value.x = std::max(bounds.Left(), position.value.x);
-                position.value.x = std::min(bounds.Right() - ballBounds.w / 2.f, position.value.x);
-                position.value.y = std::max(bounds.Bottom(), position.value.y);
-                position.value.y = std::min(bounds.Top() - ballBounds.h / 2.f, position.value.y);
+                position->value.x = std::max(bounds.Left(), position->value.x);
+                position->value.x = std::min(bounds.Right() - ballBounds.w / 2.f, position->value.x);
+                position->value.y = std::max(bounds.Bottom(), position->value.y);
+                position->value.y = std::min(bounds.Top() - ballBounds.h / 2.f, position->value.y);
 
+                // TODO: Do something less imbecile
                 g_ecs->ForEachEntity([&](wz::EntityHandle e) 
                 {
-                    if (e == position.entity) return true;
+                    if (e == position->entity) return true;
 
                     if (g_ecs->HasComponent<CollisionBox>(e))
                     {
@@ -346,37 +355,37 @@ public:
                         {
                             if (intersection.w > intersection.h)
                             {
-                                ball.direction.y *= -1;
+                                ball->direction.y *= -1;
                                 if (g_ecs->HasComponent<PlayerConfig>(e))
                                 {
                                     float ratio = (ballBounds.Center().x - otherBox->rectangle.Left()) / otherBox->rectangle.w;
-                                    ball.direction.x = 1.f - 2.f * (1.f - ratio);
+                                    ball->direction.x = 1.f - 2.f * (1.f - ratio);
                                 }
-                                if (ball.direction.y > 0) // Top
+                                if (ball->direction.y > 0) // Top
                                 {
-                                    position.value.y = intersection.Top() + 1.f;
+                                    position->value.y = intersection.Top() + 1.f;
                                 }
                                 else // Bottom
                                 {
-                                    position.value.y = intersection.Bottom() - 1.f - ballBounds.h;
+                                    position->value.y = intersection.Bottom() - 1.f - ballBounds.h;
                                 }
                             }
                             else 
                             {
-                                ball.direction.x *= -1;
-                                if (ball.direction.x > 0) // Left 
+                                ball->direction.x *= -1;
+                                if (ball->direction.x > 0) // Left 
                                 {
-                                    position.value.x = intersection.Right() + 1.f;
+                                    position->value.x = intersection.Right() + 1.f;
                                 }
                                 else // Right
                                 {
-                                    position.value.x = intersection.Left() - 1.f - ballBounds.w;
+                                    position->value.x = intersection.Left() - 1.f - ballBounds.w;
                                 }
                             }
 
                             if (g_ecs->HasComponent<Brick>(e))
                             {
-                                g_ecs->RemoveEntity(e);
+                                g_ecs->DestroyEntity(e);
                             }
 
                             return false;
@@ -386,30 +395,28 @@ public:
                     return true;
                 });
 
-                ball.direction = glm::normalize(ball.direction);
+                ball->direction = glm::normalize(ball->direction);
 
-                position.value += ball.direction * ball.speed * delta;
+                position->value += ball->direction * ball->speed * delta;
 
-                return;
+                break;
             }
         }
+        return false;
     }
 };
 
-class ResourceSystem : public wz::System
+SYSTEM_DEF(ResourceSystem, ResourceComponent)
 {
 public:
     ResourceSystem()
     {
-        AddComponentType<ResourceComponent>();
-
         Subscribe(wz::EventType::app_update);
         Subscribe(wz::EventType::resource_file_change);
     }
 
-    void OnEvent(const wz::Event& e, wz::ComponentGroup& components) const
+    bool ProcessComponents(const wz::Event& e, ResourceComponent* resourceComponent) const override
     {
-        auto& comp = *components.Get<ResourceComponent>();
         switch(e.GetEventType())
         {
             case wz::EventType::app_update:
@@ -420,423 +427,452 @@ public:
                 }
                 catch(const wz::ResourceFileMissingException& e)
                 {
+                    // TODO: Handle missing files.
                     // Ignore missing files for now
                     // (Photoshop deletes & replace files when exporting to it
                     //  and we don't want the resource to be removed because of that)
                 }
                 
-                return;
+                break;
             }
             case wz::EventType::resource_file_change:
             {
                 auto& resourceEvent = (const wz::ResourceFileChangedEvent&)e;
+                auto& hResource = resourceEvent.GetResourceHandle();
 
-                wz::ResourceManagement::Reload(resourceEvent.GetResourceHandle());
+                wz::ResourceManagement::Reload(hResource);
 
-                return;
+                // TODO: Update pipeline shaders
+
+                break;
             }
         }
+
+        return false;
     }
 };
 
-class TestClass
+SYSTEM_DEF(LightGuiSystem, wzg::Light, wzg::Position2D, Name, wzg::ColorTint)
 {
 public:
-
-
-private:
-};
-
-class SpriteRenderer : public wz::System
-{
-public:
-    SpriteRenderer()
+    LightGuiSystem()
     {
-        AddComponentType<Position>();
-        AddComponentType<Sprite>();
-        AddComponentType<CollisionBox>(component_flag_optional);
-        AddComponentType<ColorTint>(component_flag_optional);
+        Flag<wzg::ColorTint>(flag_optional);
+        Flag<Name>(flag_optional);
 
-        Subscribe(wz::EventType::app_render);
-        Subscribe(wz::EventType::app_frame_end);
-
-        
+        Subscribe(wz::EventType::app_update);
     }
 
-    void OnEvent(const wz::Event& e, wz::ComponentGroup& components) const
+    bool ProcessComponents(const wz::Event& e, 
+                           wzg::Light* light,
+                           wzg::Position2D* position,
+                           Name*            name,
+                           wzg::ColorTint* colorTint) const override
     {
-        auto& position = *components.Get<Position>();
-        auto& sprite = *components.Get<Sprite>();
-
-        const wz::Color& color = components.Has<ColorTint>()
-                                ? components.Get<ColorTint>()->value
-                                : wz::Color::white;
 
         switch (e.GetEventType())
         {
-            case wz::EventType::app_render:
+            case wz::EventType::app_update:
             {
-                if (wz::ResourceManagement::IsLoaded(sprite.hTexture))
-                {       
-                    wz::Renderer2D::SubmitTexture
+                string label = "Light " + (name 
+                            ? name->value 
+                            : "Unnamed##" + std::to_string(reinterpret_cast<int>(light)));
+                ImGui::Begin(label.c_str());
+
+                ImGui::DragFloat2("Position", glm::value_ptr(position->value), .1f);
+                ImGui::DragFloat("Intensity", &light->intensity, .01f);
+                ImGui::DragFloat("Radius", &light->radius, .1f);
+                if (colorTint)
+                {
+                    ImGui::ColorEdit4("Color", colorTint->value.rgba);
+                }
+
+                ImGui::End();
+                break;
+            }
+        }
+        return false;
+    }
+};
+
+SYSTEM_DEF(CameraGuiSystem, wzg::Camera2D, wzg::Position2D, Name, CameraConfig)
+{
+public:
+    CameraGuiSystem()
+    {
+        Subscribe(wz::EventType::app_update);
+    }
+
+    bool ProcessComponents(const wz::Event& e, 
+                            wzg::Camera2D* camera,
+                            wzg::Position2D* position,
+                            Name* name,
+                            CameraConfig* config
+                            ) const override
+    {
+        switch(e.GetEventType())
+        {
+            case wz::EventType::app_update:
+            {
+                
+                if (g_showCameras)
+                {
+                    DoGui(camera, position, name, config);
+                }
+                
+                break;
+            }
+        }
+
+        return false;
+    }
+
+    void DoGui(wzg::Camera2D* camera,
+               wzg::Position2D* position,
+               Name* name,
+               CameraConfig* config
+               ) const
+    {
+        if (wz::ResourceManagement::IsLoaded(camera->hRenderTarget))
+        {
+            auto& style = ImGui::GetStyle();
+            auto& renderTarget 
+                = wz::ResourceManagement::Get<wz::RenderTarget>(camera->hRenderTarget);
+
+            s32 flags = ImGuiWindowFlags_NoScrollbar 
+                        | ImGuiWindowFlags_NoScrollWithMouse
+                        | ImGuiWindowFlags_MenuBar;
+            ImGui::Begin(name->value.c_str(), &g_showCameras, flags);
+            
+            auto min = ImGui::GetWindowContentRegionMin();
+            auto max = ImGui::GetWindowContentRegionMax();
+
+            auto space = ImVec2(max.x - min.x, max.y - min.y);
+            space.x += style.WindowPadding.x * 2;
+            space.y += style.WindowPadding.y * 2;
+
+            auto wndSz = ImGui::GetWindowSize();
+
+            ImGui::BeginMenuBar();
+
+            if (ImGui::BeginMenu("Config"))
+            {
+                string current = 
+                        std::to_string(renderTarget.GetWidth()) 
+                    + "x"
+                    + std::to_string(renderTarget.GetHeight());
+
+                if (config->dynamic)
+                {
+                    current = "Dynamic";
+                }
+
+                if (ImGui::BeginCombo("Resolution", current.c_str()))
+                {
+                    if (ImGui::MenuItem("1280x720"))
+                    {
+                        renderTarget.SetSize(1280, 720);
+                        config->dynamic = false;
+                    }
+                    if (ImGui::MenuItem("1600x900"))
+                    {
+                        renderTarget.SetSize(1600, 900);
+                        config->dynamic = false;
+                    }
+                    if (ImGui::MenuItem("1920x1080"))
+                    {
+                        renderTarget.SetSize(1920, 1080);
+                        config->dynamic = false;
+                    }
+                    if (ImGui::MenuItem("2560x1440"))
+                    {
+                        renderTarget.SetSize(2560, 1440);
+                        config->dynamic = false;
+                    }
+                    if (ImGui::MenuItem("3840x2160"))
+                    {
+                        renderTarget.SetSize(2840, 2160);
+                        config->dynamic = false;
+                    }
+                    if (ImGui::MenuItem("7680x4320"))
+                    {
+                        renderTarget.SetSize(7680, 4320);
+                        config->dynamic = false;
+                    }
+                    if (ImGui::MenuItem("160x90"))
+                    {
+                        renderTarget.SetSize(160, 90);
+                        config->dynamic = false;
+                    }
+                    if (ImGui::MenuItem("80x45"))
+                    {
+                        renderTarget.SetSize(80, 45);
+                        config->dynamic = false;
+                    }
+                    if (ImGui::MenuItem("40x22"))
+                    {
+                        renderTarget.SetSize(40, 22);
+                        config->dynamic = false;
+                    }
+                    if (ImGui::MenuItem("1080x2340"))
+                    {
+                        renderTarget.SetSize(1080, 2340);
+                        config->dynamic = false;
+                    }
+                    if (ImGui::MenuItem("Dynamic"))
+                    {
+                        config->dynamic = true;
+                    }
+
+                    ImGui::EndCombo();
+                }
+
+                ImGui::Checkbox("Consistent view Size", &camera->consistentSize);
+                if (camera->consistentSize)
+                {
+                    ImGui::DragFloat2
                     (
-                        g_mainPipeline,
-                        sprite.hTexture,
-                        position.value,
-                        { 1.f, 1.f },
-                        0, 
-                        color
+                        "View Size", 
+                        glm::value_ptr(camera->viewSize), 
+                        .1f, 
+                        1.f, 
+                        99999.f
                     );
+                }
+                ImGui::DragFloat2
+                (
+                    "Position", 
+                    glm::value_ptr(position->value),
+                    .1f
+                );
+                ImGui::EndMenu();
+            }
+
+            ImGui::EndMenuBar();
+
+            ImVec2 pos = { 0, wndSz.y - space.y };
+            vec2 res = { renderTarget.GetWidth(), renderTarget.GetHeight() };
+
+            ImVec2 sz = { res.x, res.y };
+
+            if (config->dynamic)
+            {
+                if (renderTarget.GetWidth() != space.x
+                    || renderTarget.GetWidth() != space.y)
+                {
+                    renderTarget.SetSize(std::max(space.x, 1.f), std::max(space.y, 1.f));
+                    sz = { space.x, space.y };
+                }
+            }
+            else
+            {
+                if (res.x > res.y)
+                {
+                    sz.x = space.x;
+                    float ratio = res.y / res.x;
+                    sz.y = sz.x * ratio;
+
+                    if (space.y < sz.y)
+                    {
+                        sz.y = space.y;
+                        float ratio = res.x / res.y;
+                        sz.x = sz.y * ratio;
+                        pos.x += (space.x - sz.x) / 2.f;
+                    }
+                    else 
+                    {
+                        pos.y += (space.y - sz.y) / 2.f;
+                    }
                 }
                 else 
                 {
-                    wz::Renderer2D::SubmitRect
-                    (
-                        g_mainPipeline,
-                        wz::Rect(position.value, { 32, 32 }),
-                        color
-                    );
+                    sz.y = space.y;
+                    float ratio = res.x / res.y;
+                    sz.x = sz.y * ratio;
+
+                    if (space.x < sz.x)
+                    {
+                        sz.x = space.x;
+                        float ratio = res.y / res.x;
+                        sz.y = sz.x * ratio;
+                        pos.y += (space.y - sz.y) / 2.f;
+                    }
+                    else 
+                    {
+                        pos.x += (space.x - sz.x) / 2.f;
+                    }
                 }
-                
-                if (components.Has<CollisionBox>() && g_drawColliders)
-                {
-                    auto& collisionBox = *components.Get<CollisionBox>();
-
-                    wz::Renderer2D::SubmitRect
-                    (
-                        g_mainPipeline,
-                        collisionBox.rectangle,
-                        wz::Color(.8f, .1f, .1f, .5f)
-                    );
-                }
-
-                return;
             }
-            case wz::EventType::app_frame_end:
-            {
-                
-                return;
-            }
-        }
-    }
-};
 
-class TextRenderer : public wz::System
-{
-public:
-    TextRenderer()
-    {
-        AddComponentType<Position>();
-        AddComponentType<Text>();
+            ImGui::SetCursorPos(pos);
 
-        Subscribe(wz::EventType::app_render);
-
-    }
-
-    void OnEvent(const wz::Event& e, wz::ComponentGroup& components) const
-    {
-        auto& position = *components.Get<Position>();
-        auto& text = *components.Get<Text>();
-
-        const wz::Color& color = components.Has<ColorTint>()
-                                ? components.Get<ColorTint>()->value
-                                : wz::Color::white;
-
-        switch (e.GetEventType())
-        {
-            case wz::EventType::app_render:
-            {
-                wz::Renderer2D::SubmitText
-                (
-                    g_textPipeline,
-                    text.hFont,
-                    text.value,
-                    position.value,
-                    { 1.f, 1.f },
-                    0.f,
-                    color
-                );
-
-                return;
-            }
-        }
-    }
-};
-
-class CameraSystem : public wz::System
-{
-public:
-    CameraSystem()
-    {
-        AddComponentType<Camera>();
-
-        Subscribe(wz::EventType::app_init);
-        Subscribe(wz::EventType::app_update);
-        Subscribe(wz::EventType::app_frame_end);
-        Subscribe(wz::EventType::window_resize);
-    }
-
-    void OnEvent(const wz::Event& e, wz::ComponentGroup& components) const
-    {
-        auto& camera = *components.Get<Camera>();
-        auto& wnd = wz::Application::Get().GetWindow();
-
-        switch (e.GetEventType())
-        {
-            case wz::EventType::app_init:
-            {
-                wz::RenderCommand::SetClearColor(wz::Color::blue);
-                camera.projection = glm::ortho<float>
-                                    (
-                                        0.f, 
-                                        wnd.GetWidth(), 
-                                        0.f, 
-                                        wnd.GetHeight()
-                                    );
-                wz::RenderCommand::SetViewport(wz::Viewport
-                                                (
-                                                    0, 
-                                                    0, 
-                                                    wnd.GetWidth(), 
-                                                    wnd.GetHeight()
-                                                ));
-                g_mainPipeline->camTransform = camera.projection;
-                g_textPipeline->camTransform = camera.projection;
-                return;
-            }
-            case wz::EventType::window_resize:
-            {
-                wz::RenderCommand::SetViewport(wz::Viewport
-                                                (
-                                                    0, 
-                                                    0, 
-                                                    wnd.GetWidth(), 
-                                                    wnd.GetHeight()
-                                                ));
-                g_textPipeline->camTransform = camera.projection;
-                return;
-            }
-            case wz::EventType::app_update:
-            {
-                wz::Renderer2D::ResetMetrics();
-
-                wz::Renderer2D::Clear(g_mainPipeline);
-                wz::Renderer2D::Begin(g_mainPipeline);
-
-                wz::Renderer2D::Clear(g_textPipeline);
-                wz::Renderer2D::Begin(g_textPipeline);
-
-                g_lightCounter = 0;
-
-                return;
-            }
-            case wz::EventType::app_frame_end:
-            {
-                wz::Renderer2D::End(g_mainPipeline);
-                wz::Renderer2D::End(g_textPipeline);
-                return;
-            }
-        }
-    }
-};
-
-class LightSystem : public wz::System
-{
-public:
-    LightSystem()
-    {
-        AddComponentType<Position>();
-        AddComponentType<LightConfig>();
-        AddComponentType<ColorTint>(component_flag_optional);
-
-        Subscribe(wz::EventType::app_update);
-
-    }
-
-    void OnEvent(const wz::Event& e, wz::ComponentGroup& components) const
-    {
-        auto& position = *components.Get<Position>();
-        auto& lightConfig = *components.Get<LightConfig>();
-
-        const wz::Color& color = components.Has<ColorTint>()
-                                ? components.Get<ColorTint>()->value
-                                : wz::Color::white;
-
-        switch (e.GetEventType())
-        {
-            case wz::EventType::app_update:
-            {
-                position.value = wz::Input::GetMousePos();
-
-                if (wz::ResourceManagement::IsLoaded(g_mainPipeline->hShader))
-                {
-                    auto& shader = wz::ResourceManagement::Get<wz::Shader>(g_mainPipeline->hShader);
-
-                    shader.Upload1f("u_ambient", lightConfig.ambient);
-                    shader.Upload2f("u_pointLights[0].lightPos", position.value);
-                    shader.Upload4f("u_pointLights[0].lightColor", color);
-                    shader.Upload1f("u_pointLights[0].intensity", lightConfig.intensity);
-					shader.Upload1f("u_pointLights[0].radius", lightConfig.radius);
-
-                    shader.Upload1f("u_ambient", lightConfig.ambient);
-                    shader.Upload2f("u_pointLights[1].lightPos", position.value - vec2(0, 400));
-                    shader.Upload4f("u_pointLights[1].lightColor", color);
-                    shader.Upload1f("u_pointLights[1].intensity", lightConfig.intensity);
-					shader.Upload1f("u_pointLights[1].radius", lightConfig.radius);
-
-                    shader.Upload1i("u_pointLightCount", 2);
-                }
-
-				ImGui::Begin("Game Debugging");
-
-				ImGui::SliderFloat("Ambient Strength", &lightConfig.ambient, 0.f, .9f);
-				if (components.Has<ColorTint>())
-					ImGui::ColorEdit4("Light color", components.Get<ColorTint>()->value.rgba);
-				ImGui::DragFloat("Intensity", &lightConfig.intensity, .01f, .0f, 100.f);
-				ImGui::DragFloat("Radius", &lightConfig.radius, .1f, .0f, 10000.f);
-
-				ImGui::End();
-
-                return;
-            }
+            ImGui::Image
+            (
+                (ImTextureID)renderTarget.GetTextureId(),
+                sz,
+                ImVec2(0, 1),
+                ImVec2(1, 0)
+            );
+            ImGui::End();
         }
     }
 };
 
 void DemoGame2D::Init()
 {
+    // Set Log Levels. If Core Trace Level is activated the console will be hardcore spammed
     wz::Log::SetCoreLogLevel(LOG_LEVEL_DEBUG);
+    wz::Log::SetClientLogLevel(LOG_LEVEL_TRACE);
 
+    // Set Resource Directory (Portable)
     string resDir = ulib::File::directory_of(GetExecutablePath()) + "/../../../res/";
     wz::ResourceManagement::SetResourceDir(resDir);
 
-    g_mainPipeline = new wz::Renderer2D::Pipeline();
-    g_mainPipeline->hShader 
-                    = wz::ResourceManagement::Load<wz::Shader>("DemoGame/simple_light.wzsdr");
-    g_textPipeline  = new wz::Renderer2D::Pipeline();
-    g_textPipeline->hShader = wz::Renderer2D::GetTextShader();
+    // Load Resource Files
+    auto hBgrTex = wz::ResourceManagement::Load<wz::Texture>("DemoGame/background.png");
+    auto hPlayerTexture = wz::ResourceManagement::Load<wz::Texture>("DemoGame/player.png");
+    auto hBrickTexture = wz::ResourceManagement::Load<wz::Texture>("DemoGame/brick.png");
+    auto hBallTexture = wz::ResourceManagement::Load<wz::Texture>("DemoGame/ball.png");
+    auto hFont = wz::ResourceManagement::Load<wz::Font>("DemoGame/InputMono-Black.ttf");
 
-    {
-        auto e = m_ecs.CreateEntity<Position, Sprite>();
-        m_ecs.GetComponent<Sprite>(e)->hTexture
-                    = wz::ResourceManagement::Load<wz::Texture>("DemoGame/background.png");
-    }
+    // Create the background
+    auto hBackground = m_ecs.CreateEntity<wzg::Position2D, wzg::Sprite>();
+    m_ecs.GetComponent<wzg::Sprite>(hBackground)->hTexture = hBgrTex;
 
-    {
-        Position p;
-        p.value = { 800, 100 };
-        Sprite s;
-        s.hTexture = wz::ResourceManagement::Load<wz::Texture>("DemoGame/player.png");
-        PlayerConfig pc;
-        CollisionBox cb;
+    // Create the Player
+    auto hPlayer = m_ecs.CreateEntity
+    <
+        wzg::Position2D, 
+        wzg::Sprite, 
+        PlayerConfig, 
+        CollisionBox
+    >();
+    m_ecs.GetComponent<wzg::Position2D>(hPlayer)->value = { 800, 100 };
+    m_ecs.GetComponent<wzg::Sprite>(hPlayer)->hTexture = hPlayerTexture;
 
-        m_ecs.CreateEntity(p, s, pc, cb);
-    }
+    // Create the main camera
+    wz::Game::CreateCamera(&m_ecs);
 
-    {
-        m_ecs.CreateEntity<Camera>();
-    }
+    // Create two cameras that render to their own render targets instead of the window
+    auto hCamera1 = m_ecs.CreateEntity<wzg::Camera2D, wzg::Position2D, Name, CameraConfig>();
+    auto hrt1 = wz::ResourceManagement::CreateRuntime<wz::RenderTarget>(1600, 900);
+    m_ecs.GetComponent<wzg::Camera2D>(hCamera1)->hRenderTarget = hrt1;
+    m_ecs.GetComponent<Name>(hCamera1)->value = "Camera 1";
 
-    {
-        m_ecs.CreateEntity<Gui>();
-    }
+    auto hCamera2 = m_ecs.CreateEntity<wzg::Camera2D, wzg::Position2D, Name, CameraConfig>();
+    auto hrt2 = wz::ResourceManagement::CreateRuntime<wz::RenderTarget>(1600, 900);
+    m_ecs.GetComponent<wzg::Camera2D>(hCamera2)->hRenderTarget = hrt2;
+    m_ecs.GetComponent<Name>(hCamera2)->value = "Camera 2";
 
-    wz::Texture::Handle hBrickTexture
-                    = wz::ResourceManagement::Load<wz::Texture>("DemoGame/brick.png");
-    wz::Texture& brickTexture = wz::ResourceManagement::Get<wz::Texture>(hBrickTexture);
+    // Create the Gui Entity
+    m_ecs.CreateEntity<Gui>();
 
-    {
-        float countx = 20;
-        float county = 10;
-        float sizex = brickTexture.GetWidth();
-        float sizey = brickTexture.GetHeight();
+    // Generate the block of Bricks
+    GenerateBricks(hBrickTexture);
 
-        float width = sizex * countx;
-        float height = sizey * county;
+    // Create the Resource Manager Entity
+    m_ecs.CreateEntity<ResourceComponent>();
 
-        auto& wnd = wz::Application::Get().GetWindow();
-        vec2 center = vec2(wnd.GetWidth(), wnd.GetHeight()) / 2.f;
-        wz::Rect bounds(center.x - width / 2.f, wnd.GetHeight() - height - sizey * 2.f, width, height);
+    // Create the Game Tracker Entity
+    auto hGameTracker = m_ecs.CreateEntity<Time, wzg::Text, wzg::Position2D>();
+    m_ecs.GetComponent<wzg::Text>(hGameTracker)->hFont = hFont;
 
-        int nMaxPowerups = 5;
-        
-        for (float x = bounds.Left(); x < bounds.Right(); x += sizex)
-        {
-            for (float y = bounds.Bottom(); y < bounds.Top(); y += sizey)
-            {
-                Position p;
-                p.value = { x, y };
-                Brick b;
-                Sprite s;
-                CollisionBox cb;
-                s.hTexture = hBrickTexture;
-                ColorTint ct;
-                ct.value = wz::Color
-                        (
-                            (x + y) / (bounds.Right() + bounds.Top()), 
-                            x / bounds.Right(), 
-                            y / bounds.Top(), 
-                            1.f
-                        );
+    // Create the Ball
+    auto hBall = m_ecs.CreateEntity
+    <
+        wzg::Position2D, 
+        wzg::Sprite, 
+        Ball, 
+        CollisionBox, 
+        wzg::Light, // Make the ball a light
+        Name
+    >();
+    m_ecs.GetComponent<wzg::Position2D>(hBall)->value = { 800, 150 };
+    m_ecs.GetComponent<wzg::Sprite>(hBall)->hTexture = hBallTexture;
+    m_ecs.GetComponent<Ball>(hBall)->direction = { 1, 1 };
+    m_ecs.GetComponent<Name>(hBall)->value = "Ball";
 
-                auto e = m_ecs.CreateEntity(p, b, s, cb, ct);
+    wz::Game::SetLightingEnabled(false);
 
-                if (rand() % (int)(countx + county) == (int)countx)
-                {
-                    Powerup pu;
-                    m_ecs.AddComponent(e, &pu);
-                }
-            }    
-        }
-    }
+    // Register Systems to the Main System Layer
+    // The main System Layer is notified of all events
+    m_systemLayer.Push<BallController>();
+    m_systemLayer.Push<PlayerController>();
+    m_systemLayer.Push<GuiSystem>();
+    m_systemLayer.Push<CollisionBoxUpdater>();
+    m_systemLayer.Push<BrickController>();
+    m_systemLayer.Push<ResourceSystem>();
+    m_systemLayer.Push<GameTracker>();
+    m_systemLayer.Push<CameraGuiSystem>();
+    //m_systemLayer.Push<LightGuiSystem>();
 
-    {
-        m_ecs.CreateEntity<ResourceComponent>();
-    }
-
-    {
-        // Game Tracker Entity
-        m_ecs.CreateEntity<Time, Text, Position>();
-    }
-
-    {
-        Position p;
-        p.value = {800, 150};
-        Ball b;
-        b.direction =  { 1.f, 1.f };
-        CollisionBox cb;
-        Sprite s;
-        s.hTexture = wz::ResourceManagement::Load<wz::Texture>("DemoGame/ball.png");
-
-        m_ecs.CreateEntity(p, b, cb, s);
-    }
-
-    {
-        auto e = m_ecs.CreateEntity<LightConfig, Position, ColorTint>();
-        m_ecs.GetComponent<ColorTint>(e)->value = wz::Color::white;
-    }
-
-    m_systems.AddSystem<BallController>();
-    m_systems.AddSystem<PlayerController>();
-    m_systems.AddSystem<GuiSystem>();
-    m_systems.AddSystem<CameraSystem>();
-    m_systems.AddSystem<CollisionBoxUpdater>();
-    m_systems.AddSystem<SpriteRenderer>();
-    m_systems.AddSystem<BrickController>();
-    m_systems.AddSystem<ResourceSystem>();
-    m_systems.AddSystem<GameTracker>();
-    m_systems.AddSystem<TextRenderer>();
-    m_systems.AddSystem<LightSystem>();
+    // Attach the Systems from the Game Library Extension to the Main System Layer
+    wz::Game::Attach(m_systemLayer);
 
     g_ecs = &m_ecs;
 
-    constexpr char code[] = R"(
-        test_var = 5
-    )";
-
-    wz::ResourceManagement::CreateRuntime<wz::Script, const char[27]>(code);
 }
 void DemoGame2D::Shutdown()
 {
 
+}
+
+void DemoGame2D::GenerateBricks(const wz::Texture::Handle& hBrickTexture)
+{
+    auto& brickTexture = wz::ResourceManagement::Get<wz::Texture>(hBrickTexture);
+
+    float countx = 20;
+    float county = 10;
+    float sizex = brickTexture.GetWidth();
+    float sizey = brickTexture.GetHeight();
+
+    float width = sizex * countx;
+    float height = sizey * county;
+
+    auto& wnd = wz::Application::Get().GetWindow();
+    vec2 center = vec2(wnd.GetWidth(), wnd.GetHeight()) / 2.f;
+    wz::Rect bounds(center.x - width / 2.f, wnd.GetHeight() - height - sizey * 2.f, width, height);
+
+    int nMaxPowerups = 5;
+    int i = 0;
+    for (float x = bounds.Left(); x < bounds.Right(); x += sizex)
+    {
+        for (float y = bounds.Bottom(); y < bounds.Top(); y += sizey)
+        {
+            wz::Color color = wz::Color
+            (
+                (x + y) / (bounds.Right() + bounds.Top()), 
+                x / bounds.Right(), 
+                y / bounds.Top(), 
+                1.f
+            );
+
+            auto hPlatform = m_ecs.CreateEntity
+            <
+                wzg::Position2D,
+                wzg::Sprite,
+                wzg::ColorTint,
+                Brick,
+                CollisionBox,
+                Name
+            >();
+            m_ecs.GetComponent<wzg::Position2D>(hPlatform)->value = { x, y };
+            m_ecs.GetComponent<wzg::Sprite>(hPlatform)->hTexture = hBrickTexture;
+            m_ecs.GetComponent<wzg::ColorTint>(hPlatform)->value = color;
+            m_ecs.GetComponent<Name>(hPlatform)->value = "Brick " + std::to_string(i);
+            
+
+            if (rand() % ((int)(countx + county) / 2) == 1)
+            {
+                m_ecs.CreateComponent<Powerup>(hPlatform);
+                m_ecs.CreateComponent<wzg::Light>(hPlatform);
+                m_ecs.CreateComponent<wzg::LightOffset>(hPlatform);
+                float lightStren = ((rand() % 100) / 100.f);
+                m_ecs.GetComponent<wzg::Light>(hPlatform)->radius = 8.f + 16.f * lightStren;
+                m_ecs.GetComponent<wzg::Light>(hPlatform)->intensity = .5f + lightStren;
+                m_ecs.GetComponent<wzg::LightOffset>(hPlatform)->value = vec2(32, 16);
+            }
+            i++;
+        }    
+    }
 }

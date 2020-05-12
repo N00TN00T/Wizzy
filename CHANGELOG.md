@@ -1,5 +1,34 @@
 # CHANGELOG FOR WIZZY
 
+## 0.1.7 - New & Improved Ecs, Wizzy Game Extension & 64-bit Tables
+### Ecs
+- Fully redesgined the Ecs implementation
+- More things are done in compile & initialization time
+- Improved cache friendlyness
+- Better & Safer API
+- Improved overall safety
+- Improved SystemLayer system (Enable/Disable, Push/Pop, Insert/Remove)
+### Game Extension
+- An optional extension
+- Ecs Systems & Components for basic video game tasks:
+	- Sprites
+	- Cameras
+	- Point Lights
+- Abstracts the concept of Pipelines into Sprites, Cameras & per object Custom Shaders.
+- An API to easily implement the Game features (`Attach(systemLayer)`, `CreateSprite(ecs*)` etc)
+### PropertyTable
+- Refactored to support 64-bit integers & floats and
+- to do all type checks in compile time (if constexpr)
+- Changed Get<>() to return a copy of T instead of reference. This is for example if you request a an unsigned int, the value will be cast to that before returned (PropertyTable stores ints as signed ints).
+- There is now instead a GetRef<>() function (so you don't need to copy strings & SubTables every time you read them). However, this function is strict so you have to specify the correct type i.e. if you want an integer you HAVE to specify ut as a 64-bit signed integer and nothing else. Otherwise a static assertion fails and the code won't compile.
+### Demo Game
+- Extracted some code from the demo game to the Game Extension & added some lighting to the game.
+- Render the game with two other cameras and show the results in ImGui windows
+### Misc
+- Added Create & CreateRuntime in ResourceManagement to construct & add a resource for you
+- Implemented the Bitset type that acts as a dynamic n-bit integer that you can do bitwise operations on and set/get bits represented in bool values.
+- Added the squirrel submodule
+
 ## 0.1.6 - Optimized Text Rendering & First Game In Wizzy! (Breakout)
 ### Text Rendering
 - Fonts now properly renders texts to a render target

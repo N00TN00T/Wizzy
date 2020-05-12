@@ -6,7 +6,7 @@
 
 #include "Wizzy/Application.h"
 #include "Wizzy/Input.h"
-#include "Wizzy/Utils.h"
+#include "Wizzy/Utilities/Bitset.h"
 #include "Wizzy/Stopwatch.h"
 #include "Wizzy/ImGuiSystem.h"
 #include "Wizzy/Resource/ResourceManagement.h"
@@ -29,11 +29,11 @@
 #include "Wizzy/Renderer/API.h"
 
 #include "Wizzy/Scripting/Script.h"
-#include "Wizzy/Scripting/ScriptContext.h"
+//#include "Wizzy/Scripting/ScriptContext.h"
 
 #include "Wizzy/Audio/AudioClip.h"
 
-#include "Wizzy/Ecs/ECSManager.h"
+#include "Wizzy/Ecs/Ecs.h"
 
 #include "Wizzy/Rect.h"
 

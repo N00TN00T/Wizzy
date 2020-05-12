@@ -38,7 +38,8 @@ namespace Wizzy {
 		});
 
 		WZ_CORE_TRACE("Notifying systems '{0}'", e);
-		m_ecs.NotifySystems(m_systems, e);
+		m_ecs.ProcessLayout(m_systemLayer, e);
+		m_ecs.ProcessLayout(m_coreLayer, e);
 
 		for (auto& fn : m_eventCallbacks)
 		{
@@ -86,13 +87,9 @@ namespace Wizzy {
 		this->Init();
 
 		m_ecs.CreateEntity<ImGuiComponent>();
-		m_systems.AddSystem<ImGuiSystem>();
+		m_coreLayer.Push<ImGuiSystem>();
 
 		DISPATCH_EVENT_LOCAL(AppInitEvent);
-
-
-		std::future<void> as;
-		int64 f = 0;
 		
 		while (m_running) {
 			WZ_PROFILE_SCOPE("App loop");

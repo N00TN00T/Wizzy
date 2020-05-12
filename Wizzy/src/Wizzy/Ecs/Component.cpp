@@ -4,7 +4,7 @@
 
 namespace Wizzy {
 
-	const ComponentInfo & IComponent::StaticInfo(StaticCId componentType) {
-		return componentTypes()[componentType];
+	const ComponentInfo & IComponent::StaticInfo(ComponentId componentType) {
+		return componentTypes()[componentType - 1];
 	}
 }

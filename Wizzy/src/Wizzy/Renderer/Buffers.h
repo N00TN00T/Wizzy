@@ -7,7 +7,7 @@ namespace Wizzy {
     struct BufferElement {
         ShaderDataType type;
         string name;
-        u32 size;
+        size_t size;
         u32 offset;
         bool normalized;
 

@@ -4,7 +4,6 @@
 #include "Wizzy/Resource/ResourceManagement.h"
 #include "Wizzy/Renderer/Shader.h"
 #include "Wizzy/Renderer/Texture.h"
-#include "Wizzy/Utils.h"
 #include "Wizzy/WizzyExceptions.h"
 
 namespace Wizzy {

@@ -1,7 +1,7 @@
 #pragma once
 
 #include <Wizzy.h>
-
+#include <Wizzy/Extensions/Game.h>
 
 class Sandbox
 	: public wz::Application
@@ -34,4 +34,5 @@ private:
 	bool text = true;
 	float sizex = 30.f;
 	float sizey = 30.f;
+	bool useGameExtension = false;
 };

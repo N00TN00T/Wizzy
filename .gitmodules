@@ -15,3 +15,6 @@
 [submodule "Wizzy/vendor/ulib"]
 	path = Wizzy/vendor/ulib
 	url = https://github.com/N00TN00T/ulib
+[submodule "Wizzy/vendor/squirrel"]
+	path = Wizzy/vendor/squirrel
+	url = https://github.com/N00TN00T/squirrel

@@ -46,7 +46,7 @@ namespace Wizzy
 					m_properties[key] = Property((PropInt)value);
 				else if constexpr (std::is_same<T, bool>())
 					m_properties[key] = Property((PropBool)value);
-				else if constexpr (std::is_same<T, string>() || IS_STRING(T)) 
+				else if constexpr (IS_STRING(T)) 
 					m_properties[key] = Property(value);
 				else if constexpr (std::is_same<T, PropertyTable>())
 					m_properties[key] = Property(value);
@@ -60,7 +60,7 @@ namespace Wizzy
 					m_properties[key].value = (PropInt)value;
 				else if constexpr (std::is_same<T, bool>())
 					m_properties[key].value = (PropBool)value;
-				else if constexpr (std::is_same<T, string>() || IS_STRING(T))
+				else if constexpr (IS_STRING(T))
 					m_properties[key].value = value;
 				else if constexpr (std::is_same<T, PropertyTable>())
 					m_properties[key].value = value;
@@ -107,10 +107,6 @@ namespace Wizzy
 			_STATIC_ASSERT_VALID_PROP_TYPE_STRICT(T, "GetRef is strict and handles only s64, f64, string, bool & PropertyTable");
 
 			WZ_CORE_ASSERT(m_properties.find(key) != m_properties.end(), "Tried getting a non-existent property");
-
-#define __TRY_GET(tt) auto value = std::get_if<tt>(&m_properties.at(key).value); \
-			WZ_CORE_ASSERT(value != nullptr, "Type mismatch when getting property"); \
-			return *(tt*)value;
 
 			if constexpr (std::is_same<T, PropFloat>()) 
 			{

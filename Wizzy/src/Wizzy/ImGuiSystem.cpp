@@ -11,33 +11,39 @@
 
 namespace Wizzy {
 	ImGuiSystem::ImGuiSystem() {
-		AddComponentType<ImGuiComponent>();
 		
+		Subscribe(EventType::app_init);
 		Subscribe(EventType::app_frame_begin);
 		Subscribe(EventType::app_frame_end);
-
-		Init();
 	}
 	ImGuiSystem::~ImGuiSystem() {
 		Shutdown();
 	}
-	void ImGuiSystem::OnEvent(const Event& event,
-							Wizzy::ComponentGroup& components) const {
-
-		switch (event.GetEventType()) {
+	bool ImGuiSystem::ProcessComponents(const Event& e, ImGuiComponent* imguiComponent) const 
+	{
+		
+		switch (e.GetEventType()) 
+		{
+			case EventType::app_init:
+			{
+				Init();
+				break;
+			}
 			case EventType::app_frame_begin:
 			{
-				const AppFrameBeginEvent& _updateEvent = (const AppFrameBeginEvent&)event;
+				const AppFrameBeginEvent& _updateEvent = (const AppFrameBeginEvent&)e;
 				OnFrameBegin(_updateEvent.GetDeltaTime());
 				break;
 			}
 			case EventType::app_frame_end:
 			{
-				const AppFrameEndEvent& _updateEvent = (const AppFrameEndEvent&)event;
+				const AppFrameEndEvent& _updateEvent = (const AppFrameEndEvent&)e;
 				OnFrameEnd(_updateEvent.GetDeltaTime());
 			}
 			default: break;
 		}
+
+		return false;
 	}
 
 	void ImGuiSystem::Init() const {

@@ -168,6 +168,8 @@ namespace Wizzy {
 			_data.posy = y;
 		});
 
+		SetVSync(false);
+
 		WZ_CORE_INFO("Welcome to Wizzy for Windows!");
 		WZ_CORE_INFO("API version: {0}", APIVersion());
 		WZ_CORE_INFO("API vendor: {0}", APIVendor());
@@ -204,7 +206,6 @@ namespace Wizzy {
 	}
 
 	void WindowsWindow::SetVSync(bool enabled) {
-		WZ_PROFILE_FUNCTION();
 		glfwSwapInterval(enabled);
 		m_data.vsync = enabled;
 	}

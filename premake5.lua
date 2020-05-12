@@ -25,18 +25,19 @@ workspace "Wizzy"
     imgui = "Wizzy/vendor/imgui",
     glm = "Wizzy/vendor/glm",
     stb = "Wizzy/vendor/stb",
-    lua = "Wizzy/vendor/lua/src",
     ulib = "Wizzy/vendor/ulib/include",
     assimp = "Wizzy/vendor/assimp/include",
-	luabridge = "Wizzy/vendor/LuaBridge/Source",
-	pfd = "Wizzy/vendor/pfd",
-	ft = "Wizzy/vendor/freetype/windows/include"
+    pfd = "Wizzy/vendor/pfd",
+    ft = "Wizzy/vendor/freetype/windows/include",
+    lua = "Wizzy/vendor/lua/src",
+    squirrel = "Wizzy/vendor/squirrel/include"
   }
 
   include "Wizzy/vendor/glfw/"
   include "Wizzy/vendor/glad/"
   include "Wizzy/vendor/imgui/"
   include "Wizzy/vendor/lua"
+  include "Wizzy/vendor/squirrel"
 
 --[[------------------------------------------------------------------------------------
        CORE PROJECT
@@ -62,7 +63,8 @@ project "Wizzy"
   -- Exclude all Platform-specific ones to later include the ones the target Platform will use
   removefiles
   {
-    "%{prj.name}/src/Wizzy/Platform/**"
+    "%{prj.name}/src/Wizzy/Platform/**",
+    "%{prj.name}/src/Wizzy/Scripting/**",
   }
 
   includedirs
@@ -74,19 +76,20 @@ project "Wizzy"
     "%{include_dir.imgui}",
     "%{include_dir.glm}",
     "%{include_dir.stb}",
-    "%{include_dir.lua}",
     "%{include_dir.ulib}",
     "%{include_dir.assimp}",
-	"%{include_dir.luabridge}",
-	"%{include_dir.pfd}",
-	"%{include_dir.ft}"
+    "%{include_dir.pfd}",
+    "%{include_dir.ft}",
+    "%{include_dir.lua}",
+    "%{include_dir.squirrel}"
   }
 
   defines
   {
     "WZ_EXPORT",
     "WZ_USE_OPENGL",
-	"FREETYPE_STATIC"
+    "FREETYPE_STATIC",
+    "WZ_COMPILE_EXTENSIONS"
   }
 
   filter "action:codelite"
@@ -183,7 +186,7 @@ project "Wizzy"
     defines { "WZ_CONFIG_DIST", "WZ_DISABLE_ASSERTS" }
     runtime "Release"
 	  symbols "Off"
-    optimize "Speed"
+    optimize "Full"
 
 --[[------------------------------------------------------------------------------------]]
 
@@ -220,12 +223,12 @@ project "Sandbox"
     "%{include_dir.glad}",
     "%{include_dir.glm}",
     "%{include_dir.stb}",
-    "%{include_dir.lua}",
     "%{include_dir.ulib}",
     "%{include_dir.assimp}",
-	"%{include_dir.luabridge}",
-	"%{include_dir.pfd}",
-	"%{include_dir.ft}"
+    "%{include_dir.pfd}",
+    "%{include_dir.ft}",
+    "%{include_dir.lua}",
+    "%{include_dir.squirrel}"
   }
 
   defines
@@ -233,7 +236,8 @@ project "Sandbox"
       "WZ_USE_OPENGL",
       "ULIB_NO_INCLUDE",
       "WZ_EXPORT",
-	  "FREETYPE_STATIC"
+      "FREETYPE_STATIC",
+      "WZ_EXTENSIONS_ENABLE_ALL"
   }
 
   links

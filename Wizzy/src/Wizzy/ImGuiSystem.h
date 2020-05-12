@@ -1,21 +1,19 @@
 #pragma once
 
-#include "Wizzy/Ecs/ECSManager.h"
+#include "Wizzy/Ecs/Ecs.h"
 
 namespace Wizzy {
 
 	struct ImGuiComponent
-		: public Wizzy::Component<ImGuiComponent> {
+		: public Component<ImGuiComponent> {
 
 	};
 
-	class ImGuiSystem
-		: public Wizzy::System {
+	class ImGuiSystem : public System<ImGuiSystem, ImGuiComponent> {
 	public:
 		ImGuiSystem();
 		~ImGuiSystem();
-		virtual void OnEvent(const Event& event,
-							 Wizzy::ComponentGroup& components) const override;
+		bool ProcessComponents(const Event& e, ImGuiComponent* imguiComponent) const override;
 	private:
 		void Init() const;
 		void Shutdown() const;

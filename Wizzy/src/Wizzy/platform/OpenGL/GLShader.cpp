@@ -6,7 +6,6 @@
 #include "Wizzy/platform/OpenGL/GLShader.h"
 #include "Wizzy/platform/OpenGL/GLErrorHandling.h"
 #include "Wizzy/platform/OpenGL/GLAPI.h"
-#include "Wizzy/Utils.h"
 #include "Wizzy/PropertyTable.h"
 #include "Wizzy/WizzyExceptions.h"
 
@@ -14,6 +13,27 @@
 
 bool string_is_glsl_type(const string& str) {
 	return str == "mat4" || str == "vec2" || str == "vec3" || str == "vec4" || str == "mat3" || str == "float" || str == "int" || str == "bool" || str == "sampler2d";
+}
+
+std::vector<string> split_string(const string& str, char delimiter)
+{
+    std::vector<string> words;
+    string word = "";
+    for (auto c : str)
+    {
+        if (c == delimiter)
+        {
+            if (word != "")
+            {
+                words.push_back(word);
+                word = "";
+            }
+            continue;
+        }
+        word += c;
+    }
+
+    return words;
 }
 
 namespace Wizzy {
@@ -34,6 +54,10 @@ namespace Wizzy {
 		else if (str == "bool") return ShaderDataType::BOOL;
 		else if (str == "sampler2d") return ShaderDataType::TEXTURE2D;
 
+        WZ_CORE_CRITICAL("Invalid shader type strings");
+        WZ_BREAK;
+
+        return ShaderDataType::NONE;
 	}
 
     GLShader::GLShader(const ResData& data, const PropertyTable& props)
@@ -50,6 +74,20 @@ namespace Wizzy {
         }
 
 		
+    }
+
+    GLShader::GLShader(const string& source, const PropertyTable& props)
+        : Shader(props), m_shaderId(WZ_SHADER_ID_INVALID) {
+
+        m_rawSource = source;
+        if (!this->ParseShader(m_rawSource))
+        {
+            WZ_THROW(Exception, "Failed parsing shader");
+        }
+        if (!this->Compile())
+        {
+            WZ_THROW(Exception, "Failed compiling shader");
+        }
     }
 
     GLShader::~GLShader() {
@@ -195,7 +233,7 @@ namespace Wizzy {
         u32 _lineNum = 1;
 		string _line;
         while (std::getline(_sourceStream, _line, '\n')) {
-            if (_line.find("#") != string::npos && _line.find("#shader") == string::npos && _line.find("#version") == string::npos && _line.find("#define") == string::npos && _shaderType != ShaderType::invalid) {
+            if (_line.find('#') != string::npos && _line.find("#shader") == string::npos && _line.find("#version") == string::npos && _line.find("#define") == string::npos && _shaderType != ShaderType::invalid) {
                 WZ_CORE_ERROR("Failed parsing shader, settings must be set before specifying a shader with #shader token");
                 WZ_CORE_TRACE(_line);
                 return false;
@@ -240,7 +278,7 @@ namespace Wizzy {
 
             }
 
-			if (_line.find("#") == string::npos || (_line.find("#") != string::npos && _line.find("#") > _line.find("//"))) {
+			if (_line.find('#') == string::npos || (_line.find('#') != string::npos && _line.find('#') > _line.find("//"))) {
 				_processed += _line;
 			}
 
@@ -365,7 +403,7 @@ namespace Wizzy {
 			return false;
 		}
 
-        delete _linkLog;
+        delete[] _linkLog;
 
         WZ_CORE_TRACE("Validating program");
 

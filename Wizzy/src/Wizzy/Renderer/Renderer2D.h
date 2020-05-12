@@ -181,4 +181,6 @@ namespace Wizzy
         static Shader::Handle   s_hTextShader;
         static Metrics          s_metrics;
     };
+
+    typedef Renderer2D::Pipeline RenderPipeline2D;
 }
