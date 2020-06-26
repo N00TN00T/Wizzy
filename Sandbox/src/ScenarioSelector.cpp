@@ -3,6 +3,7 @@
 
 #define SANDBOX		    0
 #define DEMOGAME        1
+#define GENERAL         3
 
 #define SELECTION	DEMOGAME
 
@@ -17,5 +18,11 @@ Wizzy::Application* CreateApplication()
 Wizzy::Application* CreateApplication()
 {
     return new DemoGame2D();
+}
+#elif SELECTION == GENERAL
+#include "GeneralTest.h"
+Wizzy::Application* CreateApplication()
+{
+    return new GeneralTest();
 }
 #endif

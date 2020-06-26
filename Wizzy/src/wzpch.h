@@ -46,14 +46,11 @@
 #include <spdlog/spdlog.h>
 #include <spdlog/fmt/ostr.h>
 
-#include <glm/glm.hpp>
-#include <glm/gtc/matrix_transform.hpp>
-#include <glm/gtc/matrix_inverse.hpp>
-#include <glm/gtc/type_ptr.hpp>
-
 #include <portable-file-dialogs.h>
 
 #include <ulib.hpp>
+
+#include <imgui.h>
 
 
 /* Platform/Compiler specific headers */
@@ -92,18 +89,15 @@ typedef uint64      u64;
 typedef float       f32;
 typedef double      f64;
 
-typedef glm::vec2 vec2;
-typedef glm::vec3 vec3;
-typedef glm::vec4 vec4;
-typedef glm::mat3 mat3;
-typedef glm::mat4 mat4;
-
 const string& GetExecutablePath();
 void SetExecutablePath(const string& p);
 
 /* wizzy headers */
 
-#include "Wizzy/Core.h"
-#include "Wizzy/Log.h"
-#include "Wizzy/Color.h"
+#include "Wizzy/Core/Core.h"
+#include "Wizzy/Utilities/Log.h"
+
+#include "Wizzy/Math/Vec.h"
+#include "Wizzy/Math/Mat.h"
+
 #include "Wizzy/Utilities/Bitset.h"

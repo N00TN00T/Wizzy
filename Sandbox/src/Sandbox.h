@@ -13,9 +13,9 @@ public:
 	~Sandbox();
 
 private:
-	virtual void Init() override;
-	
-	virtual void Shutdown() override;
+	virtual void Init()          override;
+	virtual void LoadResources() override;
+	virtual void Shutdown()      override;
 
 	void OnEvent(wz::Event& e);
 

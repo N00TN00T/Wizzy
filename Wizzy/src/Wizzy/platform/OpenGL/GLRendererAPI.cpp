@@ -9,7 +9,7 @@
 
 namespace Wizzy {
 
-    Color g_clearColor = Color::transparent;
+    color3 g_clearColor = COLOR_TRANSPARENT;
 
     void GLRendererAPI::SetClearColor(float r, float g, float b, float a) {
         if (g_clearColor.r != r && g_clearColor.g != g && g_clearColor.b != b && g_clearColor.a != a)
@@ -19,7 +19,7 @@ namespace Wizzy {
         }
     }
 
-    const Color& GLRendererAPI::GetClearColor() const
+    const color3& GLRendererAPI::GetClearColor() const
     {
         return g_clearColor;
     }

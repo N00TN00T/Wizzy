@@ -23,21 +23,16 @@ workspace "Wizzy"
     glfw = "Wizzy/vendor/glfw/include",
     glad = "Wizzy/vendor/glad/include",
     imgui = "Wizzy/vendor/imgui",
-    glm = "Wizzy/vendor/glm",
     stb = "Wizzy/vendor/stb",
     ulib = "Wizzy/vendor/ulib/include",
     assimp = "Wizzy/vendor/assimp/include",
     pfd = "Wizzy/vendor/pfd",
-    ft = "Wizzy/vendor/freetype/windows/include",
-    lua = "Wizzy/vendor/lua/src",
-    squirrel = "Wizzy/vendor/squirrel/include"
+    ft = "Wizzy/vendor/freetype/windows/include"
   }
 
   include "Wizzy/vendor/glfw/"
   include "Wizzy/vendor/glad/"
   include "Wizzy/vendor/imgui/"
-  include "Wizzy/vendor/lua"
-  include "Wizzy/vendor/squirrel"
 
 --[[------------------------------------------------------------------------------------
        CORE PROJECT
@@ -74,14 +69,11 @@ project "Wizzy"
     "%{include_dir.glfw}",
     "%{include_dir.glad}",
     "%{include_dir.imgui}",
-    "%{include_dir.glm}",
     "%{include_dir.stb}",
     "%{include_dir.ulib}",
     "%{include_dir.assimp}",
     "%{include_dir.pfd}",
-    "%{include_dir.ft}",
-    "%{include_dir.lua}",
-    "%{include_dir.squirrel}"
+    "%{include_dir.ft}"
   }
 
   defines
@@ -217,18 +209,14 @@ project "Sandbox"
     "Wizzy/src",
     "Sandbox/src",
     "%{include_dir.imgui}",
-    "%{include_dir.glm}",
     "%{include_dir.spdlog}",
     "%{include_dir.glfw}",
     "%{include_dir.glad}",
-    "%{include_dir.glm}",
     "%{include_dir.stb}",
     "%{include_dir.ulib}",
     "%{include_dir.assimp}",
     "%{include_dir.pfd}",
-    "%{include_dir.ft}",
-    "%{include_dir.lua}",
-    "%{include_dir.squirrel}"
+    "%{include_dir.ft}"
   }
 
   defines
@@ -245,8 +233,7 @@ project "Sandbox"
 	"Wizzy",
     "imgui",
     "glfw",
-    "glad",
-    "lua"
+    "glad"
   }
 
   filter "action:codelite"

@@ -9,8 +9,8 @@
 #include "Wizzy/platform/OpenGL/GLTexture.h"
 #include "Wizzy/platform/OpenGL/GLErrorHandling.h"
 #include "Wizzy/platform/OpenGL/GLAPI.h"
-#include "Wizzy/WizzyExceptions.h"
-#include "Wizzy/ImageImporter.h"
+#include "Wizzy/Exceptions/WizzyExceptions.h"
+#include "Wizzy/Utilities/ImageImporter.h"
 
 #define DEFAULT_WRAP_MODE       (GL_REPEAT)
 #define DEFAULT_MIN_FILTER_MODE (GL_LINEAR_MIPMAP_LINEAR)

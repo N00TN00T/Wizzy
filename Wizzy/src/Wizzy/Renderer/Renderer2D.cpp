@@ -4,9 +4,9 @@
 #include "Wizzy/Resource/ResourceManagement.h"
 #include "Wizzy/Renderer/RenderCommand.h"
 
-#include "Wizzy/Application.h"
-#include "Wizzy/Instrumentor.h"
-#include "Wizzy/WizzyExceptions.h"
+#include "Wizzy/Core/Application.h"
+#include "Wizzy/Utilities/Instrumentor.h"
+#include "Wizzy/Exceptions/WizzyExceptions.h"
 constexpr char fallback_shader_source[] = R"(
 
 #shader vertex
@@ -212,26 +212,26 @@ namespace Wizzy
 	void Renderer2D::SubmitTexture(
 		Pipeline* pipeline,
 		const Texture::Handle& hTexture,  
-		const vec2& position, 
-		const vec2& scale, 
+		const fvec2& position, 
+		const fvec2& scale, 
 		float rotation, 
-		const Color& color, 
+		const color& color, 
 		const Rect& renderRect)
 	{
 		
-		mat4 transform = glm::translate(mat4(1.f), vec3(position, 0.f));
-		if (scale.x != 1 || scale.y != 1)
-			transform = glm::scale(transform, vec3(scale, 1.f));
-		if (rotation != 0)
-			transform = glm::rotate(transform, glm::radians(rotation), vec3(0, 0, 1));
+		fmat4 transform = transformation::translation(fvec3(position, 0.f));
+		if (rotation != 0.f)
+			transform.rotate(rotation, fvec3(0, 0, 1));
+		if (scale.x != 1.f || scale.y != 1.f)
+			transform.scale(fvec3(scale, 1.f));
 
 		SubmitTexture(pipeline, hTexture, transform, color, renderRect);
 	}
 	void Renderer2D::SubmitTexture(
 		Pipeline* pipeline,
 		const Texture::Handle& hTexture, 
-		const mat4& transform, 
-		const Color& color, 
+		const fmat4& transform, 
+		const color& color, 
 		const Rect& renderRect)
 	{
 		WZ_CORE_ASSERT(ResourceManagement::IsLoaded(hTexture), "Texture not loaded in Renderer2D")
@@ -259,25 +259,25 @@ namespace Wizzy
 	void Renderer2D::SubmitRenderTarget(
 		Pipeline* pipeline,
 		const RenderTarget::Handle& hTexture,  
-		const vec2& position, 
-		const vec2& scale, 
+		const fvec2& position, 
+		const fvec2& scale, 
 		float rotation, 
-		const Color& color, 
+		const color& color, 
 		const Rect& renderRect)
 	{
-		mat4 transform = glm::translate(mat4(1.f), vec3(position, 0.f));
-		if (scale.x != 1 || scale.y != 1)
-			transform = glm::scale(transform, vec3(scale, 1.f));
+		mat4 transform = transformation::translation(fvec3(position, 0.f));
 		if (rotation != 0)
-			transform = glm::rotate(transform, glm::radians(rotation), vec3(0, 0, 1));
+			transform.rotate(rotation, fvec3(0, 0, 1));
+		if (scale.x != 1 || scale.y != 1)
+			transform.scale(fvec3(scale, 1.f));
 
 		SubmitRenderTarget(pipeline, hTexture, transform, color, renderRect);
 	}
 	void Renderer2D::SubmitRenderTarget(
 		Pipeline* pipeline,
 		const RenderTarget::Handle& hTexture, 
-		const mat4& transform, 
-		const Color& color, 
+		const fmat4& transform, 
+		const color& color, 
 		const Rect& renderRect)
 	{
 		WZ_CORE_ASSERT(ResourceManagement::IsLoaded(hTexture), "Texture not loaded in Renderer2D")
@@ -306,16 +306,16 @@ namespace Wizzy
 		Pipeline* pipeline,
 		const Font::Handle& hFont,  
 		const string& text,
-		const vec2& position, 
-		const vec2& scale, 
+		const fvec2& position, 
+		const fvec2& scale, 
 		float rotation, 
-		const Color& color)
+		const color& color)
 	{
-		mat4 transform = glm::translate(mat4(1.f), vec3(position, 0.f));
+		mat4 transform = transformation::translation(fvec3(position, 0.f));
 		if (scale.x != 1 || scale.y != 1)
-			transform = glm::scale(transform, vec3(scale, 1.f));
+			transform.scale(fvec3(scale, 1.f));
 		if (rotation != 0)
-			transform = glm::rotate(transform, glm::radians(rotation), vec3(0, 0, 1));
+			transform.rotate(rotation, fvec3(0, 0, 1));
 
 		SubmitText(pipeline, hFont, text, transform, color);	
 	}
@@ -323,8 +323,8 @@ namespace Wizzy
 		Pipeline* pipeline,
 		const Font::Handle& hFont, 
 		const string& text,
-		const mat4& transform, 
-		const Color& color)
+		const fmat4& transform, 
+		const color& color)
 	{
 		WZ_CORE_ASSERT(ResourceManagement::IsLoaded(hFont), 
 			"Unloaded font in Renderer2D submission");
@@ -347,7 +347,7 @@ namespace Wizzy
 		else
 		{*/
 			auto sz = font.MeasureString(text);
-			vec2 penPos(0.f, sz.y - font.GetFontSize());
+			fvec2 penPos(0.f, sz.y - font.GetFontSize());
 			for (auto c : text)
 			{
 				auto& info = font.CharInfo(c);
@@ -361,7 +361,8 @@ namespace Wizzy
 
 				if (c != ' ')
 				{
-					mat4 charTransform = glm::translate(transform, vec3(penPos.x + info.bearing.x, penPos.y + info.bearing.y - info.size.y, 0.f));
+					fmat4 charTransform = transform;
+					charTransform.translate(fvec3(penPos.x + info.bearing.x, penPos.y + info.bearing.y - info.size.y, 0.f));
 					
 					Renderer2D::SubmitTexture
 					(
@@ -384,12 +385,37 @@ namespace Wizzy
 	void Renderer2D::SubmitRect(
 		Pipeline* pipeline,
 		const Rect& rect, 
-		const Color& color, 
+		const color& color, 
+		RectMode mode)
+	{
+		SubmitRect(pipeline, rect, 0, color, mode);
+	}
+
+	void Renderer2D::SubmitRect(
+		Pipeline* pipeline,
+		const Rect& rect, 
+		f32 rotation,
+		const color& color, 
 		RectMode mode)
 	{
 		WZ_CORE_ASSERT(ResourceManagement::IsLoaded(s_hWhite1x1Texture), 
 		"White texture not loaded properly");
-		SubmitTexture(pipeline, s_hWhite1x1Texture, rect.position, rect.size, 0, color);
+		SubmitTexture(pipeline, s_hWhite1x1Texture, rect.position, rect.size, rotation, color);
+	}
+
+	void Renderer2D::SubmitLine(
+		Pipeline*       pipeline,
+		fvec2           a,
+		fvec2           b,
+		const color&    color)
+	{
+		fvec2 dir = b - a;
+
+		float angle = std::atan2f(dir.y, dir.x);
+
+		float len = dir.magnitude();
+
+		SubmitRect(pipeline, Rect(a.x, a.y, len, 1), angle, color, RectMode::Filled);
 	}
 
 	void Renderer2D::End(Renderer2D::Pipeline* pipeline)
@@ -504,9 +530,9 @@ namespace Wizzy
 	void Renderer2D::Submit(
 		Pipeline* pipeline,
 		u32 textureSlot,
-		vec2&& size,
-		mat4 transform,
-		const Color& color,
+		fvec2&& size,
+		fmat4 transform,
+		const color& color,
 		const Rect& renderRect)
 	{
 		WZ_PROFILE_FUNCTION();
@@ -518,14 +544,14 @@ namespace Wizzy
 			Begin(pipeline);
 		}
 
-		static vec2 uv[] =
+		static fvec2 uv[] =
 		{
-			vec2(0, 0),
-			vec2(1, 0),
-			vec2(1, 1),
-			vec2(0, 1)
+			fvec2(0, 0),
+			fvec2(1, 0),
+			fvec2(1, 1),
+			fvec2(0, 1)
 		};
-		static vec3 offsetTranslation(0.f);
+		static fvec3 offsetTranslation(0.f);
 
 		if (renderRect.IsValid())
 		{
@@ -544,12 +570,15 @@ namespace Wizzy
 			size.y *= std::fabsf(renderRect.h / size.y);
 		}
 
+		size.x *= transform.rows[0].x;
+		size.y *= transform.rows[1].y;
+
 		auto& pBuffer = pipeline->pBufferCurrent;
 
 		{
 			WZ_PROFILE_SCOPE("Buffer assignment");
 			// Bottom left
-			pBuffer->pos = transform[3];
+			pBuffer->pos = transform.translation;
 			pBuffer->uv = uv[0];
 			pBuffer->color = color;
 			pBuffer->textureSlot = textureSlot;
@@ -557,10 +586,10 @@ namespace Wizzy
 
 			offsetTranslation.x = size.x;
 			offsetTranslation.y = 0;
-			transform = glm::translate(transform, offsetTranslation);
+			transform.translate(offsetTranslation);
 
 			// Bottom right
-			pBuffer->pos = transform[3];
+			pBuffer->pos = transform.translation;
 			pBuffer->uv = uv[1];
 			pBuffer->color = color;
 			pBuffer->textureSlot = textureSlot;
@@ -568,10 +597,10 @@ namespace Wizzy
 
 			offsetTranslation.x = 0;
 			offsetTranslation.y = size.y;
-			transform = glm::translate(transform, offsetTranslation);
+			transform.translate(offsetTranslation);
 
 			// Top right
-			pBuffer->pos = transform[3];
+			pBuffer->pos = transform.translation;
 			pBuffer->uv = uv[2];
 			pBuffer->color = color;
 			pBuffer->textureSlot = textureSlot;
@@ -579,10 +608,10 @@ namespace Wizzy
 
 			offsetTranslation.x = -size.x;
 			offsetTranslation.y = 0;
-			transform = glm::translate(transform, offsetTranslation);
+			transform.translate(offsetTranslation);
 
 			// Top left
-			pBuffer->pos = transform[3];
+			pBuffer->pos = transform.translation;
 			pBuffer->uv = uv[3];
 			pBuffer->color = color;
 			pBuffer->textureSlot = textureSlot;

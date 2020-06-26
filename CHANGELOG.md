@@ -1,5 +1,16 @@
 # CHANGELOG FOR WIZZY
 
+## 0.1.8 - Wizzy Maths
+### Maths
+- Templated vec2, vec3, vec4 & mat4 structs
+- Typedefs for common types likes ivec3, fvec3, uvec3 etc
+- All vector types can be upgraded and downgraded as well as converted to other data types with no errors (but warnings like implicit float to int conversion are still there)
+- Can store their data like any datatype, as long as math-operations are applicable
+- Projection & Transformation functions for mat4
+- Color is now just a typedef of fvec4 but can be used the same way as vec4 has alias for xyzw being rgba (union)
+### Misc
+- Changed directory structure and divided all files into directories
+
 ## 0.1.7 - New & Improved Ecs, Wizzy Game Extension & 64-bit Tables
 ### Ecs
 - Fully redesgined the Ecs implementation

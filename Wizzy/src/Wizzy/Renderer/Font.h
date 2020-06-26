@@ -15,16 +15,16 @@ namespace Wizzy
 	private:
 		struct CharacterInfo
 		{
-			vec2 	advance;
-			vec2 	size;
-			vec2 	bearing;
+			fvec2 	advance;
+			fvec2 	size;
+			fvec2 	bearing;
 			float 	xPos;
 		};
 
 		struct Cache
 		{
 			RenderTarget::Handle hTexture;
-			vec2 textSize;
+			fvec2 textSize;
 			size_t sizeBytes = 0;
 		};
 
@@ -36,7 +36,7 @@ namespace Wizzy
 		// Render the text from the atlas to a texture
 		const RenderTarget::Handle& Render(const string& text, const Shader::Handle& shader);
 
-		glm::vec2 MeasureString(const string& str);
+		fvec2 MeasureString(const string& str);
 
 		inline Texture::Handle GetAtlasTexture() const { return m_hAtlasTexture; }
 

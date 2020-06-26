@@ -18,15 +18,13 @@ namespace Wizzy {
             case ShaderDataType::FLOAT1:
                 Upload1f(name, *static_cast<float*>(data)); break;
             case ShaderDataType::FLOAT2:
-                Upload2f(name, *static_cast<vec2*>(data)); break;
+                Upload2f(name, *static_cast<fvec2*>(data)); break;
             case ShaderDataType::FLOAT3:
-                Upload3f(name, *static_cast<vec3*>(data)); break;
+                Upload3f(name, *static_cast<fvec3*>(data)); break;
             case ShaderDataType::FLOAT4:
-                Upload4f(name, *static_cast<vec4*>(data)); break;
-            case ShaderDataType::MAT3:
-                UploadMat3(name, *static_cast<mat3*>(data)); break;
+                Upload4f(name, *static_cast<fvec4*>(data)); break;
             case ShaderDataType::MAT4:
-                UploadMat4(name, *static_cast<mat4*>(data)); break;
+                UploadMat4(name, *static_cast<fmat4*>(data)); break;
             case ShaderDataType::INT1:
                 Upload1i(name, *static_cast<int*>(data)); break;
             case ShaderDataType::INT2:

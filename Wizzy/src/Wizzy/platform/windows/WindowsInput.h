@@ -1,6 +1,6 @@
 #pragma once
 
-#include "Wizzy/Input.h"
+#include "Wizzy/Input/Input.h"
 
 namespace Wizzy {
 
@@ -9,7 +9,7 @@ namespace Wizzy {
     protected:
         virtual bool GetKeyImpl(KeyCode keycode) override;
         virtual bool GetMouseButtonImpl(MouseCode mousecode) override;
-		virtual vec2 GetMousePosImpl() override;
+		virtual fvec2 GetMousePosImpl() override;
     };
 
     

@@ -4,18 +4,6 @@
 
 #include <imgui.h>
 
-#include "Wizzy/Application.h"
-#include "Wizzy/Input.h"
-#include "Wizzy/Utilities/Bitset.h"
-#include "Wizzy/Stopwatch.h"
-#include "Wizzy/ImGuiSystem.h"
-#include "Wizzy/Resource/ResourceManagement.h"
-
-#include "Wizzy/Events/AppEvent.h"
-#include "Wizzy/Events/CharEvent.h"
-#include "Wizzy/Events/KeyEvent.h"
-#include "Wizzy/Events/MouseEvent.h"
-#include "Wizzy/Events/ClientEvent.h"
 
 #include "Wizzy/Renderer/Buffers.h"
 #include "Wizzy/Renderer/RenderTarget.h"
@@ -28,17 +16,30 @@
 #include "Wizzy/Renderer/Material.h"
 #include "Wizzy/Renderer/API.h"
 
-#include "Wizzy/Scripting/Script.h"
-//#include "Wizzy/Scripting/ScriptContext.h"
+#include "Wizzy/Utilities/Bitset.h"
+#include "Wizzy/Utilities/Stopwatch.h"
+#include "Wizzy/Utilities/Instrumentor.h"
+
+#include "Wizzy/Events/AppEvent.h"
+#include "Wizzy/Events/CharEvent.h"
+#include "Wizzy/Events/KeyEvent.h"
+#include "Wizzy/Events/MouseEvent.h"
+
+#include "Wizzy/Core/Application.h"
+#include "Wizzy/Core/ImGuiSystem.h"
 
 #include "Wizzy/Audio/AudioClip.h"
 
 #include "Wizzy/Ecs/Ecs.h"
 
-#include "Wizzy/Rect.h"
+#include "Wizzy/Math/Rect.h"
 
 #include "Wizzy/JobSystem/JobSystem.h"
 
-#include "Wizzy/Instrumentor.h"
+#include "Wizzy/Input/Input.h"
+
+#include "Wizzy/Resource/ResourceManagement.h"
+
+#include "Wizzy/Utilities/TemplateUtils.h"
 
 namespace wz = ::Wizzy;

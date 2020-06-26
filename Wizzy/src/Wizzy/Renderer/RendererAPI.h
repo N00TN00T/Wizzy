@@ -12,12 +12,12 @@ namespace Wizzy {
 
     public:
         virtual void SetClearColor(float r, float g, float b, float a) = 0;
-        inline void SetClearColor(const Color& color)
+        inline void SetClearColor(const color3& color)
         {
-            SetClearColor(color.r, color.g, color.b, color.a);
+            SetClearColor(color.r, color.g, color.b, 1.f);
         }
 
-        virtual const Color& GetClearColor() const = 0;
+        virtual const color3& GetClearColor() const = 0;
 
         virtual void Clear() = 0;
 

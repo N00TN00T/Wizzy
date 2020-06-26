@@ -6,8 +6,8 @@
 #include "Wizzy/platform/OpenGL/GLShader.h"
 #include "Wizzy/platform/OpenGL/GLErrorHandling.h"
 #include "Wizzy/platform/OpenGL/GLAPI.h"
-#include "Wizzy/PropertyTable.h"
-#include "Wizzy/WizzyExceptions.h"
+#include "Wizzy/Utilities/PropertyTable.h"
+#include "Wizzy/Exceptions/WizzyExceptions.h"
 
 #define U_LOCATION(p, n) glGetUniformLocation(p, n)
 
@@ -110,17 +110,11 @@ namespace Wizzy {
         }
     }
 
-    void GLShader::UploadMat4(const string& name, const mat4& value) 
+    void GLShader::UploadMat4(const string& name, const fmat4& value) 
     {
         this->Bind();
         GL_CALL(glUniformMatrix4fv(U_LOCATION(m_shaderId, name.c_str()), 1,
-                                      GL_FALSE, glm::value_ptr(value)));
-    }
-    void GLShader::UploadMat3(const string& name, const mat3& value) 
-    {
-        this->Bind();
-        GL_CALL(glUniformMatrix3fv(U_LOCATION(m_shaderId, name.c_str()), 1,
-                                      GL_FALSE, glm::value_ptr(value)));
+                                      GL_TRUE, value.ptr));
     }
 
     void GLShader::Upload1i(const string & name, const int32 & value) 
@@ -153,19 +147,19 @@ namespace Wizzy {
 		GL_CALL(glUniform1f(U_LOCATION(m_shaderId, name.c_str()), value));
 	}
 
-	void GLShader::Upload2f(const string & name, const vec2 & value) 
+	void GLShader::Upload2f(const string & name, const fvec2 & value) 
     {
         this->Bind();
 		GL_CALL(glUniform2f(U_LOCATION(m_shaderId, name.c_str()), value.x, value.y));
 	}
 
-	void GLShader::Upload3f(const string& name, const vec3& value) 
+	void GLShader::Upload3f(const string& name, const fvec3& value) 
     {
         this->Bind();
 		GL_CALL(glUniform3f(U_LOCATION(m_shaderId, name.c_str()), value.x, value.y, value.z));
 	}
 
-	void GLShader::Upload4f(const string& name, const vec4& value) 
+	void GLShader::Upload4f(const string& name, const fvec4& value) 
     {
         this->Bind();
 		GL_CALL(glUniform4f(U_LOCATION(m_shaderId, name.c_str()), value.x, value.y, value.z, value.w));
@@ -196,20 +190,20 @@ namespace Wizzy {
         this->Bind();
         GL_CALL(glUniform1fv(U_LOCATION(m_shaderId, name.c_str()), count, value));
     }
-    void GLShader::Upload2fv(const string& name, const u32& count, const vec2& value)
+    void GLShader::Upload2fv(const string& name, const u32& count, const fvec2& value)
     {
         this->Bind();
-        GL_CALL(glUniform2fv(U_LOCATION(m_shaderId, name.c_str()), count, glm::value_ptr(value)));
+        GL_CALL(glUniform2fv(U_LOCATION(m_shaderId, name.c_str()), count, value.ptr));
     }
-    void GLShader::Upload3fv(const string& name, const u32& count, const vec3& value)
+    void GLShader::Upload3fv(const string& name, const u32& count, const fvec3& value)
     {
         this->Bind();
-        GL_CALL(glUniform3fv(U_LOCATION(m_shaderId, name.c_str()), count, glm::value_ptr(value)));
+        GL_CALL(glUniform3fv(U_LOCATION(m_shaderId, name.c_str()), count, value.ptr));
     }
-    void GLShader::Upload4fv(const string& name, const u32& count, const vec4& value)
+    void GLShader::Upload4fv(const string& name, const u32& count, const fvec4& value)
     {
         this->Bind();
-        GL_CALL(glUniform4fv(U_LOCATION(m_shaderId, name.c_str()), count, glm::value_ptr(value)));
+        GL_CALL(glUniform4fv(U_LOCATION(m_shaderId, name.c_str()), count, value.ptr));
     }
 
     bool GLShader::ParseShader(const string& data) {

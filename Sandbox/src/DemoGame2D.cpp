@@ -36,9 +36,9 @@ COMPONENT_DEF(CollisionBox)
 
 COMPONENT_DEF(Ball)
 {
-    vec2 direction;
+    wz::fvec2 direction;
     float speed = 650.f;
-    vec2 spawnPos;
+    wz::fvec2 spawnPos;
 };
 
 COMPONENT_DEF(Gui)
@@ -65,7 +65,7 @@ COMPONENT_DEF(Name)
 
 COMPONENT_DEF(CameraConfig)
 {
-    vec2 resolution;
+    wz::fvec2 resolution;
     bool dynamic = false;
 };
 
@@ -107,7 +107,7 @@ public:
                 auto& texture = wz::ResourceManagement::Get<wz::Texture>(sprite->hTexture);
 
                 wz::Rect bounds(0, 0, 1600.f, 900.f);
-                vec2 size = { texture.GetWidth(), texture.GetHeight() };
+                wz::fvec2 size = { texture.GetWidth(), texture.GetHeight() };
                 
                 position->value.x = std::max(bounds.Left(), position->value.x);
                 position->value.x = std::min(bounds.Right() - size.x, position->value.x);
@@ -270,7 +270,7 @@ public:
                 wz::Texture* texture;
                 if (wz::ResourceManagement::TryGet<wz::Texture>(sprite->hTexture, texture))
                 {
-                    auto sz = vec2(texture->GetWidth(), texture->GetHeight());
+                    auto sz = wz::fvec2(texture->GetWidth(), texture->GetHeight());
 
                     collisionBox->rectangle.position = position->value;
                     collisionBox->rectangle.size = sz;
@@ -333,7 +333,7 @@ public:
                     position->value = ball->spawnPos;
                     ball->direction.y = (float)((rand() % 100) + 10) / 100.f;
                     ball->direction.x = (float)(rand() % 100) / 100.f;
-                    ball->direction = glm::normalize(ball->direction);
+                    ball->direction = ball->direction.normalize();
                 }
 
                 position->value.x = std::max(bounds.Left(), position->value.x);
@@ -395,7 +395,7 @@ public:
                     return true;
                 });
 
-                ball->direction = glm::normalize(ball->direction);
+                ball->direction = ball->direction.normalize();
 
                 position->value += ball->direction * ball->speed * delta;
 
@@ -479,12 +479,12 @@ public:
                             : "Unnamed##" + std::to_string(reinterpret_cast<int>(light)));
                 ImGui::Begin(label.c_str());
 
-                ImGui::DragFloat2("Position", glm::value_ptr(position->value), .1f);
+                ImGui::DragFloat2("Position", position->value.ptr, .1f);
                 ImGui::DragFloat("Intensity", &light->intensity, .01f);
                 ImGui::DragFloat("Radius", &light->radius, .1f);
                 if (colorTint)
                 {
-                    ImGui::ColorEdit4("Color", colorTint->value.rgba);
+                    ImGui::ColorEdit4("Color", colorTint->value.ptr);
                 }
 
                 ImGui::End();
@@ -633,7 +633,7 @@ public:
                     ImGui::DragFloat2
                     (
                         "View Size", 
-                        glm::value_ptr(camera->viewSize), 
+                        camera->viewSize.ptr, 
                         .1f, 
                         1.f, 
                         99999.f
@@ -642,7 +642,7 @@ public:
                 ImGui::DragFloat2
                 (
                     "Position", 
-                    glm::value_ptr(position->value),
+                    position->value.ptr,
                     .1f
                 );
                 ImGui::EndMenu();
@@ -651,7 +651,7 @@ public:
             ImGui::EndMenuBar();
 
             ImVec2 pos = { 0, wndSz.y - space.y };
-            vec2 res = { renderTarget.GetWidth(), renderTarget.GetHeight() };
+            wz::fvec2 res = { renderTarget.GetWidth(), renderTarget.GetHeight() };
 
             ImVec2 sz = { res.x, res.y };
 
@@ -723,7 +723,9 @@ void DemoGame2D::Init()
     // Set Log Levels. If Core Trace Level is activated the console will be hardcore spammed
     wz::Log::SetCoreLogLevel(LOG_LEVEL_DEBUG);
     wz::Log::SetClientLogLevel(LOG_LEVEL_TRACE);
-
+}
+void DemoGame2D::LoadResources()
+{
     // Set Resource Directory (Portable)
     string resDir = ulib::File::directory_of(GetExecutablePath()) + "/../../../res/";
     wz::ResourceManagement::SetResourceDir(resDir);
@@ -810,7 +812,6 @@ void DemoGame2D::Init()
     wz::Game::Attach(m_systemLayer);
 
     g_ecs = &m_ecs;
-
 }
 void DemoGame2D::Shutdown()
 {
@@ -830,7 +831,7 @@ void DemoGame2D::GenerateBricks(const wz::Texture::Handle& hBrickTexture)
     float height = sizey * county;
 
     auto& wnd = wz::Application::Get().GetWindow();
-    vec2 center = vec2(wnd.GetWidth(), wnd.GetHeight()) / 2.f;
+    wz::fvec2 center = wz::fvec2(wnd.GetWidth(), wnd.GetHeight()) / 2.f;
     wz::Rect bounds(center.x - width / 2.f, wnd.GetHeight() - height - sizey * 2.f, width, height);
 
     int nMaxPowerups = 5;
@@ -839,7 +840,7 @@ void DemoGame2D::GenerateBricks(const wz::Texture::Handle& hBrickTexture)
     {
         for (float y = bounds.Bottom(); y < bounds.Top(); y += sizey)
         {
-            wz::Color color = wz::Color
+            wz::color color = wz::color
             (
                 (x + y) / (bounds.Right() + bounds.Top()), 
                 x / bounds.Right(), 
@@ -870,7 +871,7 @@ void DemoGame2D::GenerateBricks(const wz::Texture::Handle& hBrickTexture)
                 float lightStren = ((rand() % 100) / 100.f);
                 m_ecs.GetComponent<wzg::Light>(hPlatform)->radius = 8.f + 16.f * lightStren;
                 m_ecs.GetComponent<wzg::Light>(hPlatform)->intensity = .5f + lightStren;
-                m_ecs.GetComponent<wzg::LightOffset>(hPlatform)->value = vec2(32, 16);
+                m_ecs.GetComponent<wzg::LightOffset>(hPlatform)->value = wz::fvec2(32, 16);
             }
             i++;
         }    

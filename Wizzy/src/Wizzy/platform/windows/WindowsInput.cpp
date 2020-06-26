@@ -1,7 +1,7 @@
 #include <wzpch.h>
 #include "WindowsInput.h"
 
-#include "Wizzy/Application.h"
+#include "Wizzy/Core/Application.h"
 #include <GLFW/glfw3.h>
 
 namespace Wizzy {
@@ -25,13 +25,13 @@ namespace Wizzy {
         return _state == GLFW_PRESS;
     }
 
-	vec2 WindowsInput::GetMousePosImpl() {
+	fvec2 WindowsInput::GetMousePosImpl() {
 		auto& _app = Application::Get();
 		auto _window = static_cast<GLFWwindow*>(_app.GetWindow().GetNativeWindow());
 
 		double _x, _y;
 		glfwGetCursorPos(_window, &_x, &_y);
 
-		return vec2(_x, _app.GetWindow().GetHeight() - _y);
+		return fvec2(_x, _app.GetWindow().GetHeight() - _y);
 	}
 }

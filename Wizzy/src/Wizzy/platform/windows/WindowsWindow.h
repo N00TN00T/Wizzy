@@ -1,6 +1,6 @@
 #pragma once
 
-#include "Wizzy/IWindow.h"
+#include "Wizzy/Core/IWindow.h"
 #include "Wizzy/Renderer/GraphicsContext.h"
 
 struct GLFWwindow;

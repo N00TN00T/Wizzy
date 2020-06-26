@@ -9,7 +9,7 @@ namespace Wizzy {
         virtual
         void SetClearColor(float r, float g, float b, float a) override;
 
-        const Color& GetClearColor() const override;
+        const color3& GetClearColor() const override;
 
         virtual
         void Clear() override;

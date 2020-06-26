@@ -163,9 +163,9 @@ bool SpriteRenderer::ProcessComponents(const Event& e,
                     pipeline, 
                     sprite->hTexture,
                     position->value,
-                    scale ? scale->value : vec2(1),
+                    scale ? scale->value : fvec2(1),
                     rotation ? rotation->value : 0,
-                    colorTint ? colorTint->value : Color::white
+                    colorTint ? colorTint->value : COLOR_WHITE
                 );
             }
 
@@ -334,22 +334,24 @@ void CameraSystem2D::UpdateTransform(Camera2D* camera,
                                      Rotation2D* rotation
                                      ) const
 {
-    static mat4 projection;
-    projection = glm::ortho<float>
+    static fmat4 projection;
+    projection = projection::ortho<float>
                 (
                     0, 
                     camera->viewSize.x * (scale ? scale->value.x : 1.f), 
                     0, 
-                    camera->viewSize.y * (scale ? scale->value.y : 1.f)
+                    camera->viewSize.y * (scale ? scale->value.y : 1.f),
+                    -1,
+                    1
                 );
 
-    static mat4 view;
-    view = glm::translate(mat4(1.f), vec3(position->value, 0.f));
+    static fmat4 view;
+    view = transformation::translation((fvec3)position->value);
     if (rotation)
     {
-        view = glm::rotate(view, rotation->value, vec3(0, 0, 1));
+        view.rotate(rotation->value, fvec3(0, 0, 1));
     }
-    view = glm::inverse(view);
+    view.invert();
 
     camera->transform = projection * view;
 }
@@ -396,9 +398,9 @@ bool TextRenderer::ProcessComponents(const Event& e,
                     text->hFont,
                     text->value,
                     position->value,
-                    scale ? scale->value : vec2(1.f),
+                    scale ? scale->value : fvec2(1.f),
                     rotation ? rotation->value : 0.f,
-                    colorTint ? colorTint->value : wz::Color::white
+                    colorTint ? colorTint->value : COLOR_WHITE
                 );
             }
 
@@ -451,10 +453,10 @@ bool LightRenderer2D::ProcessComponents(const Event& e,
                 // TODO: UBO (#OPTIMIZE)
                 string name = "u_pointLights[" + std::to_string(count - 1) + "]";
 
-                vec2 pos = position->value + (offset ? offset->value : vec2(0));
+                fvec2 pos = position->value + (offset ? offset->value : fvec2(0));
 
                 shader.Upload2f(name + ".lightPos", pos);
-                shader.Upload4f(name + ".lightColor", colorTint ? colorTint->value : Color::white);
+                shader.Upload4f(name + ".lightColor", colorTint ? colorTint->value : COLOR_WHITE);
                 shader.Upload1f(name + ".intensity", light->intensity);
                 shader.Upload1f(name + ".radius", light->radius);
                 

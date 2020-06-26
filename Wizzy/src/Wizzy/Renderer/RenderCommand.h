@@ -10,12 +10,12 @@ namespace Wizzy {
         {
             s_rendererAPI->SetClearColor(r, g, b, a);
         }
-        inline static void SetClearColor(const Color& color) 
+        inline static void SetClearColor(const color3& color) 
         {
             s_rendererAPI->SetClearColor(color);
         }
 
-        inline static const Color& GetClearColor()
+        inline static const color3& GetClearColor()
         {
             return s_rendererAPI->GetClearColor();
         }

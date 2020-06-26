@@ -1,6 +1,6 @@
 #pragma once
 
-#include "Wizzy/PropertyTable.h"
+#include "Wizzy/Utilities/PropertyTable.h"
 
 
 #define __HANDLE_DEF struct Handle : public ::Wizzy::Resource::Handle \

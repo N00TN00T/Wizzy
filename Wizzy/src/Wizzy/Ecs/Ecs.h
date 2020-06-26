@@ -2,6 +2,7 @@
 
 #include "Wizzy/Ecs/System.h"
 #include "Wizzy/Events/Event.h"
+#include "Wizzy/JobSystem/JobSystem.h"
 
 namespace Wizzy
 {

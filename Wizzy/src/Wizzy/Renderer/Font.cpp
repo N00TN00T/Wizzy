@@ -71,7 +71,7 @@ namespace Wizzy
         else
         { // Text has no cached texture, create new texture
             WZ_CORE_TRACE("Rendering text to rendertarget");
-            glm::vec2 textureSize = MeasureString(text);
+            fvec2 textureSize = MeasureString(text);
             m_cache[text].hTexture = ResourceManagement::AddRuntimeResource
             (
                 (RenderTarget*)RenderTarget::Create(textureSize.x, textureSize.y, 1), RenderTarget::GetTemplateProps()
@@ -81,7 +81,7 @@ namespace Wizzy
             m_cache[text].sizeBytes = 
                 (textureSize.x * textureSize.y * sizeof(float) * 3
                 + sizeof(RenderTarget)
-                + sizeof(vec2) 
+                + sizeof(fvec2) 
                 + sizeof(size_t));
             m_cachedBytes += m_cache[text].sizeBytes;
 
@@ -92,15 +92,15 @@ namespace Wizzy
             Renderer2D::Pipeline pipeline(pipelineBudget);
 
             pipeline.hShader = hShader;
-            pipeline.camTransform = glm::ortho<float>(0, textureSize.x, 0, textureSize.y);
+            pipeline.camTransform = projection::ortho<float>(0, textureSize.x, 0, textureSize.y, -1, 1);
             pipeline.hRenderTarget = hStringTexture;
-            pipeline.clearColor = Color::transparent;
+            pipeline.clearColor = COLOR_TRANSPARENT;
 
             Renderer2D::Clear(&pipeline);
             Renderer2D::Begin(&pipeline);
 
             // Since we scale -1 on Y, the pivot y is on the top
-            vec2 penPos(0.f, textureSize.y - m_fontSize);
+            fvec2 penPos(0.f, textureSize.y - m_fontSize);
             for (auto c : text)
             {
                 if (m_characterInfo.find(c) == m_characterInfo.end()) c = '?';
@@ -124,7 +124,7 @@ namespace Wizzy
                         penPos + info.bearing,
                         {1.f, -1.f},
                         0.f,
-                        Color::white,
+                        COLOR_WHITE,
                         Rect(info.xPos, 0, info.size.x, info.size.y)
                     );
                 }
@@ -159,7 +159,7 @@ namespace Wizzy
         }
     }
 
-    glm::vec2 Font::MeasureString(const string& str)
+    fvec2 Font::MeasureString(const string& str)
     {
         if (m_cache.find(str) != m_cache.end())
         {
@@ -169,7 +169,7 @@ namespace Wizzy
         else
         {
             WZ_CORE_TRACE("Measing text size for '{0}'", str);
-            glm::vec2 size(0, m_fontSize);
+            fvec2 size(0, m_fontSize);
 
             int32 posX = 0;
             int32 yBonus = 0;

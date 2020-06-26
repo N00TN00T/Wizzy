@@ -96,5 +96,11 @@ namespace Wizzy
 
         layer.Count<TestSystem>();
         layer.Count<TestSystem2>();
+
+		EcsInstance ecs;
+
+		ecs.ProcessLayout(layer, AppUpdateEvent(5));
+
+		ecs.ProcessSystem<TestSystem>(AppUpdateEvent(5));
 	}
 }

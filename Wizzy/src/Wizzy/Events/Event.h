@@ -1,5 +1,4 @@
 #pragma once
-#include "Wizzy/Core.h"
 
 namespace Wizzy {
 
@@ -64,11 +63,12 @@ namespace Wizzy {
 			}
 			return false;
 		}
+
+		template<typename ostream>
+        inline friend ostream& operator<<(ostream& os, const Event& e) {
+            return os << e.ToString();
+        }
 	private:
 		Event& m_event;
 	};
-
-	inline std::ostream& operator<<(std::ostream& os, const Event& e) {
-		return os << e.ToString();
-	}
 }

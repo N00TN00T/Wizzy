@@ -1,7 +1,7 @@
 #include "wzpch.h"
 
 #include "Wizzy/Resource/ResourceManagement.h"
-#include "Wizzy/Application.h"
+#include "Wizzy/Core/Application.h"
 
 
 #define __CHECK_HANDLE(handle, loaded)\
@@ -36,6 +36,7 @@ namespace Wizzy
 	u32 ResourceManagement::s_freeIndicesCount = 0;
 	uId ResourceManagement::s_idCounter;
 	std::queue<ResourceManagement::ResourceAction> ResourceManagement::s_deferredActions;
+	string ResourceManagement::s_idFile;
 
 	void ResourceManagement::Load(const Resource::Handle& handle)
 	{
@@ -228,6 +229,8 @@ namespace Wizzy
 					s_idCounter = std::stoi(content);
 				}
 			}
+
+			s_idFile = s_resourceDir + ".id";
 	}
 
 	void ResourceManagement::Validate(bool checkSources)

@@ -17,14 +17,14 @@ inline void Attach(SystemLayer& layer)
     layer.Push<ResourceSystem>();
 }
 
-inline EntityHandle CreateCamera(EcsInstance* ecs, const vec2& position = vec2(0))
+inline EntityHandle CreateCamera(EcsInstance* ecs, const fvec2& position = fvec2(0))
 {
     auto hEntity = ecs->CreateEntity<Camera2D, Position2D>();
     ecs->GetComponent<Position2D>(hEntity)->value = position;
     return hEntity;
 }
 
-inline EntityHandle CreateSprite(EcsInstance* ecs, const vec2& position = vec2(0))
+inline EntityHandle CreateSprite(EcsInstance* ecs, const fvec2& position = fvec2(0))
 {
     auto hEntity = ecs->CreateEntity<Sprite, Position2D>();
     ecs->GetComponent<Position2D>(hEntity)->value = position;
@@ -32,8 +32,8 @@ inline EntityHandle CreateSprite(EcsInstance* ecs, const vec2& position = vec2(0
 }
 
 inline EntityHandle CreateLight(EcsInstance* ecs, 
-                                const vec2& position = vec2(0), 
-                                const Color& color = Color::white)
+                                const fvec2& position = fvec2(0), 
+                                const color& color = COLOR_WHITE)
 {
     auto hEntity = ecs->CreateEntity<Light, Position2D, ColorTint>();
     ecs->GetComponent<Position2D>(hEntity)->value = position;

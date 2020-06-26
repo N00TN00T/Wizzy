@@ -33,4 +33,8 @@ imgui.ini
 
 benchmark.json
 
-
+*.id
+*.id_
+*.id__
+*.id___
+*.id____

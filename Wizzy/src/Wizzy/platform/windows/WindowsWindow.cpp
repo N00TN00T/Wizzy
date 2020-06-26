@@ -11,7 +11,7 @@
 #include "Wizzy/Renderer/RendererAPI.h"
 #include "Wizzy/Renderer/API.h"
 
-#include "Wizzy/Instrumentor.h"
+#include "Wizzy/Utilities/Instrumentor.h"
 
 namespace Wizzy {
 	IWindow *IWindow::Create(const WindowProps& props) {

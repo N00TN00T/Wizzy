@@ -2,10 +2,10 @@
 
 #include <glad/glad.h>
 
-#include "Wizzy/WizzyExceptions.h"
+#include "Wizzy/Exceptions/WizzyExceptions.h"
 #include "Wizzy/platform/OpenGL/GLRenderTarget.h"
 #include "Wizzy/platform/OpenGL/GLErrorHandling.h"
-#include "Wizzy/ImageImporter.h"
+#include "Wizzy/Utilities/ImageImporter.h"
 
 namespace Wizzy {
 

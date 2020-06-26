@@ -4,7 +4,7 @@
 #include "Wizzy/platform/OpenGL/GLTexture.h"
 #include "Wizzy/Renderer/Renderer.h"
 #include "Wizzy/Resource/ResourceManagement.h"
-#include "Wizzy/WizzyExceptions.h"
+#include "Wizzy/Exceptions/WizzyExceptions.h"
 
 #define TO_4_BYTE_COLOR(c16) new byte[4] { (byte)(c16.r * 255.f), (byte)(c16.g * 255.f), (byte)(c16.b * 255.f), (byte)(c16.a * 255.f) }
 

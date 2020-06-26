@@ -1,7 +1,6 @@
 #pragma once
 
-#include "Event.h"
-#include "../Core.h"
+#include "Wizzy/Events/Event.h"
 
 namespace Wizzy {
 	class  CharEvent

@@ -34,9 +34,7 @@ namespace Wizzy {
 		virtual
 		void Unbind() const = 0;
 
-        virtual void UploadMat4(const string& name, const mat4& value) = 0;
-
-		virtual void UploadMat3(const string& name, const mat3& value) = 0;
+        virtual void UploadMat4(const string& name, const fmat4& value) = 0;
 
 		virtual void Upload1i(const string& name, const int32& value)  = 0;
 
@@ -48,11 +46,11 @@ namespace Wizzy {
 
 		virtual void Upload1f(const string& name, const float& value)  = 0;
 
-		virtual void Upload2f(const string& name, const vec2& value)  = 0;
+		virtual void Upload2f(const string& name, const fvec2& value)  = 0;
 
-		virtual void Upload3f(const string& name, const vec3& value)  = 0;
+		virtual void Upload3f(const string& name, const fvec3& value)  = 0;
 
-		virtual void Upload4f(const string& name, const vec4& value) = 0;
+		virtual void Upload4f(const string& name, const fvec4& value) = 0;
 
 		virtual void Upload1iv(const string& name, const u32& count, const int32* value) = 0;
 
@@ -64,11 +62,11 @@ namespace Wizzy {
 
 		virtual void Upload1fv(const string& name, const u32& count, const float* value) = 0;
 
-		virtual void Upload2fv(const string& name, const u32& count, const vec2& value) = 0;
+		virtual void Upload2fv(const string& name, const u32& count, const fvec2& value) = 0;
 
-		virtual void Upload3fv(const string& name, const u32& count, const vec3& value) = 0;
+		virtual void Upload3fv(const string& name, const u32& count, const fvec3& value) = 0;
 
-		virtual void Upload4fv(const string& name, const u32& count, const vec4& value) = 0;
+		virtual void Upload4fv(const string& name, const u32& count, const fvec4& value) = 0;
 
 		void UploadData(const string& name, ShaderDataType type, void* data);
 

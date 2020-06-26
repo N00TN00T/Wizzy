@@ -17,10 +17,16 @@ void Sandbox::Init()
 	wz::Log::SetCoreLogLevel(LOG_LEVEL_DEBUG);
 	wz::Log::SetClientLogLevel(LOG_LEVEL_TRACE);
 
+
+
 	srand(time(NULL));
 
 	AddEventCallback(WZ_BIND_FN(Sandbox::OnEvent));
+	return;
+}
 
+void Sandbox::LoadResources() 
+{
 	wz::ResourceManagement::SetResourceDir(
 		ulib::File::directory_of(GetExecutablePath()) + "/../../../res/");
 
@@ -29,16 +35,19 @@ void Sandbox::Init()
 	//song = wz::ResourceManagement::Load<wz::AudioClip>("song.wav");
 
 	pipeline = new wz::Renderer2D::Pipeline(_MB(15));
-	pipeline->camTransform = glm::ortho<float>(0, 1600, 0, 900);
+	pipeline->camTransform = wz::projection::ortho<float>(0, 1600, 0, 900, -1, 1);
+	
 
 	textPipeline = new wz::Renderer2D::Pipeline(_MB(5));
-	textPipeline->camTransform = glm::ortho<float>(0, 1600, 0, 900);
+	textPipeline->camTransform = wz::projection::ortho<float>(0, 1600, 0, 900, -1, 1);
 	textPipeline->hShader = wz::Renderer2D::GetTextShader();
 
-	wz::RenderCommand::SetClearColor(wz::Color::blue);
+	wz::RenderCommand::SetClearColor(wz::color(.1f, .1f, .8f, 1.f));
 
 	#ifndef WZ_CONFIG_DEBUG
 	sizex = sizey = 3.8f;
+	#else
+	sizex = sizey = 30.1f;
 	#endif
 
 
@@ -59,11 +68,7 @@ void Sandbox::Init()
 	}
 
 	m_systemLayer.SetEnabledAll(false);
-
-
-	return;
 }
-
 
 void Sandbox::Shutdown()
 {
@@ -113,7 +118,7 @@ bool Sandbox::Render(wz::AppRenderEvent& e)
 					(
 						pipeline,
 						wz::Rect(x, y, sizex, sizey),
-						wz::Color(0.f, x / 1600.f, y / 900.f, 1.f)
+						wz::color(0.f, x / 1600.f, y / 900.f, 1.f)
 					);
 				}
 				else
@@ -125,7 +130,7 @@ bool Sandbox::Render(wz::AppRenderEvent& e)
 						{ x, y },
 						{ sizex / 16.f, sizey / 16.f },
 						0,
-						wz::Color(1.f, x / 1600.f, y / 900.f, 1.f)
+						wz::color(1.f, x / 1600.f, y / 900.f, 1.f)
 					);
 				}
 			}
@@ -160,10 +165,10 @@ bool Sandbox::Render(wz::AppRenderEvent& e)
 				{ 0, 0 },
 				{ 1.f, 1.f },
 				0,
-				wz::Color::red
+				wz::COLOR_RED
 			);
 
-			vec2 pos = { 50.f, m_window->GetHeight() - 8 * 36 }; 
+			wz::fvec2 pos = { 50.f, m_window->GetHeight() - 8 * 36 }; 
 			string metricsStr = str(metrics.numQuads) + " Quads\n"
 								+ str(metrics.numIndices) + " Indices\n"
 								+ str(metrics.GetNumVertices()) + " Vertices\n"

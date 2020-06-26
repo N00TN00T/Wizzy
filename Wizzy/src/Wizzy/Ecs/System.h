@@ -3,15 +3,7 @@
 #include "Wizzy/Ecs/Component.h"
 #include "Wizzy/Events/Event.h"
 #include "Wizzy/Events/AppEvent.h"
-
-template<typename Target, typename ListHead, typename... ListTails>
-inline constexpr size_t indexOfVariadicType()
-{
-	if constexpr (std::is_same<Target, ListHead>::value)
-		return 0;
-	else
-		return 1 + indexOfVariadicType<Target, ListTails...>();
-}
+#include "Wizzy/Utilities/TemplateUtils.h"
 
 namespace Wizzy {
 
@@ -39,7 +31,7 @@ namespace Wizzy {
 
 		inline bool ProcessComponentsPass(const Event& e, ComponentPass& components) const
 		{
-			return ProcessComponents(e, ((TComponents*)components.at(indexOfVariadicType<TComponents, TComponents...>()))...);
+			return ProcessComponents(e, ((TComponents*)components.at(index_of_type<TComponents, TComponents...>()))...);
 		}
 
 		inline bool IsSubscribed(EventType eventType) const 

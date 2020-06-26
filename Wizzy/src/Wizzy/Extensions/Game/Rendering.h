@@ -31,10 +31,10 @@ __COMPONENT_DECL(Camera2D)
 {
     RenderTarget::Handle hRenderTarget = WZ_NULL_RESOURCE_HANDLE;
     std::unordered_map<Shader::Handle, RenderPipeline2D*, Shader::Handle::hash> pipelines;
-    vec2 viewSize = vec2(1600, 900);
+    fvec2 viewSize = fvec2(1600, 900);
     bool upToDate = false;
     bool consistentSize = false;
-    mat4 transform;
+    fmat4 transform;
 };
 
 __COMPONENT_DECL(Sprite)
@@ -49,7 +49,7 @@ __COMPONENT_DECL(Light)
 };
 __COMPONENT_DECL(LightOffset)
 {
-    vec2 value = vec2(0);
+    fvec2 value = fvec2(0);
 };
 
 __SYSTEM_DECL(SpriteRenderer, Sprite, Position2D, ColorTint, Scale2D, Rotation2D, CustomShader)

@@ -12,12 +12,12 @@ WZ_NS_BEGIN(Wizzy);
 WZ_NS_BEGIN(Game);
     __COMPONENT_DECL(Position2D)
     {
-        vec2 value = vec2(0);
+        fvec2 value = fvec2(0);
     };
 
     __COMPONENT_DECL(Scale2D)
     {
-        vec2 value = vec2(1);
+        fvec2 value = fvec2(1);
     };
 
     __COMPONENT_DECL(Rotation2D)
@@ -27,7 +27,7 @@ WZ_NS_BEGIN(Game);
 
     __COMPONENT_DECL(ColorTint)
     {
-        Color value;
+        color value;
     };
 
     __COMPONENT_DECL(ResourceConfig)

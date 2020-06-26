@@ -1,7 +1,7 @@
 #pragma once
 
-#include "Wizzy/Application.h"
-#include "Wizzy/WizzyExceptions.h"
+#include "Wizzy/Core/Application.h"
+#include "Wizzy/Exceptions/WizzyExceptions.h"
 
 #if !GL_VERSION_4_3 && !defined(WZ_CONFIG_DIST)
 #define GL_CALL(glAction)  \

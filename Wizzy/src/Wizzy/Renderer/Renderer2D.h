@@ -1,6 +1,6 @@
 #pragma once
 
-#include "Wizzy/Rect.h"
+#include "Wizzy/Math/Rect.h"
 #include "Wizzy/Renderer/Buffers.h"
 #include "Wizzy/Renderer/RenderTarget.h"
 #include "Wizzy/Renderer/Font.h"
@@ -22,10 +22,10 @@ namespace Wizzy
 
         struct VertexData
         {
-            vec2    pos;
-            vec2    uv;
-            Color   color;
-            float   textureSlot;
+            fvec2    pos;
+            fvec2    uv;
+            color4   color;
+            f32      textureSlot;
         };
         struct Pipeline
         {
@@ -33,8 +33,8 @@ namespace Wizzy
         public:
             Shader::Handle                  hShader             = WZ_NULL_RESOURCE_HANDLE;
             RenderTarget::Handle            hRenderTarget       = WZ_NULL_RESOURCE_HANDLE;
-            mat4                            camTransform        = mat4(1.f);
-            Color                           clearColor          = Color::blue;
+            fmat4                           camTransform        = projection::ortho<float>(0, 1600, 0, 900, -1, 1);
+            color3                          clearColor          = COLOR_BLUE;
             const size_t                    budget;
             const size_t                    maxObjects          = budget / OBJECT_SIZE;
             const size_t                    maxIndices          = maxObjects * 6; 
@@ -98,34 +98,34 @@ namespace Wizzy
         static void SubmitTexture(
             Pipeline*               pipeline,
             const Texture::Handle&  hTexture,  
-            const vec2&             position, 
-            const vec2&             scale = vec2(1.f), 
+            const fvec2&            position, 
+            const fvec2&            scale = fvec2(1.f), 
             float                   rotation = 0.f, 
-            const Color&            color = Color::white, 
+            const color&            color = COLOR_WHITE, 
             const Rect&             renderRect = Rect(0, 0, 0, 0)
         );
         static void SubmitTexture(
             Pipeline*               pipeline,
             const Texture::Handle&  hTexture, 
-            const mat4&             transform, 
-            const Color&            color = Color::white, 
+            const fmat4&            transform, 
+            const color&            color = COLOR_WHITE, 
             const Rect&             renderRect = Rect(0, 0, 0, 0)
         );
 
         static void SubmitRenderTarget(
             Pipeline*                   pipeline,
             const RenderTarget::Handle& hTexture,  
-            const vec2&                 position, 
-            const vec2&                 scale = vec2(1.f), 
+            const fvec2&                position, 
+            const fvec2&                scale = fvec2(1.f), 
             float                       rotation = 0.f, 
-            const Color&                color = Color::white, 
+            const color&                color = COLOR_WHITE, 
             const Rect&                 renderRect = Rect(0, 0, 0, 0)
         );
         static void SubmitRenderTarget(
             Pipeline*                   pipeline,
             const RenderTarget::Handle& hTexture, 
-            const mat4&                 transform, 
-            const Color&                color = Color::white, 
+            const fmat4&                transform, 
+            const color&                color = COLOR_WHITE, 
             const Rect&                 renderRect = Rect(0, 0, 0, 0)
         );
 
@@ -133,24 +133,39 @@ namespace Wizzy
             Pipeline*           pipeline,
             const Font::Handle& hFont,  
             const string&       text,
-            const vec2&         position, 
-            const vec2&         scale = vec2(1.f), 
-            float               rotation = 0.f, 
-            const Color&        color = Color::white
+            const fvec2&        position, 
+            const fvec2&        scale = fvec2(1.f), 
+            f32                 rotation = 0.f, 
+            const color&        color = COLOR_WHITE
         );
         static void SubmitText(
             Pipeline*           pipeline,
             const Font::Handle& hFont, 
             const string&       text,
-            const mat4&         transform, 
-            const Color&        color = Color::white
+            const fmat4&        transform, 
+            const color&        color = COLOR_WHITE
         );
 
         static void SubmitRect(
             Pipeline*       pipeline,
             const Rect&     rect, 
-            const Color&    color = Color::white, 
+            const color&    color = COLOR_WHITE, 
             RectMode        mode = RectMode::Filled
+        );
+
+        static void SubmitRect(
+            Pipeline*       pipeline,
+            const Rect&     rect, 
+            f32             rotation = 0.f,
+            const color&    color = COLOR_WHITE, 
+            RectMode        mode = RectMode::Filled
+        );
+
+        static void SubmitLine(
+            Pipeline*       pipeline,
+            fvec2           a,
+            fvec2           b,
+            const color&    color = COLOR_WHITE
         );
 
         static void End(Pipeline* pipeline);
@@ -169,9 +184,9 @@ namespace Wizzy
         static void Submit(
             Pipeline*       pipeline,
             u32             textureSlot,
-            vec2&&          size,
-            mat4            transform,
-            const Color&    color,
+            fvec2&&         size,
+            fmat4           transform,
+            const color&    color,
             const Rect&     renderRect
         );
 

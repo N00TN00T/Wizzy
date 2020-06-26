@@ -1,6 +1,6 @@
 #pragma once
 
-#include "Wizzy/WizzyExceptions.h"
+#include "Wizzy/Exceptions/WizzyExceptions.h"
 #include "Wizzy/Resource/Resource.h"
 #include "Wizzy/Events/ResourceEvent.h"
 
@@ -142,6 +142,7 @@ namespace Wizzy
 		static string s_resourceDir;
 		static u32 s_freeIndicesCount;
 		static uId s_idCounter;
+		static string s_idFile;
 		
 		static std::queue<ResourceAction> s_deferredActions;
 	};
@@ -322,7 +323,7 @@ namespace Wizzy
 			id
 		};
 
-		if (info.metaData.GetKeys().size() == 0) info.metaData = T::GetTemplateProps();
+		if (info.metaData.GetCount() == 0) info.metaData = T::GetTemplateProps();
 
 		info.metaData.Set("resPath", resPath);
 		info.metaData.Set("type", typestr(T));
@@ -373,9 +374,15 @@ namespace Wizzy
 
 		DispatchEvent(ResourceRegisteredEvent(handle));
 
-		string idCountFile = s_resourceDir + ".id";
-		bool result = ulib::File::write(idCountFile, std::to_string(s_idCounter));
-		WZ_CORE_ASSERT(result, "failed writing .id file");
+#ifdef WZ_CONFIG_DEBUG
+		while (!ulib::File::write(s_idFile, std::to_string(s_idCounter))) {
+			WZ_CORE_ERROR("Id file '{}' is locked, issues may occur...", s_idFile);
+			s_idFile += "_";
+		}
+#else
+		bool readResult = ulib::File::write(s_idFile, std::to_string(s_idCounter));
+		WZ_CORE_ASSERT(readResult, "Failed reading ID file");
+#endif
 
 		return handle;
 	}
