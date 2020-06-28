@@ -12,3 +12,6 @@
 [submodule "Wizzy/vendor/ulib"]
 	path = Wizzy/vendor/ulib
 	url = https://github.com/N00TN00T/ulib
+[submodule "Wizzy/vendor/box2d"]
+	path = Wizzy/vendor/box2d
+	url = https://github.com/asbott/box2d

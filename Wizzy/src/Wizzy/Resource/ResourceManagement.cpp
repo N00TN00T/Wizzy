@@ -146,145 +146,145 @@ namespace Wizzy
 
 	void ResourceManagement::Reload(const Resource::Handle& handle, const PropertyTable& props)
 	{
-			__CHECK_HANDLE(handle, true);
+		__CHECK_HANDLE(handle, true);
 
-			auto& resourceInfo = s_resourceInfo[handle];
-			resourceInfo.metaData = props;
+		auto& resourceInfo = s_resourceInfo[handle];
+		resourceInfo.metaData = props;
 
-			Reload(handle);
+		Reload(handle);
 	}
 
 	void ResourceManagement::Reload(const Resource::Handle& handle)
 	{
-			__CHECK_HANDLE(handle, true);
+		__CHECK_HANDLE(handle, true);
 
-			auto& info = s_resourceInfo[handle];
+		auto& info = s_resourceInfo[handle];
 
-			WZ_CORE_TRACE("Reloading resource {0}", info.name());
+		WZ_CORE_TRACE("Reloading resource {0}", info.name());
 
-			WZ_CORE_TRACE("Updating source");
-			ResData currentSource;
-			if (!ulib::File::read(s_resourceDir + info.resPath, &currentSource, info.binary))
-			{
-				WZ_THROW(ResourceFileAccessException, info.resPath);
-			}
+		WZ_CORE_TRACE("Updating source");
+		ResData currentSource;
+		if (!ulib::File::read(s_resourceDir + info.resPath, &currentSource, info.binary))
+		{
+			WZ_THROW(ResourceFileAccessException, info.resPath);
+		}
 
-			info.source = currentSource;
+		info.source = currentSource;
 
-			WZ_CORE_TRACE("About to unload...");
-			Unload(handle);
-			WZ_CORE_TRACE("About to load...");
-			Load(handle);
+		WZ_CORE_TRACE("About to unload...");
+		Unload(handle);
+		WZ_CORE_TRACE("About to load...");
+		Load(handle);
 	}
 
 	void ResourceManagement::Delete(const Resource::Handle& handle)
 	{
-			auto& info = s_resourceInfo[handle];
-			WZ_CORE_TRACE("Deleting resource (path: {0}, handle: {1})", info.resPath, handle.id);
+		auto& info = s_resourceInfo[handle];
+		WZ_CORE_TRACE("Deleting resource (path: {0}, handle: {1})", info.resPath, handle.id);
 
-			if (!IsValid(handle))
-			{
-				WZ_THROW(ResourceInvalidHandleException, handle.id);
-			}
+		if (!IsValid(handle))
+		{
+			WZ_THROW(ResourceInvalidHandleException, handle.id);
+		}
 
-			if (IsLoaded(handle))
-			{
-				Unload(handle);
-			}
+		if (IsLoaded(handle))
+		{
+			Unload(handle);
+		}
 
-			info.isDeleting = true;
+		info.isDeleting = true;
 
-			DeferAction([handle, info]()
-			{
-				DispatchEvent(ResourceDeletedEvent(handle));
+		DeferAction([handle, info]()
+		{
+			DispatchEvent(ResourceDeletedEvent(handle));
 
-				delete s_resource[info.resourceIndex];
-				s_resource[info.resourceIndex] = nullptr;
-				s_freeIndicesCount++;
+			delete s_resource[info.resourceIndex];
+			s_resource[info.resourceIndex] = nullptr;
+			s_freeIndicesCount++;
 
-				s_handles.erase(handle);
-				string resPath = s_resourceInfo[handle].resPath;
-				s_resourceInfo.erase(handle);
+			s_handles.erase(handle);
+			string resPath = s_resourceInfo[handle].resPath;
+			s_resourceInfo.erase(handle);
 
-				if (!info.runtime) 	{WZ_CORE_INFO("Deleted resource '{0}'", resPath);}
-				else				{WZ_CORE_TRACE("Deleted resource '{0}'", resPath);}
-			});
+			if (!info.runtime) 	{WZ_CORE_INFO("Deleted resource '{0}'", resPath);}
+			else				{WZ_CORE_TRACE("Deleted resource '{0}'", resPath);}
+		});
 	}
 
 	void ResourceManagement::SetResourceDir(const string& dir)
 	{
-			if (!ulib::Directory::exists(dir) && dir != "")
-			{
-				WZ_THROW(ResourceInvalidPathException, dir);
-			}
-			s_resourceDir = dir;
-			if (s_resourceDir.size() > 0 && (s_resourceDir[s_resourceDir.size() - 1] != '/' && s_resourceDir[s_resourceDir.size() - 1] != '\\'))  s_resourceDir += "/";
+		if (!ulib::Directory::exists(dir) && dir != "")
+		{
+			WZ_THROW(ResourceInvalidPathException, dir);
+		}
+		s_resourceDir = dir;
+		if (s_resourceDir.size() > 0 && (s_resourceDir[s_resourceDir.size() - 1] != '/' && s_resourceDir[s_resourceDir.size() - 1] != '\\'))  s_resourceDir += "/";
 
-			string idCountFile = s_resourceDir + ".id";
-			if (ulib::File::exists(idCountFile))
+		string idCountFile = s_resourceDir + ".id";
+		if (ulib::File::exists(idCountFile))
+		{
+			string content;
+			if (ulib::File::read(idCountFile, &content))
 			{
-				string content;
-				if (ulib::File::read(idCountFile, &content))
-				{
-					s_idCounter = std::stoi(content);
-				}
+				s_idCounter = std::stoi(content);
 			}
+		}
 
-			s_idFile = s_resourceDir + ".id";
+		s_idFile = s_resourceDir + ".id";
 	}
 
 	void ResourceManagement::Validate(bool checkSources)
 	{
-			for (auto handle : s_handles)
+		for (auto handle : s_handles)
+		{
+			if (s_resourceInfo.find(handle) == s_resourceInfo.end())
 			{
-				if (s_resourceInfo.find(handle) == s_resourceInfo.end())
-				{
-					WZ_THROW(ResourceInvalidHandleException, handle);
-				}
+				WZ_THROW(ResourceInvalidHandleException, handle);
+			}
+		}
+
+		for (auto& [handle, info] : s_resourceInfo)
+		{
+			if (info.runtime)
+			{
+				WZ_CORE_ASSERT(IsLoaded(handle), "A runtime resource is unloaded");
+				continue;
+			}
+			string fullPath = s_resourceDir + info.resPath;
+
+			if (s_handles.find(handle) == s_handles.end())
+			{
+				WZ_THROW(ResourceInvalidHandleException, handle.id);
 			}
 
-			for (auto& [handle, info] : s_resourceInfo)
+			if (info.resourceIndex >= s_resource.size())
 			{
-				if (info.runtime)
+				WZ_THROW(ResourceIndexOutOfRangeException, info.resPath, handle.id, info.name());
+			}
+
+			if (!ulib::File::exists(fullPath))
+			{
+				WZ_THROW(ResourceFileMissingException, info.resPath, handle.id, info.name());
+			}
+
+			if (!HasMeta(handle))
+			{
+				WriteMeta(handle);
+			}
+
+			if (IsLoaded(handle))
+			{
+				auto lastWriteTime = std::filesystem::last_write_time(s_resourceDir + info.resPath);
+
+				if (lastWriteTime > info.lastWrite)
 				{
-					WZ_CORE_ASSERT(IsLoaded(handle), "A runtime resource is unloaded");
-					continue;
-				}
-				string fullPath = s_resourceDir + info.resPath;
+					info.lastWrite = lastWriteTime;
+					WZ_CORE_TRACE("Changed detectedfor file {0}", info.resPath);
 
-				if (s_handles.find(handle) == s_handles.end())
-				{
-					WZ_THROW(ResourceInvalidHandleException, handle.id);
-				}
-
-				if (info.resourceIndex >= s_resource.size())
-				{
-					WZ_THROW(ResourceIndexOutOfRangeException, info.resPath, handle.id, info.name());
-				}
-
-				if (!ulib::File::exists(fullPath))
-				{
-					WZ_THROW(ResourceFileMissingException, info.resPath, handle.id, info.name());
-				}
-
-				if (!HasMeta(handle))
-				{
-					WriteMeta(handle);
-				}
-
-				if (IsLoaded(handle))
-				{
-					auto lastWriteTime = std::filesystem::last_write_time(s_resourceDir + info.resPath);
-
-					if (lastWriteTime > info.lastWrite)
-					{
-						info.lastWrite = lastWriteTime;
-						WZ_CORE_TRACE("Changed detectedfor file {0}", info.resPath);
-
-						DispatchEvent(ResourceFileChangedEvent(handle));
-					}
+					DispatchEvent(ResourceFileChangedEvent(handle));
 				}
 			}
+		}
 	}
 
 	const ResourceInfo& ResourceManagement::GetInfoFor(const Resource::Handle& handle)
