@@ -1,12 +1,8 @@
-
-
 #pragma once
 
 #include "Wizzy.h"
 
-#define __COMPONENT_DECL(t) struct t : public Component<t>
-#define __SYSTEM_DECL(t, ...) class t : public System<t, __VA_ARGS__>
-
+#include "Wizzy/Extensions/ExtensionsCommon.h"
 
 WZ_NS_BEGIN(Wizzy);
 WZ_NS_BEGIN(Game);

@@ -180,6 +180,8 @@ namespace Wizzy
         inline static const Metrics& GetMetrics() { return s_metrics; }
         inline static void ResetMetrics() { s_metrics = Metrics(); }
 
+        inline static const Texture::Handle& GetWhite1x1Texture() { return s_hWhite1x1Texture; }
+
     private:
         static void Submit(
             Pipeline*       pipeline,

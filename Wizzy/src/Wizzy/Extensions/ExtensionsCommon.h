@@ -30,3 +30,6 @@
     #define WZ_EXT_CRTICIAL
 
 #endif
+
+#define __COMPONENT_DECL(t) struct t : public Component<t>
+#define __SYSTEM_DECL(t, ...) class t : public System<t, __VA_ARGS__>

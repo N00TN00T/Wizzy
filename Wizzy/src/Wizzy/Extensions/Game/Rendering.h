@@ -22,13 +22,11 @@ typedef std::unordered_map
 
 const PipelinePool2D& GetPipelinePool2D();
 
-__COMPONENT_DECL(CustomShader)
-{
+__COMPONENT_DECL(CustomShader) {
     Shader::Handle hShader = WZ_NULL_RESOURCE_HANDLE;
 };
 
-__COMPONENT_DECL(Camera2D)
-{
+__COMPONENT_DECL(Camera2D) {
     RenderTarget::Handle hRenderTarget = WZ_NULL_RESOURCE_HANDLE;
     std::unordered_map<Shader::Handle, RenderPipeline2D*, Shader::Handle::hash> pipelines;
     fvec2 viewSize = fvec2(1600, 900);
@@ -37,18 +35,15 @@ __COMPONENT_DECL(Camera2D)
     fmat4 transform;
 };
 
-__COMPONENT_DECL(Sprite)
-{
+__COMPONENT_DECL(Sprite) {
     Texture::Handle hTexture = WZ_NULL_RESOURCE_HANDLE;
 };
 
-__COMPONENT_DECL(Light)
-{
+__COMPONENT_DECL(Light) {
     float intensity = 1.f;
 	float radius = 150.f;
 };
-__COMPONENT_DECL(LightOffset)
-{
+__COMPONENT_DECL(LightOffset) {
     fvec2 value = fvec2(0);
 };
 

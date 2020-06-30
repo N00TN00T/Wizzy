@@ -3,9 +3,10 @@
 
 #define SANDBOX		    0
 #define DEMOGAME        1
-#define GENERAL         3
+#define GENERAL         2
+#define GAD180_BREAKOUT 3
 
-#define SELECTION	DEMOGAME
+#define SELECTION	GAD180_BREAKOUT
 
 #if SELECTION == SANDBOX
 #include "Sandbox.h"
@@ -24,5 +25,11 @@ Wizzy::Application* CreateApplication()
 Wizzy::Application* CreateApplication()
 {
     return new GeneralTest();
+}
+#elif SELECTION == GAD180_BREAKOUT
+#include "GAD180Breakout.h"
+Wizzy::Application* CreateApplication()
+{
+    return new GAD180Breakout();
 }
 #endif

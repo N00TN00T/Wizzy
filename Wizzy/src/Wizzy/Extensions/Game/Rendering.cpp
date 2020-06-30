@@ -123,9 +123,9 @@ const PipelinePool2D& GetPipelinePool2D()
 
 SpriteRenderer::SpriteRenderer()
 {
-    Flag<ColorTint>(flag_optional);
-    Flag<Scale2D>(flag_optional);
-    Flag<Rotation2D>(flag_optional);
+    Flag<ColorTint>   (flag_optional);
+    Flag<Scale2D>     (flag_optional);
+    Flag<Rotation2D>  (flag_optional);
     Flag<CustomShader>(flag_optional);
 
     Subscribe(EventType::app_render);

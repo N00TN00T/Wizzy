@@ -4,12 +4,14 @@
 
 #include "Game/Common.h"
 #include "Game/Rendering.h"
+#include "Game/CharacterControllers.h"
 
 WZ_NS_BEGIN(Wizzy)
 WZ_NS_BEGIN(Game)
 
 inline void Attach(SystemLayer& layer)
 {
+    layer.Push<CharacterController2D>();
     layer.Push<CameraSystem2D>();
     layer.Push<SpriteRenderer>();
     layer.Push<TextRenderer>();
